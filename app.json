@@ -43,6 +43,13 @@
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
-    }
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "55248243-5896-4e44-b5fc-4e23d9e9b950"
+      }
+    },
+    "owner": "darkmatter_29"
   }
 }
