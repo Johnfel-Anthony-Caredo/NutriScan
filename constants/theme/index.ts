@@ -46,7 +46,7 @@ export const lightTheme: AppTheme = {
 
 export const darkTheme: AppTheme = {
   dark: true,
-  colors: darkColors,
+  colors: darkColors as unknown as ThemeColors,
   fontSizes,
   fontWeights,
   lineHeights,

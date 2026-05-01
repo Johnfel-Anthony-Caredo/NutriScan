@@ -6,12 +6,12 @@
  */
 
 import React from 'react';
-import { View, StyleSheet, type ViewStyle } from 'react-native';
+import { View, StyleSheet, type ViewStyle, type StyleProp } from 'react-native';
 import { useTheme } from '@/hooks/useTheme';
 
 interface CardProps {
   children: React.ReactNode;
-  style?: ViewStyle;
+  style?: StyleProp<ViewStyle>;
   /** Remove default padding (default: false) */
   noPadding?: boolean;
 }

@@ -132,6 +132,19 @@ export default function HistoryScreen() {
         ))}
       </Card>
 
+      {/* ── View Full Report ───────────── */}
+      <TouchableOpacity
+        onPress={() => router.push('/health-report')}
+        style={[styles.reportBtn, { backgroundColor: theme.colors.primaryLight, borderRadius: theme.radius.md }]}
+        accessibilityRole="button"
+      >
+        <Ionicons name="stats-chart" size={20} color={theme.colors.primary} />
+        <Text style={{ color: theme.colors.primary, fontSize: theme.fontSizes.body, fontWeight: theme.fontWeights.semibold, marginLeft: 8 }}>
+          View Full Report
+        </Text>
+        <Ionicons name="chevron-forward" size={18} color={theme.colors.primary} style={{ marginLeft: 'auto' }} />
+      </TouchableOpacity>
+
       <View style={{ height: 100 }} />
     </AppScreen>
   );
@@ -149,4 +162,5 @@ const styles = StyleSheet.create({
   dailySummary: { marginBottom: 12 },
   dailySummaryRow: { flexDirection: 'row', alignItems: 'center' },
   riskyRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 12, borderBottomWidth: StyleSheet.hairlineWidth },
+  reportBtn: { flexDirection: 'row', alignItems: 'center', paddingVertical: 16, paddingHorizontal: 16, marginTop: 20 },
 });

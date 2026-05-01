@@ -16,3 +16,5 @@ export { NutrientRow } from './NutrientRow';
 export { FoodLogItem } from './FoodLogItem';
 export { SkeletonLoader } from './SkeletonLoader';
 export { WeeklyChart } from './WeeklyChart';
+export { ChatBubble } from './ChatBubble';
+export { TypingIndicator } from './TypingIndicator';

@@ -16,7 +16,7 @@ import { useProfile } from '@/context/ProfileContext';
 
 const EXAMPLES = [
   '"My doctor told me to reduce potassium and limit fluids."',
-  '"I'm pre-diabetic and trying to lose 10 kg."',
+  '"I\'m pre-diabetic and trying to lose 10 kg."',
   '"I have high cholesterol and want to eat more fiber."',
 ];
 

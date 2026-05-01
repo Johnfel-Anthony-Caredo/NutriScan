@@ -30,14 +30,14 @@ export const conditionLabels: Record<HealthCondition, string> = {
 
 /** Friendly descriptions shown on the confirmation screen */
 export const conditionDescriptions: Record<HealthCondition, string> = {
-  diabetes: 'We'll watch sugar, carbs, and glycemic index for you.',
-  hypertension: 'We'll flag high-sodium and processed foods.',
-  heart_disease: 'We'll monitor cholesterol, saturated fat, and sodium.',
-  kidney_disease: 'We'll track potassium, phosphorus, and protein levels.',
-  liver_disease: 'We'll watch for high-fat, processed, and high-sodium items.',
-  cancer: 'We'll focus on anti-inflammatory and nutrient-dense guidance.',
-  other: 'We'll provide general balanced nutrition guidance.',
-  unsure: 'We'll give you broad, healthy eating guidance.',
+  diabetes: 'We\'ll watch sugar, carbs, and glycemic index for you.',
+  hypertension: 'We\'ll flag high-sodium and processed foods.',
+  heart_disease: 'We\'ll monitor cholesterol, saturated fat, and sodium.',
+  kidney_disease: 'We\'ll track potassium, phosphorus, and protein levels.',
+  liver_disease: 'We\'ll watch for high-fat, processed, and high-sodium items.',
+  cancer: 'We\'ll focus on anti-inflammatory and nutrient-dense guidance.',
+  other: 'We\'ll provide general balanced nutrition guidance.',
+  unsure: 'We\'ll give you broad, healthy eating guidance.',
 };
 
 /** The three-tier verdict system */
