@@ -21,11 +21,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data }) => {
-      setSession(data.session ?? null);
-      setIsLoading(false);
-    });
-
+    // onAuthStateChange fires synchronously with the current session on registration,
+    // so calling getSession() is redundant and creates a race condition.
     const { data } = supabase.auth.onAuthStateChange((_event, nextSession) => {
       setSession(nextSession ?? null);
       setIsLoading(false);
@@ -38,7 +35,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signOut = useCallback(async () => {
     const { error } = await supabase.auth.signOut();
-    if (error) throw error;
+    if (error) {
+      console.error('Sign out failed:', error);
+      throw error;
+    }
     // Session will be set to null by onAuthStateChange listener above
   }, []);
 

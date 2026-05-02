@@ -125,31 +125,20 @@ interface AuthContextValue {
   session: Session | null
   user: User | null
   isLoading: boolean
-  isGuest: boolean
-  setGuestMode: (val: boolean) => void
 }
 
 const AuthContext = createContext<AuthContextValue>({
   session: null,
   user: null,
   isLoading: true,
-  isGuest: false,
-  setGuestMode: () => {},
 })
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null)
   const [isLoading, setIsLoading] = useState(true)
-  const [isGuest, setIsGuest] = useState(false)
 
   useEffect(() => {
-    // Load existing session on app launch
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session)
-      setIsLoading(false)
-    })
-
-    // Listen for login, logout, token refresh
+    // onAuthStateChange fires synchronously with the current session on subscription
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session)
       setIsLoading(false)
@@ -159,7 +148,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [])
 
   return (
-    <AuthContext.Provider value={{ session, user: session?.user ?? null, isLoading, isGuest, setGuestMode: setIsGuest }}>
+    <AuthContext.Provider value={{ session, user: session?.user ?? null, isLoading }}>
       {children}
     </AuthContext.Provider>
   )
@@ -229,13 +218,13 @@ import { useRouter } from 'expo-router'
 import { useEffect } from 'react'
 
 export default function Index() {
-  const { session, isLoading: authLoading, isGuest } = useAuth()
+  const { session, isLoading: authLoading } = useAuth()
   const { profile, isHydrated } = useProfile()
   const router = useRouter()
 
   useEffect(() => {
     if (!authLoading && isHydrated) {
-      if (!session && !isGuest) {
+      if (!session) {
         router.replace('/(auth)/login')
       } else if (!profile.onboardingCompleted) {
         router.replace('/(onboarding)/welcome')
@@ -243,7 +232,7 @@ export default function Index() {
         router.replace('/(tabs)')
       }
     }
-  }, [session, authLoading, isHydrated, profile.onboardingCompleted, isGuest])
+  }, [session, authLoading, isHydrated, profile.onboardingCompleted])
 
   // Keep showing splash/loading until both auth and profile are ready
   return <SplashScreen />
@@ -507,7 +496,7 @@ const completeOnboarding = useCallback(async () => {
 }, [user, state.profile])
 ```
 
-> Keep `AsyncStorage` as the fallback for guest mode users who have no Supabase account.
+> Keep `AsyncStorage` as the local cache fallback. Supabase is the source of truth for authenticated users.
 
 ---
 
@@ -602,7 +591,6 @@ Your `app/(auth)/` folder already exists. [cite:132] Wire each screen to the `au
 **Login screen — key changes:**
 ```ts
 import { signIn } from '@/services/authService'
-import { useAuth } from '@/context/AuthContext'
 
 // On submit:
 try {
@@ -611,11 +599,6 @@ try {
 } catch (e) {
   setError('Invalid email or password')
 }
-
-// Guest button:
-const { setGuestMode } = useAuth()
-setGuestMode(true)
-router.replace('/(onboarding)/welcome')
 ```
 
 **Sign up screen — key changes:**
@@ -676,7 +659,7 @@ import { useAuth } from '@/context/AuthContext'
 const { user } = useAuth()
 
 const handleAddToLog = async () => {
-  if (!user) return  // guest mode — skip or prompt to sign up
+  if (!user) return  // skip if not authenticated
   try {
     let imageUrl: string | undefined
     if (capturedImageUri) {

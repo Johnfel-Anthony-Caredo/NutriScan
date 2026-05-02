@@ -47,6 +47,8 @@ export default function LoginScreen() {
     try {
       await signIn(email.trim(), password);
       // Let the global route guard in _layout.tsx handle the redirect.
+      // Reset submitting state in case the redirect is delayed.
+      setIsSubmitting(false);
     } catch {
       setAuthError('Invalid email or password');
       setIsSubmitting(false); // Only reset if there's an error

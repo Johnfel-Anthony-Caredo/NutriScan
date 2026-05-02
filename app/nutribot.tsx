@@ -49,6 +49,8 @@ export default function NutriBotScreen() {
   const [messages, setMessages] = useState<ChatMessage[]>([WELCOME]);
   const [input, setInput] = useState('');
   const [isTyping, setIsTyping] = useState(false);
+  const [isStreaming, setIsStreaming] = useState(false);
+  const [streamingText, setStreamingText] = useState('');
   const [isLoadingHistory, setIsLoadingHistory] = useState(!!params.conversationId);
   const flatListRef = useRef<FlatList>(null);
 
@@ -97,6 +99,8 @@ export default function NutriBotScreen() {
     setMessages((prev) => [...prev, userMsg]);
     setInput('');
     setIsTyping(true);
+    setIsStreaming(false);
+    setStreamingText('');
     scrollToEnd();
 
     let currentConvId = activeConversationId;
@@ -112,26 +116,61 @@ export default function NutriBotScreen() {
       // 2. Save the user message to the database
       await insertMessage(currentConvId, 'user', text.trim());
 
-      // 3. Prepare messages for AI (excluding our initial static welcome if we want, but fine to include)
+      // 3. Prepare messages for AI
       const currentMessages = [...messages, userMsg].map((m) => ({
         role: m.sender === 'bot' ? 'assistant' : 'user',
         content: m.text,
       }));
 
-      // 4. Call Edge Function
-      const { data, error } = await supabase.functions.invoke('nutribot', {
-        body: { messages: currentMessages, profile },
+      // 4. Call Edge Function with streaming fetch
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) throw new Error('No active session');
+
+      const response = await fetch(`${process.env.EXPO_PUBLIC_SUPABASE_URL}/functions/v1/nutribot`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify({ messages: currentMessages, profile }),
+        // @ts-ignore
+        reactNative: { textStreaming: true },
       });
 
-      if (error) {
-        console.error('Supabase function error:', error);
-        throw new Error(error.message || 'Function invocation failed');
-      }
-      if (data?.error) {
-        throw new Error(data.error);
+      if (!response.ok) {
+        let errText = await response.text();
+        try {
+          const errJson = JSON.parse(errText);
+          errText = errJson.error || errText;
+        } catch {}
+        throw new Error(errText);
       }
 
-      const replyText = data?.reply || 'I am sorry, I received an empty response.';
+      const reader = response.body?.getReader();
+      if (!reader) throw new Error('Streaming not supported on this device');
+
+      const decoder = new TextDecoder();
+      let replyText = '';
+
+      setIsTyping(false);
+      setIsStreaming(true);
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        const chunk = decoder.decode(value, { stream: true });
+        replyText += chunk;
+        setStreamingText(replyText);
+        scrollToEnd();
+      }
+
+      setIsStreaming(false);
+      setStreamingText('');
+
+      if (!replyText) {
+        replyText = 'I am sorry, I received an empty response.';
+      }
       
       // 5. Save the AI response to the database
       await insertMessage(currentConvId, 'assistant', replyText);
@@ -156,6 +195,7 @@ export default function NutriBotScreen() {
       setMessages((prev) => [...prev, errorMsg]);
     } finally {
       setIsTyping(false);
+      setIsStreaming(false);
       scrollToEnd();
     }
   }, [messages, profile, user, activeConversationId, scrollToEnd]);
@@ -207,7 +247,18 @@ export default function NutriBotScreen() {
             renderItem={({ item }) => <ChatBubble message={item} />}
             ListFooterComponent={
               <>
-                {isTyping && <NutriBotShimmer />}
+                {isTyping && !isStreaming && <NutriBotShimmer />}
+                {isStreaming && (
+                  <ChatBubble 
+                    message={{
+                      id: 'streaming-bubble',
+                      text: streamingText,
+                      sender: 'bot',
+                      timestamp: new Date(),
+                      disclaimer: false,
+                    }}
+                  />
+                )}
               </>
             }
           />

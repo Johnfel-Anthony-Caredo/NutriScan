@@ -5,21 +5,21 @@
  * Designed to make users feel understood and ready to scan.
  */
 
-import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { AppScreen, PrimaryButton, ProfileSummaryCard, SecondaryButton } from '@/components/ui';
+import { useProfile } from '@/context/ProfileContext';
+import { useTheme } from '@/hooks/useTheme';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import { useTheme } from '@/hooks/useTheme';
-import { AppScreen, PrimaryButton, SecondaryButton, ProfileSummaryCard } from '@/components/ui';
-import { useProfile } from '@/context/ProfileContext';
+import React from 'react';
+import { StyleSheet, Text, View } from 'react-native';
 
 export default function ConfirmationScreen() {
   const theme = useTheme();
   const router = useRouter();
   const { profile, completeOnboarding } = useProfile();
 
-  const handleStart = () => {
-    completeOnboarding();
+  const handleStart = async () => {
+    await completeOnboarding();
     router.replace('/(tabs)');
   };
 

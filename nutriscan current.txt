@@ -11,7 +11,7 @@ NutriScan is a React Native mobile application designed for users with specific 
 - **Navigation**: `expo-router` (File-based routing)
 - **Language**: TypeScript
 - **Styling**: Custom React Native StyleSheet with global Theme Tokens (no Tailwind)
-- **State Management**: React Context (`ProfileContext`) + AsyncStorage for persistence
+- **State Management**: React Context (`AuthContext` + `ProfileContext`) + AsyncStorage + Supabase for persistence
 - **Animations**: React Native `Animated` API & `react-native-reanimated`
 
 ---
@@ -26,16 +26,16 @@ nutriscan/
 │   ├── index.tsx             # Animated Splash Screen & Auth routing logic
 │   ├── (auth)/               # Authentication Stack
 │   │   ├── _layout.tsx
-│   │   ├── login.tsx         # Login with social placeholders & Guest mode
+│   │   ├── login.tsx         # Login with social placeholders
 │   │   ├── register.tsx      # Sign up with password strength meter
 │   │   └── forgot-password.tsx
 │   ├── (onboarding)/         # Personalization Stack
 │   │   ├── _layout.tsx
-│   │   ├── index.tsx         # Welcome screen
+│   │   ├── welcome.tsx       # Welcome screen
 │   │   ├── conditions.tsx    # Illness selector
 │   │   ├── goals.tsx         # Dietary tag/symptom picker
 │   │   ├── nutribot-assist.tsx
-│   │   └── confirm.tsx       # Profile summary and target confirmation
+│   │   └── confirmation.tsx  # Profile summary and target confirmation
 │   ├── (tabs)/               # Main Bottom Tab Navigator
 │   │   ├── _layout.tsx       # Tab bar configuration & Floating Action Button
 │   │   ├── index.tsx         # Home Dashboard (donut ring, daily log, tips)
@@ -50,7 +50,6 @@ nutriscan/
 │   ├── nutribot.tsx          # Chat interface with typing indicators
 │   ├── chat-history.tsx      # Date-grouped past conversations
 │   ├── health-report.tsx     # Weekly compliance & calorie charts
-│   └── settings.tsx          # Preferences & dark mode toggle
 ├── components/
 │   └── ui/                   # Reusable Design System Primitives
 │       ├── AppScreen.tsx, Card.tsx, TopBar.tsx, SectionHeader.tsx
@@ -66,7 +65,8 @@ nutriscan/
 │       ├── radius.ts         # Border radii
 │       └── index.ts          # Barrel exports
 ├── context/
-│   └── ProfileContext.tsx    # Global state (conditions, onboarding status, theme preference)
+│   ├── AuthContext.tsx       # Supabase auth session management
+│   └── ProfileContext.tsx    # Global state (conditions, onboarding status)
 └── data/
     └── mockData.ts           # Unified mock database (Scans, Logs, Articles, NutriBot)
 ```
@@ -79,7 +79,7 @@ The routing is entirely handled by `expo-router` using contextual state checks i
 
 ### Authentication & Hydration Flow
 1. **Splash Screen (`/`)**: Displays animated logo. After 2 seconds, checks `ProfileContext`.
-2. **Auth Gateway**: If no user/guest exists -> routes to `/(auth)/login`.
+2. **Auth Gateway**: If no authenticated user exists -> routes to `/(auth)/login`.
 3. **Onboarding Gateway**: If user logged in but `hasOnboarded` is false -> routes to `/(onboarding)`.
 4. **Main App**: If user is fully onboarded -> routes to `/(tabs)`.
 
@@ -101,7 +101,6 @@ The routing is entirely handled by `expo-router` using contextual state checks i
 
 ### ✅ Identity & Onboarding
 - Full Authentication UI (Login, Registration, Password Reset) with validation.
-- "Continue as Guest" mode integrated.
 - 5-step condition & goal onboarding to build the user's initial health profile.
 
 ### ✅ Dashboard & Tracking
@@ -122,7 +121,6 @@ The routing is entirely handled by `expo-router` using contextual state checks i
 ### ✅ Education & Settings
 - Full article view with Wikipedia sourcing, "Key Takeaways" box, and horizontally scrolling related tips.
 - Profile dashboard showing dynamic goals, mock scan streaks, and nutrient monitoring targets.
-- Categorized Settings screen with legal/medical disclaimers.
 
 ---
 
@@ -132,9 +130,7 @@ The routing is entirely handled by `expo-router` using contextual state checks i
 Handles the global persistence layer via `AsyncStorage`.
 - `hasHydrated`: Ensures loading states don't flash before memory is read.
 - `hasOnboarded`: Controls the gate between auth and the main app.
-- `isGuest`: Flags if the user skipped formal registration.
 - `profile`: Stores the user's selected `conditions` and `goals`.
-- `settings`: Stores global preferences like `theme` (Light/Dark/System).
 
 ### `data/mockData.ts`
 Because the app is not yet connected to a live backend (Gemini/Wikipedia), this file provides a robust, realistic data layer ensuring the UI works flawlessly:
@@ -166,9 +162,7 @@ The UI and flow are complete. The remaining tasks to hit 100% of the planned MVP
 1. **Custom Fonts** (Tier 1)
    - Install `Plus Jakarta Sans` (Headers) and `Inter` (Body) via `expo-font`.
    - The app currently falls back to the system default font.
-2. **Dark Mode Toggle** (Tier 1)
-   - The UI components are built to accept dark theme tokens, and the Settings toggle exists. The logic in `useTheme()` needs to dynamically swap the returned `theme` object based on the context setting.
-3. **Camera Integration** (Tier 2)
+2. **Camera Integration** (Tier 2)
    - Replace the placeholder view in `app/(tabs)/scan.tsx` with a live feed using `expo-camera`.
-4. **Backend API Hookup** (Tier 3 - Post-MVP)
+3. **Backend API Hookup** (Tier 3 - Post-MVP)
    - Replace `mockData.ts` with real calls to Gemini Flash (for scanning/chat) and the Wikipedia API (for articles).

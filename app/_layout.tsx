@@ -2,8 +2,8 @@ import { AuthProvider, useAuth } from '@/context/AuthContext';
 import { ProfileProvider, useProfile } from '@/context/ProfileContext';
 import { Stack, useRouter, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { useColorScheme } from 'react-native';
 import React, { useEffect } from 'react';
+import { useColorScheme } from 'react-native';
 import 'react-native-reanimated';
 
 function RootLayoutNav() {
@@ -52,6 +52,7 @@ function RootLayoutNav() {
         <Stack.Screen name="health-report" options={{ animation: 'slide_from_right' }} />
         <Stack.Screen name="nutribot" options={{ presentation: 'modal', animation: 'slide_from_bottom' }} />
         <Stack.Screen name="article/[id]" options={{ presentation: 'modal', animation: 'slide_from_bottom' }} />
+        <Stack.Screen name="auth/callback" options={{ headerShown: false, animation: 'fade' }} />
       </Stack>
     </>
   );

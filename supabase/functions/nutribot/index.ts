@@ -81,8 +81,8 @@ If the user asks how to use the app or where to find something, guide them using
       parts: [{ text: m.content }]
     }))
 
-    // Call Gemini API
-    const response = await ai.models.generateContent({
+    // Call Gemini API with streaming
+    const responseStream = await ai.models.generateContentStream({
       model: model,
       contents: formattedMessages,
       config: {
@@ -91,12 +91,32 @@ If the user asks how to use the app or where to find something, guide them using
       }
     })
 
-    const reply = response.text || 'I am sorry, but I am unable to respond at this time.'
+    const encoder = new TextEncoder()
+    const stream = new ReadableStream({
+      async start(controller) {
+        try {
+          for await (const chunk of responseStream) {
+            if (chunk.text) {
+              controller.enqueue(encoder.encode(chunk.text))
+            }
+          }
+        } catch (e) {
+          console.error('Streaming error from Gemini:', e)
+          controller.error(e)
+        } finally {
+          controller.close()
+        }
+      }
+    })
 
-    return new Response(
-      JSON.stringify({ reply }),
-      { headers: { "Content-Type": "application/json", ...corsHeaders } },
-    )
+    return new Response(stream, { 
+      headers: { 
+        "Content-Type": "text/plain", 
+        "Cache-Control": "no-cache",
+        "Connection": "keep-alive",
+        ...corsHeaders 
+      } 
+    })
   } catch (error) {
     console.error('Error in NutriBot edge function:', error)
     return new Response(

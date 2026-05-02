@@ -5,16 +5,18 @@
  * personalization matters. Sets the tone for the entire flow.
  */
 
-import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { AppScreen, PrimaryButton, SecondaryButton } from '@/components/ui';
+import { useProfile } from '@/context/ProfileContext';
+import { useTheme } from '@/hooks/useTheme';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import { useTheme } from '@/hooks/useTheme';
-import { AppScreen, PrimaryButton, SecondaryButton } from '@/components/ui';
+import React from 'react';
+import { StyleSheet, Text, View } from 'react-native';
 
 export default function WelcomeScreen() {
   const theme = useTheme();
   const router = useRouter();
+  const { completeOnboarding } = useProfile();
 
   return (
     <AppScreen>
@@ -83,7 +85,10 @@ export default function WelcomeScreen() {
           />
           <SecondaryButton
             label="Skip for Now"
-            onPress={() => router.replace('/(tabs)')}
+            onPress={() => {
+              completeOnboarding();
+              router.replace('/(tabs)');
+            }}
             style={{ marginTop: 12 }}
           />
           <Text

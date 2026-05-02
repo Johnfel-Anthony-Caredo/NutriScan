@@ -41,18 +41,22 @@ interface ProfileState {
   profile: UserHealthProfile;
   isLoading: boolean;
   isHydrated: boolean;
+  hydrationError: string | null;
 }
 
 const initialState: ProfileState = {
   profile: DEFAULT_PROFILE,
   isLoading: true,
   isHydrated: false,
+  hydrationError: null,
 };
 
 // ── Actions ────────────────────────────────────────────────────────
 
 type ProfileAction =
+  | { type: 'HYDRATE_START' }
   | { type: 'HYDRATE'; payload: UserHealthProfile }
+  | { type: 'HYDRATION_ERROR'; payload: string }
   | { type: 'SET_CONDITIONS'; payload: HealthCondition[] }
   | { type: 'SET_GOALS'; payload: HealthGoal[] }
   | { type: 'SET_NUTRIBOT_NOTE'; payload: string }
@@ -62,12 +66,23 @@ type ProfileAction =
 
 function profileReducer(state: ProfileState, action: ProfileAction): ProfileState {
   switch (action.type) {
+    case 'HYDRATE_START':
+      return { ...state, isLoading: true, hydrationError: null };
     case 'HYDRATE':
       return {
         ...state,
         profile: action.payload,
         isLoading: false,
         isHydrated: true,
+        hydrationError: null,
+      };
+    case 'HYDRATION_ERROR':
+      return {
+        ...state,
+        profile: DEFAULT_PROFILE,
+        isLoading: false,
+        isHydrated: true,
+        hydrationError: action.payload,
       };
     case 'SET_CONDITIONS': {
       const nutrientTargets = buildNutrientTargets(action.payload);
@@ -113,10 +128,11 @@ interface ProfileContextValue {
   profile: UserHealthProfile;
   isLoading: boolean;
   isHydrated: boolean;
+  hydrationError: string | null;
   setConditions: (conditions: HealthCondition[]) => void;
   setGoals: (goals: HealthGoal[]) => void;
   setNutriBotNote: (note: string) => void;
-  completeOnboarding: () => void;
+  completeOnboarding: () => Promise<void>;
   updateProfile: (partial: Partial<UserHealthProfile>) => void;
   resetProfile: () => void;
 }
@@ -170,6 +186,8 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
     let isActive = true;
 
     const hydrate = async () => {
+      dispatch({ type: 'HYDRATE_START' });
+
       if (user) {
         try {
           const remote = await getUserProfile(user.id);
@@ -183,7 +201,14 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
       }
 
       const localProfile = await hydrateFromStorage();
-      if (isActive) {
+      if (!isActive) return;
+
+      // If local profile is DEFAULT_PROFILE (never onboarded, no local data) and Supabase failed,
+      // that's expected for new users. Only flag an error if Supabase failed AND local is empty.
+      if (user && localProfile === DEFAULT_PROFILE) {
+        // Supabase had a user but profile fetch failed — this is a real error
+        dispatch({ type: 'HYDRATION_ERROR', payload: 'Could not load your profile. Using defaults.' });
+      } else {
         dispatch({ type: 'HYDRATE', payload: localProfile });
       }
     };
@@ -236,23 +261,22 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
     }
   }, [user]);
 
-  const completeOnboarding = useCallback(() => {
+  const completeOnboarding = useCallback(async () => {
     dispatch({ type: 'COMPLETE_ONBOARDING' });
 
     if (user) {
-      upsertUserConditions(user.id, state.profile.conditions).catch((error) => {
-        console.warn('Supabase conditions sync failed:', error);
-      });
-      upsertNutrientTargets(user.id, state.profile.nutrientTargets).catch((error) => {
-        console.warn('Supabase nutrient targets sync failed:', error);
-      });
-      updateUserProfile(user.id, {
-        goals: state.profile.goals,
-        nutribot_note: state.profile.nutriBotNote,
-        onboarding_completed: true,
-      }).catch((error) => {
-        console.warn('Supabase onboarding sync failed:', error);
-      });
+      try {
+        await upsertUserConditions(user.id, state.profile.conditions);
+        await upsertNutrientTargets(user.id, state.profile.nutrientTargets);
+        await updateUserProfile(user.id, {
+          goals: state.profile.goals,
+          nutribot_note: state.profile.nutriBotNote,
+          onboarding_completed: true,
+        });
+      } catch (error) {
+        console.warn('Supabase onboarding sync failed, local state is saved:', error);
+        // Don't block — local state + AsyncStorage is already persisted
+      }
     }
   }, [state.profile.conditions, state.profile.goals, state.profile.nutrientTargets, state.profile.nutriBotNote, user]);
 
@@ -299,6 +323,9 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
     } catch {
       // Ignore storage errors during reset
     }
+    // NOTE: This only clears local state + AsyncStorage.
+    // Remote Supabase data is preserved so it can be restored on re-login.
+    // The "Reset Profile & Restart Onboarding" action clears remote data separately.
   }, []);
 
   return (
@@ -307,6 +334,7 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
         profile: state.profile,
         isLoading: state.isLoading,
         isHydrated: state.isHydrated,
+        hydrationError: state.hydrationError,
         setConditions,
         setGoals,
         setNutriBotNote,

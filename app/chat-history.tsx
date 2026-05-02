@@ -9,14 +9,14 @@
  * - Tap row → opens NutriBot chat with past conversation
  */
 
-import React, { useState, useCallback } from 'react';
-import { View, Text, TouchableOpacity, SectionList, StyleSheet, ActivityIndicator } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
-import { useRouter, useFocusEffect } from 'expo-router';
-import { useTheme } from '@/hooks/useTheme';
-import { AppScreen, TopBar, EmptyState } from '@/components/ui';
+import { AppScreen, EmptyState, TopBar } from '@/components/ui';
 import { useAuth } from '@/context/AuthContext';
+import { useTheme } from '@/hooks/useTheme';
 import { getConversations } from '@/services/supabaseService';
+import { Ionicons } from '@expo/vector-icons';
+import { useFocusEffect, useRouter } from 'expo-router';
+import React, { useCallback, useState } from 'react';
+import { ActivityIndicator, SectionList, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 type ConversationSection = {
   title: string;
@@ -32,7 +32,10 @@ export default function ChatHistoryScreen() {
   const [isLoading, setIsLoading] = useState(true);
 
   const fetchHistory = useCallback(async () => {
-    if (!user) return;
+    if (!user) {
+      setIsLoading(false);
+      return;
+    }
     try {
       const data = await getConversations(user.id);
       

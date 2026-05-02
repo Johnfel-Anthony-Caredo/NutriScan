@@ -5,15 +5,15 @@
  * the onboarding flow. Links to NutriBot.
  */
 
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Alert } from 'react-native';
+import { AppScreen, Card, ConditionPill, SecondaryButton, SectionHeader } from '@/components/ui';
+import { useAuth } from '@/context/AuthContext';
+import { useProfile } from '@/context/ProfileContext';
+import { useTheme } from '@/hooks/useTheme';
+import { goalIcons, goalLabels, type HealthGoal } from '@/types/health';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import { useTheme } from '@/hooks/useTheme';
-import { AppScreen, Card, ConditionPill, SectionHeader, SecondaryButton } from '@/components/ui';
-import { useProfile } from '@/context/ProfileContext';
-import { useAuth } from '@/context/AuthContext';
-import { goalLabels, goalIcons, type HealthGoal } from '@/types/health';
+import React, { useState } from 'react';
+import { Alert, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 function MenuRow({ icon, label, subtitle, onPress, color }: {
   icon: keyof typeof Ionicons.glyphMap;
@@ -41,7 +41,7 @@ export default function ProfileScreen() {
   const theme = useTheme();
   const router = useRouter();
   const { profile, resetProfile } = useProfile();
-  const { signOut } = useAuth();
+  const { user, signOut } = useAuth();
   const [isLoggingOut, setIsLoggingOut] = useState(false);
 
   const handleEditProfile = () => router.push('/(onboarding)/conditions');
@@ -83,7 +83,19 @@ export default function ProfileScreen() {
           style: 'destructive',
           onPress: async () => {
             await resetProfile();
-            router.replace('/');
+            // Also clear remote Supabase data so the old profile isn't restored on re-hydration
+            if (user) {
+              try {
+                await Promise.all([
+                  updateUserProfile(user.id, { onboarding_completed: false, goals: [], nutribot_note: '' }),
+                  upsertUserConditions(user.id, []),
+                  upsertNutrientTargets(user.id, []),
+                ]);
+              } catch (error) {
+                console.warn('Remote profile reset failed:', error);
+              }
+            }
+            router.replace('/(onboarding)/welcome');
           },
         },
       ],

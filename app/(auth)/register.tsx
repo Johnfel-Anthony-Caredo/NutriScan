@@ -22,6 +22,7 @@ export default function RegisterScreen() {
   const [errs, setErrs] = useState<Record<string, string>>({});
   const [authError, setAuthError] = useState('');
   const [info, setInfo] = useState('');
+  const [emailSent, setEmailSent] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const strength = (() => {
@@ -61,7 +62,7 @@ export default function RegisterScreen() {
     try {
       const data = await signUp(name.trim(), email.trim(), password);
       if (!data.session) {
-        setInfo('Check your email to confirm your account, then sign in.');
+        setEmailSent(true);
         setIsSubmitting(false);
       }
       // If data.session exists, let the global route guard in _layout.tsx handle the redirect.
@@ -71,6 +72,29 @@ export default function RegisterScreen() {
       setIsSubmitting(false);
     }
   };
+
+  // Email verification sent — show confirmation
+  if (emailSent) {
+    return (
+      <AppScreen noPadding>
+        <TopBar title="Check Your Email" showBack />
+        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 20, paddingTop: 60 }}>
+          <View style={[{ width: 96, height: 96, borderRadius: 48, justifyContent: 'center', alignItems: 'center }, { backgroundColor: theme.colors.safe.bg }]}>
+            <Ionicons name="mail-open" size={48} color={theme.colors.safe.icon} />
+          </View>
+          <Text style={{ color: theme.colors.textPrimary, fontSize: theme.fontSizes['2xl'], fontWeight: theme.fontWeights.bold, textAlign: 'center', marginTop: 20 }}>
+            Verify your email
+          </Text>
+          <Text style={{ color: theme.colors.textSecondary, fontSize: theme.fontSizes.body, textAlign: 'center', marginTop: 8, maxWidth: 280, lineHeight: theme.lineHeights.body }}>
+            We sent a confirmation link to{' '}
+            <Text style={{ fontWeight: theme.fontWeights.semibold, color: theme.colors.textPrimary }}>{email}</Text>
+            {'. '}Check your inbox and tap the link to activate your account.
+          </Text>
+          <PrimaryButton label="Go to Sign In" onPress={() => router.replace('/(auth)/login')} style={{ marginTop: 28, width: '100%' }} />
+        </View>
+      </AppScreen>
+    );
+  }
 
   return (
     <AppScreen scroll noPadding>

@@ -69,7 +69,6 @@ This palette was selected for three reasons:
 ### Global Floating Elements
 
 - **NutriBot FAB (Floating Action Button):** A teal circular chatbot button fixed to the bottom-right corner, visible on ALL screens except the full-screen camera viewfinder. This keeps the chatbot always accessible without occupying a navbar slot.
-- FAB shows a small red badge notification when NutriBot has a new daily tip ready.
 
 ---
 
@@ -89,7 +88,6 @@ This palette was selected for three reasons:
 - Social login: Google, Apple
 - "Forgot Password?" link
 - "New to NutriScan? Create an account" link
-- "Continue as Guest" text link at bottom (low emphasis ghost style) — lets users try before committing
 
 #### Screen A3: Sign Up
 - Name, Email, Password fields
@@ -164,7 +162,7 @@ This palette was selected for three reasons:
 ### C. Home Dashboard
 
 #### Screen C1: Home (Main Dashboard)
-- **Top bar:** NutriScan logo (left) + notification bell icon (right)
+- **Top bar:** NutriScan logo (left)
 - **Greeting:** "Good morning, Jhepoy 👋"
 - **Profile pills** (horizontal scroll, below greeting): `Diabetes` `Hypertension` — small teal chips
 - **Today's Health Safety Card** (large, most prominent element):
@@ -302,7 +300,6 @@ This palette was selected for three reasons:
 - **Nutrient Focus** (condition-based weekly average):
   - e.g., "Avg daily sodium this week: 1,800mg vs. your 1,500mg limit"
   - Shown as a simple horizontal progress bar (red if over limit)
-- **"Share as Image"** button — exports summary as a shareable graphic
 - **"Export CSV"** button (v1.1 feature, shown grayed out in v1.0 with "Coming Soon" tag)
 
 ---
@@ -360,7 +357,6 @@ This palette was selected for three reasons:
 #### NutriBot FAB (Floating Button — Global)
 - Fixed position: bottom-right, 56×56px diameter teal circle
 - Icon: chat bubble with a small leaf/heart inside
-- Small red notification badge when a new daily tip is available
 - Hidden on: Screen D1 (camera viewfinder) only
 - Smooth entrance animation on each screen (scale up from 0 with spring easing)
 
@@ -369,7 +365,7 @@ This palette was selected for three reasons:
 ### G. Profile Tab
 
 #### Screen G1: Profile Home
-- **Top bar:** "Profile" title + settings gear icon (right) → goes to G2
+- **Top bar:** "Profile" title
 - Profile image (circular) + name + "Active" green badge
 - Condition tag pills: `Diabetes` `Hypertension`
 - **Health Goals card:**
@@ -387,40 +383,6 @@ This palette was selected for three reasons:
   - Header: "NutriBot" with small robot icon
   - Row: "Chat History 🕐" → goes to Screen F2
   - Row: "Clear Chat History" → confirmation dialog
-- **App Settings shortcut row:**
-  - Dark Mode toggle (directly accessible here)
-  - Language selector
-  - "Full Settings →" link → goes to G2
-
-#### Screen G2: Settings
-- **Account Settings:**
-  - Personal Information
-  - Edit Health Conditions (re-opens onboarding B2 flow)
-  - Change Password
-  - Linked Accounts (Google, Apple)
-- **Notification Preferences:**
-  - Meal reminders toggle
-  - Daily NutriTip notification toggle
-  - Alert sounds toggle
-- **NutriBot Settings:**
-  - Show quick suggestion chips toggle
-  - NutriBot notification alerts toggle
-- **Privacy & Data:**
-  - Anonymous analytics toggle
-  - "Export My Data" (CSV — v1.1)
-- **App Settings:**
-  - Language (English / Filipino)
-  - Dark Mode toggle
-- **Support & Feedback:**
-  - Help Center
-  - Send Feedback
-  - Rate the App
-- **Legal:**
-  - Terms of Service
-  - Privacy Policy
-  - Medical Disclaimer
-- **Logout** (bottom, red destructive text)
-- App version: "NutriScan v1.0.0"
 
 ---
 
@@ -439,7 +401,7 @@ LAUNCH
     Safety Score Ring        Viewfinder (D1)     Date Picker        User Info
     Scan CTA Button     →    Preview (D2)    →   Scans List         Health Goals
     Today's Log         →    Result (D3)         Weekly Chart       NutriBot →──┐
-    Health Tip Carousel      Manual Search       Full Report        Settings    │
+    Health Tip Carousel      Manual Search       Full Report              │
          │                                                                       │
          ▼                                                                       ▼
     Article Detail (C3)                                              Chat History (F2)
@@ -550,10 +512,8 @@ Your role:
 | Article Detail screen | 🔴 Must Have | MVP v1.0 |
 | Weekly health summary report | 🟡 Should Have | MVP v1.0 |
 | Profile tab with health goals | 🟡 Should Have | MVP v1.0 |
-| Dark mode | 🟡 Should Have | MVP v1.0 |
 | Manual food search | 🟡 Should Have | MVP v1.0 |
 | AI-generated Key Takeaways in articles | 🟡 Should Have | MVP v1.0 |
-| Daily push notification tips | 🟢 Nice to Have | v1.1 |
 | Voice input for NutriBot | 🟢 Nice to Have | v1.1 |
 | Export logs as CSV/PDF | 🟢 Nice to Have | v1.1 |
 | NutriBot scan from chat (image in chat) | 🟢 Nice to Have | v1.1 |
@@ -598,11 +558,10 @@ Your role:
 - [ ] F1: NutriBot full-screen chat
 - [ ] F2: Chat history list
 
-### Profile (2 screens)
+### Profile (1 screen)
 - [ ] G1: Profile home (with NutriBot history shortcut)
-- [ ] G2: Settings
 
-**Total: ~21 core screens**
+**Total: ~20 core screens**
 
 ---
 
@@ -627,15 +586,14 @@ Your role:
 
 ### Principle 4: Trust Through Transparency
 - Always show *why* a food is flagged (not just the red badge)
-- Medical disclaimer visible in Settings and on first scan result
+- Medical disclaimer visible on first scan result
 - Wikipedia source credited on every article card
 - NutriBot defers to doctors for serious medical questions
 
 ### Principle 5: Engagement Loop
 - Home → Health Tip Carousel → Article Detail → "Related Tips" → back to Home
 - Scan result → "Learn why →" → Article Detail → back to result
-- NutriBot tip notification → opens chat → answers question → suggests article → user reads, returns
-- History → "View Full Report" → shares with family/doctor → reinforces app value
+- History → "View Full Report" → reinforces app value
 
 ---
 

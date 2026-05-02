@@ -19,7 +19,7 @@ This document is written so it can be pasted into an AI coding assistant step by
 - Bottom tabs: **Home**, **Scan**, **History**, **Profile**
 - Global floating **NutriBot FAB** on all screens except the full-screen camera screen
 - Key app flows:
-  - Auth and guest entry
+  - Auth entry
   - 3-tier health personalization onboarding
   - Fast scan-to-verdict flow
   - Food log and weekly summaries
@@ -403,15 +403,6 @@ PROFILE
 - Re-open condition setup / onboarding editing flow
 - Stats cards like total scans, safe this week, streak
 - NutriBot section with chat history shortcut
-
-SETTINGS
-- Dark mode toggle
-- Language selector
-- Notification settings
-- Privacy options
-- Help center / feedback rows
-- Medical disclaimer area
-- Logout action
 
 FINAL UX POLISH
 - Add loading states, error states, and empty states everywhere needed

@@ -58,7 +58,7 @@ export default function ForgotPasswordScreen() {
               </Text>
             </View>
           </Card>
-          <PrimaryButton label="Back to Sign In" onPress={() => router.back()} style={{ marginTop: 28, width: '100%' }} />
+          <PrimaryButton label="Back to Sign In" onPress={() => router.replace('/(auth)/login')} style={{ marginTop: 28, width: '100%' }} />
         </View>
       </AppScreen>
     );
