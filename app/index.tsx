@@ -11,17 +11,19 @@
  * Uses theme tokens for all colors and typography.
  */
 
-import React, { useEffect, useRef } from 'react';
-import { View, Text, Animated, StyleSheet } from 'react-native';
-import { useRouter } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
-import { useTheme } from '@/hooks/useTheme';
+import { useAuth } from '@/context/AuthContext';
 import { useProfile } from '@/context/ProfileContext';
+import { useTheme } from '@/hooks/useTheme';
+import { Ionicons } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
+import React, { useEffect, useRef } from 'react';
+import { Animated, StyleSheet, Text, View } from 'react-native';
 
 export default function SplashScreen() {
   const theme = useTheme();
   const router = useRouter();
-  const { profile, isLoading, isHydrated } = useProfile();
+  const { profile, isLoading: profileLoading, isHydrated } = useProfile();
+  const { session, isLoading: authLoading } = useAuth();
 
   // Animation values
   const logoOpacity = useRef(new Animated.Value(0)).current;
@@ -63,22 +65,29 @@ export default function SplashScreen() {
     }, 300);
   }, []);
 
-  // Navigate after 2s once profile is hydrated
+  // Navigate after animation once auth state is resolved
   useEffect(() => {
-    if (!isHydrated) return;
+    if (authLoading || !isHydrated) return;
 
-    const timer = setTimeout(() => {
-      if (!profile.onboardingCompleted) {
-        // First-time user or not onboarded — go to auth
+    const navigate = () => {
+      if (!session) {
         router.replace('/(auth)/login');
-      } else {
-        // Returning user — go to main tabs
-        router.replace('/(tabs)');
+        return;
       }
-    }, 2000);
+
+      if (!profile.onboardingCompleted) {
+        router.replace('/(onboarding)/welcome');
+        return;
+      }
+
+      router.replace('/(tabs)');
+    };
+
+    // Wait for splash animation on initial load, navigate immediately otherwise
+    const timer = setTimeout(navigate, 2000);
 
     return () => clearTimeout(timer);
-  }, [isHydrated, profile.onboardingCompleted, router]);
+  }, [authLoading, isHydrated, session, profile.onboardingCompleted, router]);
 
   return (
     <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
@@ -129,7 +138,7 @@ export default function SplashScreen() {
       </Animated.View>
 
       {/* Subtle loading indicator */}
-      {isLoading && (
+      {(profileLoading || authLoading) && (
         <View style={styles.loadingDots}>
           <View style={[styles.dot, { backgroundColor: theme.colors.primary, opacity: 0.3 }]} />
           <View style={[styles.dot, { backgroundColor: theme.colors.primary, opacity: 0.6 }]} />

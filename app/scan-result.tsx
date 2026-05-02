@@ -6,28 +6,82 @@
  * Uses mock data for now — will connect to real API in future.
  */
 
-import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
-import { useTheme } from '@/hooks/useTheme';
-import { AppScreen, TopBar, Card, VerdictBadge, PrimaryButton, SecondaryButton, NutrientRow, SectionHeader } from '@/components/ui';
+import { AppScreen, Card, NutrientRow, PrimaryButton, SecondaryButton, SectionHeader, TopBar, VerdictBadge } from '@/components/ui';
+import { useAuth } from '@/context/AuthContext';
 import { MOCK_RESULT_AVOID } from '@/data/mockData';
+import { useTheme } from '@/hooks/useTheme';
+import { uploadScanImage } from '@/services/storageService';
+import { insertScanLog } from '@/services/supabaseService';
+import { Ionicons } from '@expo/vector-icons';
+import { useLocalSearchParams, useRouter } from 'expo-router';
+import React, { useState } from 'react';
+import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+
+type MealType = 'breakfast' | 'lunch' | 'dinner' | 'snack';
+
+const mealTypes: MealType[] = ['breakfast', 'lunch', 'dinner', 'snack'];
 
 export default function ScanResultScreen() {
   const theme = useTheme();
   const router = useRouter();
-  const result = MOCK_RESULT_AVOID;
-  const [showAllNutrients, setShowAllNutrients] = useState(false);
+  const { user } = useAuth();
+  const params = useLocalSearchParams<{
+    foodName?: string;
+    mealType?: string;
+    source?: string;
+    imageUri?: string;
+  }>();
+  const [isSaving, setIsSaving] = useState(false);
+  const [logError, setLogError] = useState('');
   const [logged, setLogged] = useState(false);
+
+  const foodNameParam = Array.isArray(params.foodName) ? params.foodName[0] : params.foodName;
+  const mealTypeParam = Array.isArray(params.mealType) ? params.mealType[0] : params.mealType;
+  const sourceParam = Array.isArray(params.source) ? params.source[0] : params.source;
+  const imageUriParam = Array.isArray(params.imageUri) ? params.imageUri[0] : params.imageUri;
+
+  const mealType = mealTypes.includes(mealTypeParam as MealType)
+    ? (mealTypeParam as MealType)
+    : MOCK_RESULT_AVOID.mealType;
+
+  const source = sourceParam === 'barcode' || sourceParam === 'manual' ? sourceParam : 'photo';
+
+  const result = {
+    ...MOCK_RESULT_AVOID,
+    foodName: foodNameParam ?? MOCK_RESULT_AVOID.foodName,
+    mealType,
+    scannedAt: new Date().toISOString(),
+  };
+  const [showAllNutrients, setShowAllNutrients] = useState(false);
 
   const relevantNutrients = result.nutrients.filter((n) => n.overLimit || n.warning);
   const otherNutrients = result.nutrients.filter((n) => !n.overLimit && !n.warning);
   const displayNutrients = showAllNutrients ? result.nutrients : relevantNutrients.length > 0 ? relevantNutrients : result.nutrients.slice(0, 3);
 
-  const handleLog = () => {
-    setLogged(true);
-    setTimeout(() => router.replace('/(tabs)'), 1200);
+  const handleLog = async () => {
+    if (!user) {
+      setLogError('Please sign in to save scans.');
+      return;
+    }
+
+    setIsSaving(true);
+    setLogError('');
+
+    try {
+      let imageUrl: string | undefined;
+
+      if (imageUriParam) {
+        imageUrl = await uploadScanImage(user.id, imageUriParam);
+      }
+
+      await insertScanLog(user.id, result, source, imageUrl);
+      setLogged(true);
+      setTimeout(() => router.replace('/(tabs)'), 1200);
+    } catch {
+      setLogError('Unable to save your scan. Please try again.');
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   return (
@@ -108,7 +162,19 @@ export default function ScanResultScreen() {
         {/* ── Actions ──────────────────────── */}
         <View style={styles.actions}>
           {!logged ? (
-            <PrimaryButton label="Add to Food Log" onPress={handleLog} icon={<Ionicons name="add-circle" size={20} color="#FFFFFF" />} />
+            <>
+              {logError ? (
+                <Text style={{ color: theme.colors.avoid.text, fontSize: theme.fontSizes.sm, marginBottom: 8 }}>
+                  {logError}
+                </Text>
+              ) : null}
+              <PrimaryButton
+                label="Add to Food Log"
+                onPress={handleLog}
+                icon={<Ionicons name="add-circle" size={20} color="#FFFFFF" />}
+                loading={isSaving}
+              />
+            </>
           ) : (
             <Card style={{ backgroundColor: theme.colors.safe.bg, alignItems: 'center', paddingVertical: 16 }}>
               <Ionicons name="checkmark-circle" size={28} color={theme.colors.safe.icon} />

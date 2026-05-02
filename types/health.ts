@@ -209,9 +209,11 @@ export const DEFAULT_PROFILE: UserHealthProfile = {
 /** A scanned food item */
 export interface FoodItem {
   id: string;
+  user_id?: string;
   name: string;
   verdict: Verdict;
   imageUri?: string;
+  image_url?: string;
   scannedAt: string;
   mealType?: 'breakfast' | 'lunch' | 'dinner' | 'snack';
 }

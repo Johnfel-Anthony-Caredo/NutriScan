@@ -2,16 +2,17 @@
  * Profile Screen — user identity, conditions, goals, stats, nutrients, and settings.
  *
  * Fully driven by live profile data. Provides edit actions that re-enter
- * the onboarding flow. Links to NutriBot and Settings.
+ * the onboarding flow. Links to NutriBot.
  */
 
-import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import React, { useState } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useTheme } from '@/hooks/useTheme';
 import { AppScreen, Card, ConditionPill, SectionHeader, SecondaryButton } from '@/components/ui';
 import { useProfile } from '@/context/ProfileContext';
+import { useAuth } from '@/context/AuthContext';
 import { goalLabels, goalIcons, type HealthGoal } from '@/types/health';
 
 function MenuRow({ icon, label, subtitle, onPress, color }: {
@@ -39,9 +40,56 @@ function MenuRow({ icon, label, subtitle, onPress, color }: {
 export default function ProfileScreen() {
   const theme = useTheme();
   const router = useRouter();
-  const { profile } = useProfile();
+  const { profile, resetProfile } = useProfile();
+  const { signOut } = useAuth();
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
 
   const handleEditProfile = () => router.push('/(onboarding)/conditions');
+
+  const handleLogout = () => {
+    Alert.alert(
+      'Log Out',
+      'Are you sure you want to log out of NutriScan?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Log Out',
+          style: 'destructive',
+          onPress: async () => {
+            setIsLoggingOut(true);
+            try {
+              await resetProfile();
+              await signOut();
+              router.replace('/(auth)/login');
+            } catch (error) {
+              console.error('Logout failed:', error);
+              Alert.alert('Error', 'Failed to log out. Please try again.');
+            } finally {
+              setIsLoggingOut(false);
+            }
+          },
+        },
+      ],
+    );
+  };
+
+  const handleResetProfile = () => {
+    Alert.alert(
+      'Reset Profile',
+      'This will clear your health profile and restart onboarding. You will remain logged in.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Reset',
+          style: 'destructive',
+          onPress: async () => {
+            await resetProfile();
+            router.replace('/');
+          },
+        },
+      ],
+    );
+  };
 
   return (
     <AppScreen scroll>
@@ -130,9 +178,56 @@ export default function ProfileScreen() {
         <MenuRow icon="chatbubble-ellipses-outline" label="Chat with NutriBot" subtitle="Ask about food, diet, or scans" onPress={() => router.push('/nutribot')} />
         <MenuRow icon="time-outline" label="Chat History" subtitle="View past conversations" onPress={() => router.push('/chat-history')} />
         <MenuRow icon="stats-chart-outline" label="Health Report" subtitle="Weekly summary and trends" onPress={() => router.push('/health-report')} />
-        <MenuRow icon="settings-outline" label="Settings" subtitle="Appearance, privacy, notifications" onPress={() => router.push('/settings')} />
-        <MenuRow icon="help-circle-outline" label="Help Center" onPress={() => {}} />
       </Card>
+
+      {/* ── Privacy ─────────────────────── */}
+      <SectionHeader title="Privacy" />
+      <Card noPadding>
+        <MenuRow icon="lock-closed-outline" label="Data Privacy" subtitle="Your data stays on your device" onPress={() => {}} />
+        <MenuRow icon="trash-outline" label="Clear Scan History" onPress={() => Alert.alert('Clear History', 'This will remove all scanned food history.', [{ text: 'Cancel' }, { text: 'Clear', style: 'destructive' }])} />
+      </Card>
+
+      {/* ── Support ─────────────────────── */}
+      <SectionHeader title="Support" />
+      <Card noPadding>
+        <MenuRow icon="help-circle-outline" label="Help Center" onPress={() => {}} />
+        <MenuRow icon="chatbox-outline" label="Send Feedback" onPress={() => {}} />
+        <MenuRow icon="star-outline" label="Rate NutriScan" onPress={() => {}} />
+      </Card>
+
+      {/* ── About ───────────────────────── */}
+      <SectionHeader title="About" />
+      <Card noPadding>
+        <MenuRow icon="information-circle-outline" label="App Version" subtitle="1.0.0 (MVP)" onPress={() => {}} />
+        <MenuRow icon="document-text-outline" label="Terms of Service" onPress={() => {}} />
+        <MenuRow icon="shield-checkmark-outline" label="Privacy Policy" onPress={() => {}} />
+      </Card>
+
+      {/* ── Account Actions ────────────── */}
+      <View style={{ marginTop: 24, gap: 12 }}>
+        <TouchableOpacity
+          onPress={handleResetProfile}
+          style={[styles.actionBtn, { borderColor: theme.colors.caution.border, borderRadius: theme.radius.md }]}
+          accessibilityRole="button"
+        >
+          <Ionicons name="refresh-outline" size={20} color={theme.colors.caution.icon} />
+          <Text style={{ color: theme.colors.caution.text, fontSize: theme.fontSizes.body, fontWeight: theme.fontWeights.medium, marginLeft: 8 }}>
+            Reset Profile & Restart Onboarding
+          </Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          onPress={handleLogout}
+          disabled={isLoggingOut}
+          style={[styles.actionBtn, { borderColor: theme.colors.avoid.border, borderRadius: theme.radius.md, opacity: isLoggingOut ? 0.6 : 1 }]}
+          accessibilityRole="button"
+        >
+          <Ionicons name="log-out-outline" size={20} color={theme.colors.avoid.icon} />
+          <Text style={{ color: theme.colors.avoid.text, fontSize: theme.fontSizes.body, fontWeight: theme.fontWeights.medium, marginLeft: 8 }}>
+            {isLoggingOut ? 'Logging Out...' : 'Log Out'}
+          </Text>
+        </TouchableOpacity>
+      </View>
 
       {/* ── Medical Disclaimer ─────────── */}
       <Card style={styles.disclaimer}>
@@ -162,6 +257,7 @@ const styles = StyleSheet.create({
   nutrientDot: { width: 8, height: 8, borderRadius: 4 },
   menuRow: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 14, borderBottomWidth: StyleSheet.hairlineWidth },
   menuIcon: { width: 32, height: 32, borderRadius: 8, justifyContent: 'center', alignItems: 'center', marginRight: 12 },
+  actionBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: 16, borderWidth: 1.5 },
   disclaimer: { marginTop: 16, opacity: 0.8 },
   disclaimerRow: { flexDirection: 'row', alignItems: 'flex-start' },
 });

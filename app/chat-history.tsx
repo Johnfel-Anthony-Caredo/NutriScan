@@ -6,27 +6,78 @@
  * - Each row shows message preview, count, timestamp
  * - "New Chat" button in header
  * - Empty state for new users
- * - Tap row → opens NutriBot chat
+ * - Tap row → opens NutriBot chat with past conversation
  */
 
-import React from 'react';
-import { View, Text, TouchableOpacity, SectionList, StyleSheet } from 'react-native';
+import React, { useState, useCallback } from 'react';
+import { View, Text, TouchableOpacity, SectionList, StyleSheet, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
+import { useRouter, useFocusEffect } from 'expo-router';
 import { useTheme } from '@/hooks/useTheme';
-import { AppScreen, TopBar, Card, EmptyState, PrimaryButton } from '@/components/ui';
-import { MOCK_CHAT_HISTORY } from '@/data/mockData';
+import { AppScreen, TopBar, EmptyState } from '@/components/ui';
+import { useAuth } from '@/context/AuthContext';
+import { getConversations } from '@/services/supabaseService';
+
+type ConversationSection = {
+  title: string;
+  data: any[];
+};
 
 export default function ChatHistoryScreen() {
   const theme = useTheme();
   const router = useRouter();
+  const { user } = useAuth();
+  
+  const [sections, setSections] = useState<ConversationSection[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
-  const sections = MOCK_CHAT_HISTORY.map((group) => ({
-    title: group.date,
-    data: group.conversations,
-  }));
+  const fetchHistory = useCallback(async () => {
+    if (!user) return;
+    try {
+      const data = await getConversations(user.id);
+      
+      if (!data || data.length === 0) {
+        setSections([]);
+        return;
+      }
 
-  const hasHistory = sections.some((s) => s.data.length > 0);
+      // Group conversations by date
+      const grouped: Record<string, any[]> = {};
+      const today = new Date().toDateString();
+      const yesterday = new Date(Date.now() - 86400000).toDateString();
+
+      data.forEach((conv) => {
+        const dateObj = new Date(conv.updated_at);
+        const dateStr = dateObj.toDateString();
+        
+        let label = dateObj.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
+        if (dateStr === today) label = 'Today';
+        else if (dateStr === yesterday) label = 'Yesterday';
+
+        if (!grouped[label]) grouped[label] = [];
+        grouped[label].push(conv);
+      });
+
+      const sectionArray = Object.keys(grouped).map(key => ({
+        title: key,
+        data: grouped[key]
+      }));
+
+      setSections(sectionArray);
+    } catch (err) {
+      console.error('Failed to load chat history:', err);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [user]);
+
+  useFocusEffect(
+    useCallback(() => {
+      fetchHistory();
+    }, [fetchHistory])
+  );
+
+  const hasHistory = sections.length > 0;
 
   return (
     <AppScreen noPadding>
@@ -46,7 +97,11 @@ export default function ChatHistoryScreen() {
         </TouchableOpacity>
       </View>
 
-      {hasHistory ? (
+      {isLoading ? (
+        <View style={styles.emptyWrap}>
+          <ActivityIndicator size="large" color={theme.colors.primary} />
+        </View>
+      ) : hasHistory ? (
         <SectionList
           sections={sections}
           keyExtractor={(item) => item.id}
@@ -59,10 +114,12 @@ export default function ChatHistoryScreen() {
             </Text>
           )}
           renderItem={({ item }) => {
-            const time = new Date(item.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            const time = new Date(item.updated_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            const messageCount = item.chat_messages && item.chat_messages[0] ? item.chat_messages[0].count : 0;
+            
             return (
               <TouchableOpacity
-                onPress={() => router.push('/nutribot')}
+                onPress={() => router.push({ pathname: '/nutribot', params: { conversationId: item.id } })}
                 activeOpacity={0.7}
                 style={[styles.row, { backgroundColor: theme.colors.surface, borderColor: theme.colors.borderLight, borderRadius: theme.radius.lg, ...theme.shadows.sm }]}
                 accessibilityRole="button"
@@ -72,11 +129,11 @@ export default function ChatHistoryScreen() {
                 </View>
                 <View style={styles.rowContent}>
                   <Text style={{ color: theme.colors.textPrimary, fontSize: theme.fontSizes.body, fontWeight: theme.fontWeights.medium }} numberOfLines={1}>
-                    {item.preview}
+                    {item.title || 'New Conversation'}
                   </Text>
                   <View style={styles.rowMeta}>
                     <Text style={{ color: theme.colors.textTertiary, fontSize: theme.fontSizes.sm }}>
-                      {item.messageCount} messages
+                      {messageCount} messages
                     </Text>
                     <View style={[styles.metaDot, { backgroundColor: theme.colors.textTertiary }]} />
                     <Text style={{ color: theme.colors.textTertiary, fontSize: theme.fontSizes.sm }}>
@@ -94,7 +151,7 @@ export default function ChatHistoryScreen() {
           <EmptyState
             icon="chatbubbles-outline"
             title="No conversations yet"
-            subtitle={'Tap the NutriBot button to start chatting! \u{1F916}'}
+            subtitle={'Tap the New Chat button to start talking! \u{1F916}'}
             actionLabel="Start Chatting"
             onAction={() => router.push('/nutribot')}
           />

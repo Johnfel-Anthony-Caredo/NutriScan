@@ -2,12 +2,13 @@
  * Forgot Password Screen — email-based password reset.
  */
 
-import React, { useState } from 'react';
-import { View, Text, TextInput, StyleSheet } from 'react-native';
+import { AppScreen, Card, PrimaryButton, TopBar } from '@/components/ui';
+import { useTheme } from '@/hooks/useTheme';
+import { resetPassword } from '@/services/authService';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import { useTheme } from '@/hooks/useTheme';
-import { AppScreen, TopBar, PrimaryButton, Card } from '@/components/ui';
+import React, { useState } from 'react';
+import { StyleSheet, Text, TextInput, View } from 'react-native';
 
 export default function ForgotPasswordScreen() {
   const theme = useTheme();
@@ -15,12 +16,23 @@ export default function ForgotPasswordScreen() {
   const [email, setEmail] = useState('');
   const [sent, setSent] = useState(false);
   const [error, setError] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleSend = () => {
+  const handleSend = async () => {
     if (!email.trim()) { setError('Please enter your email'); return; }
     if (!/\S+@\S+\.\S+/.test(email)) { setError('Please enter a valid email'); return; }
+
+    setIsSubmitting(true);
     setError('');
-    setSent(true);
+
+    try {
+      await resetPassword(email.trim());
+      setSent(true);
+    } catch {
+      setError('Unable to send reset email. Please try again.');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   if (sent) {
@@ -73,7 +85,7 @@ export default function ForgotPasswordScreen() {
         </View>
         {error ? <Text style={{ color: theme.colors.avoid.text, fontSize: theme.fontSizes.sm, marginTop: 4 }}>{error}</Text> : null}
 
-        <PrimaryButton label="Send Reset Link" onPress={handleSend} style={{ marginTop: 24 }} />
+        <PrimaryButton label="Send Reset Link" onPress={handleSend} style={{ marginTop: 24 }} loading={isSubmitting} />
       </View>
     </AppScreen>
   );

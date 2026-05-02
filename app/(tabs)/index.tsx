@@ -5,22 +5,121 @@
  * scan CTA, today's food log, nutrient watchlist, and health tips carousel.
  */
 
-import React, { useRef } from 'react';
-import { View, Text, StyleSheet, ScrollView, Dimensions, TouchableOpacity } from 'react-native';
+import { AppScreen, Card, ConditionPill, FoodLogItem, PrimaryButton, SectionHeader } from '@/components/ui';
+import { useAuth } from '@/context/AuthContext';
+import { useProfile } from '@/context/ProfileContext';
+import { MOCK_TIPS, MOCK_TODAY_LOG, MOCK_WEEKLY, type WeeklySummary } from '@/data/mockData';
+import { useTheme } from '@/hooks/useTheme';
+import { getTodaysScanLogs, getWeeklyScanLogs, type ScanLogRow } from '@/services/supabaseService';
+import type { FoodItem } from '@/types/health';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import { useTheme } from '@/hooks/useTheme';
-import { AppScreen, Card, ConditionPill, SectionHeader, PrimaryButton, VerdictBadge, FoodLogItem } from '@/components/ui';
-import { useProfile } from '@/context/ProfileContext';
-import { MOCK_TODAY_LOG, MOCK_TIPS, MOCK_WEEKLY } from '@/data/mockData';
+import React, { useEffect, useState } from 'react';
+import { Dimensions, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 const { width: SCREEN_W } = Dimensions.get('window');
+
+const mapScanLogToFoodItem = (row: ScanLogRow): FoodItem => ({
+  id: row.id,
+  user_id: row.user_id,
+  name: row.food_name,
+  verdict: row.verdict,
+  image_url: row.image_url ?? undefined,
+  scannedAt: row.scanned_at,
+  mealType: row.meal_type ?? undefined,
+});
+
+const buildWeeklySummary = (rows: ScanLogRow[]): WeeklySummary => {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  const dayBuckets = Array.from({ length: 7 }).map((_, index) => {
+    const date = new Date(today);
+    date.setDate(date.getDate() - (6 - index));
+
+    return {
+      date,
+      label: date.toLocaleDateString('en-US', { weekday: 'short' }),
+      safe: 0,
+      caution: 0,
+      avoid: 0,
+    };
+  });
+
+  rows.forEach((row) => {
+    const scanned = new Date(row.scanned_at);
+    scanned.setHours(0, 0, 0, 0);
+    const bucket = dayBuckets.find((b) => b.date.getTime() === scanned.getTime());
+
+    if (!bucket) return;
+
+    if (row.verdict === 'safe') bucket.safe += 1;
+    if (row.verdict === 'caution') bucket.caution += 1;
+    if (row.verdict === 'avoid') bucket.avoid += 1;
+  });
+
+  const safe = dayBuckets.reduce((sum, day) => sum + day.safe, 0);
+  const caution = dayBuckets.reduce((sum, day) => sum + day.caution, 0);
+  const avoid = dayBuckets.reduce((sum, day) => sum + day.avoid, 0);
+
+  return {
+    safe,
+    caution,
+    avoid,
+    daily: dayBuckets.map((day) => ({
+      day: day.label,
+      safe: day.safe,
+      caution: day.caution,
+      avoid: day.avoid,
+    })),
+  };
+};
 
 export default function HomeScreen() {
   const theme = useTheme();
   const router = useRouter();
   const { profile } = useProfile();
-  const hasLogs = MOCK_TODAY_LOG.length > 0;
+  const { user } = useAuth();
+  const [todayLog, setTodayLog] = useState<FoodItem[]>(MOCK_TODAY_LOG);
+  const [weeklySummary, setWeeklySummary] = useState<WeeklySummary>(MOCK_WEEKLY);
+
+  useEffect(() => {
+    let isActive = true;
+
+    const load = async () => {
+      if (!user) return;
+
+      try {
+        const [todayRows, weeklyRows] = await Promise.all([
+          getTodaysScanLogs(user.id),
+          getWeeklyScanLogs(user.id),
+        ]);
+
+        if (!isActive) return;
+
+        if (todayRows.length === 0 || weeklyRows.length === 0) {
+          setTodayLog(MOCK_TODAY_LOG);
+          setWeeklySummary(MOCK_WEEKLY);
+          return;
+        }
+
+        setTodayLog(todayRows.map(mapScanLogToFoodItem));
+        setWeeklySummary(buildWeeklySummary(weeklyRows));
+      } catch {
+        if (!isActive) return;
+        setTodayLog(MOCK_TODAY_LOG);
+        setWeeklySummary(MOCK_WEEKLY);
+      }
+    };
+
+    load();
+
+    return () => {
+      isActive = false;
+    };
+  }, [user]);
+
+  const hasLogs = todayLog.length > 0;
 
   return (
     <AppScreen scroll>
@@ -50,16 +149,16 @@ export default function HomeScreen() {
           <View style={styles.donutContainer}>
             <View style={[styles.donutOuter, { borderColor: theme.colors.safe.icon }]}>
               <Text style={{ color: theme.colors.textPrimary, fontSize: theme.fontSizes['2xl'], fontWeight: theme.fontWeights.bold }}>
-                {MOCK_WEEKLY.safe + MOCK_WEEKLY.caution + MOCK_WEEKLY.avoid}
+                {weeklySummary.safe + weeklySummary.caution + weeklySummary.avoid}
               </Text>
               <Text style={{ color: theme.colors.textTertiary, fontSize: theme.fontSizes.xs }}>scans</Text>
             </View>
           </View>
           <View style={styles.summaryStats}>
             {[
-              { label: 'Safe', count: hasLogs ? MOCK_TODAY_LOG.filter((l) => l.verdict === 'safe').length : 0, color: theme.colors.safe.icon },
-              { label: 'Caution', count: hasLogs ? MOCK_TODAY_LOG.filter((l) => l.verdict === 'caution').length : 0, color: theme.colors.caution.icon },
-              { label: 'Avoid', count: hasLogs ? MOCK_TODAY_LOG.filter((l) => l.verdict === 'avoid').length : 0, color: theme.colors.avoid.icon },
+              { label: 'Safe', count: hasLogs ? todayLog.filter((l) => l.verdict === 'safe').length : 0, color: theme.colors.safe.icon },
+              { label: 'Caution', count: hasLogs ? todayLog.filter((l) => l.verdict === 'caution').length : 0, color: theme.colors.caution.icon },
+              { label: 'Avoid', count: hasLogs ? todayLog.filter((l) => l.verdict === 'avoid').length : 0, color: theme.colors.avoid.icon },
             ].map((s) => (
               <View key={s.label} style={styles.statItem}>
                 <View style={[styles.statDot, { backgroundColor: s.color }]} />
@@ -79,7 +178,7 @@ export default function HomeScreen() {
       {hasLogs ? (
         <Card noPadding style={styles.logCard}>
           <View style={{ paddingHorizontal: 16 }}>
-            {MOCK_TODAY_LOG.map((item) => (
+            {todayLog.map((item) => (
               <FoodLogItem key={item.id} item={item} onPress={() => router.push('/scan-result')} />
             ))}
           </View>

@@ -2,12 +2,13 @@
  * Register Screen — full sign-up form with validation.
  */
 
-import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert } from 'react-native';
+import { AppScreen, PrimaryButton, TopBar } from '@/components/ui';
+import { useTheme } from '@/hooks/useTheme';
+import { signUp } from '@/services/authService';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import { useTheme } from '@/hooks/useTheme';
-import { AppScreen, TopBar, PrimaryButton } from '@/components/ui';
+import React, { useState } from 'react';
+import { StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 
 export default function RegisterScreen() {
   const theme = useTheme();
@@ -19,6 +20,9 @@ export default function RegisterScreen() {
   const [showPw, setShowPw] = useState(false);
   const [terms, setTerms] = useState(false);
   const [errs, setErrs] = useState<Record<string, string>>({});
+  const [authError, setAuthError] = useState('');
+  const [info, setInfo] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const strength = (() => {
     if (!password) return { label: '', color: 'transparent', w: '0%' };
@@ -46,6 +50,28 @@ export default function RegisterScreen() {
     borderWidth: 1.5, borderRadius: theme.radius.md,
     paddingHorizontal: 16, paddingVertical: 14,
   });
+
+  const handleRegister = async () => {
+    if (!validate()) return;
+
+    setIsSubmitting(true);
+    setAuthError('');
+    setInfo('');
+
+    try {
+      const data = await signUp(name.trim(), email.trim(), password);
+      if (data.session) {
+        router.replace('/');
+      } else {
+        setInfo('Check your email to confirm your account, then sign in.');
+      }
+    } catch (error: any) {
+      const message = typeof error?.message === 'string' ? error.message : 'Sign up failed. Please try again.';
+      setAuthError(message);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   return (
     <AppScreen scroll noPadding>
@@ -97,7 +123,14 @@ export default function RegisterScreen() {
         </TouchableOpacity>
         {errs.terms && <Text style={{ color: theme.colors.avoid.text, fontSize: theme.fontSizes.sm, marginTop: 4 }}>{errs.terms}</Text>}
 
-        <PrimaryButton label="Create Account" onPress={() => { if (validate()) router.replace('/(onboarding)/welcome'); }} style={{ marginTop: 20 }} />
+        {authError ? (
+          <Text style={{ color: theme.colors.avoid.text, fontSize: theme.fontSizes.sm, marginTop: 12 }}>{authError}</Text>
+        ) : null}
+        {info ? (
+          <Text style={{ color: theme.colors.textSecondary, fontSize: theme.fontSizes.sm, marginTop: 12 }}>{info}</Text>
+        ) : null}
+
+        <PrimaryButton label="Create Account" onPress={handleRegister} style={{ marginTop: 20 }} loading={isSubmitting} />
 
         <TouchableOpacity onPress={() => router.back()} style={s.login}><Text style={{ color: theme.colors.textSecondary, fontSize: theme.fontSizes.body }}>Already have an account? </Text><Text style={{ color: theme.colors.primary, fontSize: theme.fontSizes.body, fontWeight: theme.fontWeights.semibold }}>Sign In</Text></TouchableOpacity>
       </View>

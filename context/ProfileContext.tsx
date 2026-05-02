@@ -9,23 +9,31 @@
  * Simpler than Redux for this scope, and avoids extra dependencies.
  */
 
-import React, {
-  createContext,
-  useContext,
-  useReducer,
-  useEffect,
-  useCallback,
-  type ReactNode,
-} from 'react';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useAuth } from '@/context/AuthContext';
 import {
-  type UserHealthProfile,
-  type HealthCondition,
-  type HealthGoal,
-  type NutrientTarget,
-  DEFAULT_PROFILE,
-  buildNutrientTargets,
+    getUserProfile,
+    updateUserProfile,
+    upsertNutrientTargets,
+    upsertUserConditions,
+} from '@/services/supabaseService';
+import {
+    DEFAULT_PROFILE,
+    buildNutrientTargets,
+    nutrientLabels,
+    type HealthCondition,
+    type HealthGoal,
+    type MonitoredNutrient,
+    type UserHealthProfile
 } from '@/types/health';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import React, {
+    createContext,
+    useCallback,
+    useContext,
+    useEffect,
+    useReducer,
+    type ReactNode,
+} from 'react';
 
 // ── State ──────────────────────────────────────────────────────────
 
@@ -117,27 +125,75 @@ const ProfileContext = createContext<ProfileContextValue | null>(null);
 
 const STORAGE_KEY = '@nutriscan/profile';
 
+function mapSupabaseProfile(data: any): UserHealthProfile {
+  const conditions = (data?.user_conditions ?? [])
+    .map((row: { condition: HealthCondition }) => row.condition)
+    .filter(Boolean);
+
+  const nutrientTargets = (data?.user_nutrient_targets ?? [])
+    .map((row: { nutrient: MonitoredNutrient; daily_limit: number; unit: string }) => ({
+      nutrient: row.nutrient,
+      label: nutrientLabels[row.nutrient] ?? row.nutrient,
+      dailyLimit: row.daily_limit,
+      unit: row.unit,
+    }));
+
+  return {
+    conditions,
+    goals: data?.goals ?? [],
+    nutrientTargets,
+    nutriBotNote: data?.nutribot_note ?? undefined,
+    onboardingCompleted: Boolean(data?.onboarding_completed),
+  };
+}
+
 // ── Provider ───────────────────────────────────────────────────────
 
 export function ProfileProvider({ children }: { children: ReactNode }) {
   const [state, dispatch] = useReducer(profileReducer, initialState);
+  const { user } = useAuth();
 
-  // Hydrate from storage on mount
-  useEffect(() => {
-    (async () => {
-      try {
-        const raw = await AsyncStorage.getItem(STORAGE_KEY);
-        if (raw) {
-          const parsed = JSON.parse(raw) as UserHealthProfile;
-          dispatch({ type: 'HYDRATE', payload: parsed });
-        } else {
-          dispatch({ type: 'HYDRATE', payload: DEFAULT_PROFILE });
-        }
-      } catch {
-        dispatch({ type: 'HYDRATE', payload: DEFAULT_PROFILE });
+  const hydrateFromStorage = useCallback(async () => {
+    try {
+      const raw = await AsyncStorage.getItem(STORAGE_KEY);
+      if (raw) {
+        return JSON.parse(raw) as UserHealthProfile;
       }
-    })();
+    } catch {
+      return DEFAULT_PROFILE;
+    }
+
+    return DEFAULT_PROFILE;
   }, []);
+
+  useEffect(() => {
+    let isActive = true;
+
+    const hydrate = async () => {
+      if (user) {
+        try {
+          const remote = await getUserProfile(user.id);
+          if (isActive) {
+            dispatch({ type: 'HYDRATE', payload: mapSupabaseProfile(remote) });
+          }
+          return;
+        } catch (error) {
+          console.warn('Supabase profile hydrate failed, falling back to storage:', error);
+        }
+      }
+
+      const localProfile = await hydrateFromStorage();
+      if (isActive) {
+        dispatch({ type: 'HYDRATE', payload: localProfile });
+      }
+    };
+
+    hydrate();
+
+    return () => {
+      isActive = false;
+    };
+  }, [hydrateFromStorage, user]);
 
   // Persist to storage on every profile change after hydration
   useEffect(() => {
@@ -147,27 +203,102 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
   }, [state.profile, state.isHydrated]);
 
   const setConditions = useCallback((conditions: HealthCondition[]) => {
+    const nutrientTargets = buildNutrientTargets(conditions);
     dispatch({ type: 'SET_CONDITIONS', payload: conditions });
-  }, []);
+
+    if (user) {
+      upsertUserConditions(user.id, conditions).catch((error) => {
+        console.warn('Supabase conditions sync failed:', error);
+      });
+      upsertNutrientTargets(user.id, nutrientTargets).catch((error) => {
+        console.warn('Supabase nutrient targets sync failed:', error);
+      });
+    }
+  }, [user]);
 
   const setGoals = useCallback((goals: HealthGoal[]) => {
     dispatch({ type: 'SET_GOALS', payload: goals });
-  }, []);
+
+    if (user) {
+      updateUserProfile(user.id, { goals }).catch((error) => {
+        console.warn('Supabase goals sync failed:', error);
+      });
+    }
+  }, [user]);
 
   const setNutriBotNote = useCallback((note: string) => {
     dispatch({ type: 'SET_NUTRIBOT_NOTE', payload: note });
-  }, []);
+
+    if (user) {
+      updateUserProfile(user.id, { nutribot_note: note }).catch((error) => {
+        console.warn('Supabase NutriBot note sync failed:', error);
+      });
+    }
+  }, [user]);
 
   const completeOnboarding = useCallback(() => {
     dispatch({ type: 'COMPLETE_ONBOARDING' });
-  }, []);
+
+    if (user) {
+      upsertUserConditions(user.id, state.profile.conditions).catch((error) => {
+        console.warn('Supabase conditions sync failed:', error);
+      });
+      upsertNutrientTargets(user.id, state.profile.nutrientTargets).catch((error) => {
+        console.warn('Supabase nutrient targets sync failed:', error);
+      });
+      updateUserProfile(user.id, {
+        goals: state.profile.goals,
+        nutribot_note: state.profile.nutriBotNote,
+        onboarding_completed: true,
+      }).catch((error) => {
+        console.warn('Supabase onboarding sync failed:', error);
+      });
+    }
+  }, [state.profile.conditions, state.profile.goals, state.profile.nutrientTargets, state.profile.nutriBotNote, user]);
 
   const updateProfile = useCallback((partial: Partial<UserHealthProfile>) => {
     dispatch({ type: 'UPDATE_PROFILE', payload: partial });
-  }, []);
 
-  const resetProfile = useCallback(() => {
+    if (!user) return;
+
+    const updates: {
+      goals?: HealthGoal[];
+      nutribot_note?: string;
+      onboarding_completed?: boolean;
+    } = {};
+
+    if (partial.goals) updates.goals = partial.goals;
+    if (partial.nutriBotNote !== undefined) updates.nutribot_note = partial.nutriBotNote;
+    if (partial.onboardingCompleted !== undefined) updates.onboarding_completed = partial.onboardingCompleted;
+
+    if (Object.keys(updates).length > 0) {
+      updateUserProfile(user.id, updates).catch((error) => {
+        console.warn('Supabase profile sync failed:', error);
+      });
+    }
+
+    if (partial.conditions) {
+      const nutrientTargets = partial.nutrientTargets ?? buildNutrientTargets(partial.conditions);
+      upsertUserConditions(user.id, partial.conditions).catch((error) => {
+        console.warn('Supabase conditions sync failed:', error);
+      });
+      upsertNutrientTargets(user.id, nutrientTargets).catch((error) => {
+        console.warn('Supabase nutrient targets sync failed:', error);
+      });
+    } else if (partial.nutrientTargets) {
+      upsertNutrientTargets(user.id, partial.nutrientTargets).catch((error) => {
+        console.warn('Supabase nutrient targets sync failed:', error);
+      });
+    }
+  }, [user]);
+
+  const resetProfile = useCallback(async () => {
     dispatch({ type: 'RESET' });
+    try {
+      await AsyncStorage.removeItem(STORAGE_KEY);
+    } catch {
+      // Ignore storage errors during reset
+    }
   }, []);
 
   return (

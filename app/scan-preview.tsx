@@ -6,12 +6,12 @@
  * state while analysis happens.
  */
 
-import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
+import { AppScreen, PrimaryButton, SecondaryButton, SkeletonLoader, TopBar } from '@/components/ui';
 import { useTheme } from '@/hooks/useTheme';
-import { AppScreen, TopBar, PrimaryButton, SecondaryButton, Card, SkeletonLoader } from '@/components/ui';
+import { Ionicons } from '@expo/vector-icons';
+import { useLocalSearchParams, useRouter } from 'expo-router';
+import React, { useState } from 'react';
+import { StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 
 type MealType = 'breakfast' | 'lunch' | 'dinner' | 'snack';
 
@@ -25,7 +25,12 @@ const MEAL_OPTIONS: { key: MealType; label: string; icon: keyof typeof Ionicons.
 export default function ScanPreviewScreen() {
   const theme = useTheme();
   const router = useRouter();
-  const [foodName, setFoodName] = useState('Detected Food Item');
+  const params = useLocalSearchParams<{ source?: string }>();
+  const sourceParam = Array.isArray(params.source) ? params.source[0] : params.source;
+  const source = sourceParam === 'barcode' ? 'barcode' : 'photo';
+  const dataParam = Array.isArray(params.data) ? params.data[0] : params.data;
+  
+  const [foodName, setFoodName] = useState(source === 'barcode' && dataParam ? `Scanned Barcode: ${dataParam}` : 'Detected Food Item');
   const [mealType, setMealType] = useState<MealType>('lunch');
   const [analyzing, setAnalyzing] = useState(false);
 
@@ -34,7 +39,14 @@ export default function ScanPreviewScreen() {
     // Simulate analysis delay
     setTimeout(() => {
       setAnalyzing(false);
-      router.replace('/scan-result');
+      router.replace({
+        pathname: '/scan-result',
+        params: {
+          foodName,
+          mealType,
+          source,
+        },
+      });
     }, 2000);
   };
 

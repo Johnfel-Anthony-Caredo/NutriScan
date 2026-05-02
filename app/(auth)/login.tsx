@@ -7,16 +7,16 @@
  * - Google + Apple social login buttons
  * - Forgot password link
  * - Create account link
- * - Continue as Guest option
  * - Medical disclaimer footer
  */
 
-import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert } from 'react-native';
+import { AppScreen, PrimaryButton } from '@/components/ui';
+import { useTheme } from '@/hooks/useTheme';
+import { signIn } from '@/services/authService';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import { useTheme } from '@/hooks/useTheme';
-import { AppScreen, PrimaryButton, SecondaryButton } from '@/components/ui';
+import React, { useState } from 'react';
+import { Alert, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 
 export default function LoginScreen() {
   const theme = useTheme();
@@ -25,6 +25,8 @@ export default function LoginScreen() {
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [errors, setErrors] = useState<{ email?: string; password?: string }>({});
+  const [authError, setAuthError] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const validate = (): boolean => {
     const newErrors: typeof errors = {};
@@ -36,15 +38,20 @@ export default function LoginScreen() {
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSignIn = () => {
-    if (validate()) {
-      // Mock sign in — go to onboarding for first-time or tabs for returning
-      router.replace('/(onboarding)/welcome');
-    }
-  };
+  const handleSignIn = async () => {
+    if (!validate()) return;
 
-  const handleGuest = () => {
-    router.replace('/(onboarding)/welcome');
+    setIsSubmitting(true);
+    setAuthError('');
+
+    try {
+      await signIn(email.trim(), password);
+      router.replace('/');
+    } catch {
+      setAuthError('Invalid email or password');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handleSocial = (provider: string) => {
@@ -149,8 +156,14 @@ export default function LoginScreen() {
             </Text>
           </TouchableOpacity>
 
+          {authError ? (
+            <Text style={{ color: theme.colors.avoid.text, fontSize: theme.fontSizes.sm, marginTop: 4 }}>
+              {authError}
+            </Text>
+          ) : null}
+
           {/* Sign In button */}
-          <PrimaryButton label="Sign In" onPress={handleSignIn} style={{ marginTop: 8 }} />
+          <PrimaryButton label="Sign In" onPress={handleSignIn} style={{ marginTop: 8 }} loading={isSubmitting} />
 
           {/* Divider */}
           <View style={styles.dividerRow}>
@@ -196,8 +209,6 @@ export default function LoginScreen() {
             </Text>
           </TouchableOpacity>
 
-          {/* Guest */}
-          <SecondaryButton label="Continue as Guest" onPress={handleGuest} style={{ marginTop: 12 }} icon={<Ionicons name="person-outline" size={18} color={theme.colors.primary} />} />
         </View>
 
         {/* ── Footer ──────────────────────── */}

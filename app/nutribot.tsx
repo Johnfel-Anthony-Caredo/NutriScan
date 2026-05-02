@@ -8,15 +8,19 @@
  * - Typing indicator during bot "responses"
  * - Warm, supportive tone with medical disclaimers
  * - Scrolls to latest message
+ * - Conversation Persistence
  */
 
-import React, { useState, useRef, useCallback } from 'react';
-import { View, Text, TextInput, TouchableOpacity, FlatList, KeyboardAvoidingView, Platform, StyleSheet } from 'react-native';
+import React, { useState, useRef, useCallback, useEffect } from 'react';
+import { View, Text, TextInput, TouchableOpacity, FlatList, KeyboardAvoidingView, Platform, StyleSheet, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useTheme } from '@/hooks/useTheme';
 import { AppScreen, TopBar, ConditionPill, ChatBubble, TypingIndicator } from '@/components/ui';
 import { useProfile } from '@/context/ProfileContext';
+import { useAuth } from '@/context/AuthContext';
+import { supabase } from '@/lib/supabase';
+import { getMessages, createConversation, insertMessage } from '@/services/supabaseService';
 import type { ChatMessage } from '@/components/ui/ChatBubble';
 
 const SUGGESTIONS = [
@@ -26,16 +30,6 @@ const SUGGESTIONS = [
   'What foods are high in sodium?',
   'Give me a healthy meal idea',
 ];
-
-const BOT_RESPONSES: Record<string, string> = {
-  'Is this food safe for me?': 'It depends on the specific food! Scan it using the Scan tab and I\'ll analyze it against your health profile. Generally, fresh fruits, vegetables, and lean proteins are great choices.',
-  'What should I eat for breakfast?': 'For a heart-healthy breakfast, try oatmeal with berries and a small handful of walnuts. It\'s high in fiber and low in sodium — perfect for your profile! You could also try scrambled eggs with spinach.',
-  'Explain my last scan': 'Your last scanned item was Instant Ramen Noodles, which got an "Avoid" verdict. The main issue was very high sodium (1,820mg per serving), which exceeds your daily limit of 1,500mg. Try swapping it for a low-sodium soup or a brown rice bowl.',
-  'What foods are high in sodium?': 'Common high-sodium foods include: canned soups, processed meats (bacon, hot dogs), instant noodles, soy sauce, pickled foods, and most fast food. Always check the nutrition label — aim for less than 600mg per serving.',
-  'Give me a healthy meal idea': 'How about grilled salmon with roasted sweet potatoes and steamed broccoli? Salmon is rich in omega-3s (great for heart health), sweet potatoes are low in sodium, and broccoli adds fiber. Season with herbs instead of salt!',
-};
-
-const DEFAULT_RESPONSE = 'That\'s a great question! Based on your health profile, I\'d recommend focusing on whole, unprocessed foods that are low in sodium and sugar. Would you like me to suggest some specific meals or snacks?';
 
 const WELCOME: ChatMessage = {
   id: 'welcome',
@@ -47,18 +41,51 @@ const WELCOME: ChatMessage = {
 export default function NutriBotScreen() {
   const theme = useTheme();
   const router = useRouter();
+  const params = useLocalSearchParams<{ conversationId?: string }>();
   const { profile } = useProfile();
+  const { user } = useAuth();
+  
+  const [activeConversationId, setActiveConversationId] = useState<string | null>(params.conversationId ?? null);
   const [messages, setMessages] = useState<ChatMessage[]>([WELCOME]);
   const [input, setInput] = useState('');
   const [isTyping, setIsTyping] = useState(false);
+  const [isLoadingHistory, setIsLoadingHistory] = useState(!!params.conversationId);
   const flatListRef = useRef<FlatList>(null);
 
   const scrollToEnd = useCallback(() => {
     setTimeout(() => flatListRef.current?.scrollToEnd({ animated: true }), 100);
   }, []);
 
-  const sendMessage = useCallback((text: string) => {
-    if (!text.trim()) return;
+  // Load chat history if a conversationId was passed
+  useEffect(() => {
+    async function loadHistory() {
+      if (params.conversationId) {
+        try {
+          const history = await getMessages(params.conversationId);
+          if (history.length > 0) {
+            const loadedMessages: ChatMessage[] = history.map(m => ({
+              id: m.id,
+              text: m.content,
+              sender: m.role === 'assistant' ? 'bot' : 'user',
+              timestamp: new Date(m.created_at),
+              disclaimer: m.role === 'assistant',
+            }));
+            // Replace welcome message with actual history
+            setMessages(loadedMessages);
+          }
+        } catch (err) {
+          console.error('Failed to load conversation history:', err);
+        } finally {
+          setIsLoadingHistory(false);
+          scrollToEnd();
+        }
+      }
+    }
+    loadHistory();
+  }, [params.conversationId, scrollToEnd]);
+
+  const sendMessage = useCallback(async (text: string) => {
+    if (!text.trim() || !user) return;
 
     const userMsg: ChatMessage = {
       id: `user-${Date.now()}`,
@@ -72,21 +99,62 @@ export default function NutriBotScreen() {
     setIsTyping(true);
     scrollToEnd();
 
-    // Simulate bot response delay
-    setTimeout(() => {
-      const response = BOT_RESPONSES[text.trim()] ?? DEFAULT_RESPONSE;
+    let currentConvId = activeConversationId;
+
+    try {
+      // 1. If this is the first message, create the conversation
+      if (!currentConvId) {
+        const newConv = await createConversation(user.id, text.trim());
+        currentConvId = newConv.id;
+        setActiveConversationId(newConv.id);
+      }
+
+      // 2. Save the user message to the database
+      await insertMessage(currentConvId, 'user', text.trim());
+
+      // 3. Prepare messages for AI (excluding our initial static welcome if we want, but fine to include)
+      const currentMessages = [...messages, userMsg].map((m) => ({
+        role: m.sender === 'bot' ? 'assistant' : 'user',
+        content: m.text,
+      }));
+
+      // 4. Call Edge Function
+      const { data, error } = await supabase.functions.invoke('nutribot', {
+        body: { messages: currentMessages, profile },
+      });
+
+      if (error) {
+        console.error('Supabase function error:', error);
+        throw error;
+      }
+
+      const replyText = data?.reply || 'I am sorry, I received an empty response.';
+      
+      // 5. Save the AI response to the database
+      await insertMessage(currentConvId, 'assistant', replyText);
+
       const botMsg: ChatMessage = {
         id: `bot-${Date.now()}`,
-        text: response,
+        text: replyText,
         sender: 'bot',
         timestamp: new Date(),
         disclaimer: true,
       };
       setMessages((prev) => [...prev, botMsg]);
+    } catch (err) {
+      console.error('Error invoking nutribot edge function:', err);
+      const errorMsg: ChatMessage = {
+        id: `bot-error-${Date.now()}`,
+        text: 'I am sorry, but I am having trouble connecting to the server right now. Please try again later.',
+        sender: 'bot',
+        timestamp: new Date(),
+      };
+      setMessages((prev) => [...prev, errorMsg]);
+    } finally {
       setIsTyping(false);
       scrollToEnd();
-    }, 1200 + Math.random() * 800);
-  }, [scrollToEnd]);
+    }
+  }, [messages, profile, user, activeConversationId, scrollToEnd]);
 
   const handleSend = () => sendMessage(input);
   const handleChip = (text: string) => sendMessage(text);
@@ -118,67 +186,73 @@ export default function NutriBotScreen() {
         </View>
       )}
 
-      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined} keyboardVerticalOffset={90}>
-        {/* Messages */}
-        <FlatList
-          ref={flatListRef}
-          data={messages}
-          keyExtractor={(m) => m.id}
-          contentContainerStyle={styles.messageList}
-          showsVerticalScrollIndicator={false}
-          onContentSizeChange={scrollToEnd}
-          renderItem={({ item }) => <ChatBubble message={item} />}
-          ListFooterComponent={
-            <>
-              {isTyping && <TypingIndicator />}
-
-              {/* Quick suggestions — shown only when few messages */}
-              {messages.length <= 2 && !isTyping && (
-                <View style={styles.suggestionsWrap}>
-                  <Text style={{ color: theme.colors.textTertiary, fontSize: theme.fontSizes.sm, marginBottom: 10, paddingHorizontal: 16 }}>
-                    Try asking:
-                  </Text>
-                  <View style={styles.chips}>
-                    {SUGGESTIONS.map((s) => (
-                      <TouchableOpacity
-                        key={s}
-                        onPress={() => handleChip(s)}
-                        style={[styles.chip, { backgroundColor: theme.colors.surfaceSecondary, borderColor: theme.colors.border, borderRadius: theme.radius.full }]}
-                        accessibilityRole="button"
-                      >
-                        <Text style={{ color: theme.colors.textPrimary, fontSize: theme.fontSizes.sm }}>{s}</Text>
-                      </TouchableOpacity>
-                    ))}
-                  </View>
-                </View>
-              )}
-            </>
-          }
-        />
-
-        {/* Input bar */}
-        <View style={[styles.inputBar, { backgroundColor: theme.colors.surface, borderTopColor: theme.colors.border }]}>
-          <TextInput
-            value={input}
-            onChangeText={setInput}
-            placeholder="Ask NutriBot anything..."
-            placeholderTextColor={theme.colors.textTertiary}
-            style={[styles.input, { backgroundColor: theme.colors.surfaceSecondary, borderRadius: theme.radius.full, color: theme.colors.textPrimary, fontSize: theme.fontSizes.body }]}
-            onSubmitEditing={handleSend}
-            returnKeyType="send"
-            accessibilityLabel="Chat message input"
-          />
-          <TouchableOpacity
-            onPress={handleSend}
-            disabled={!input.trim() || isTyping}
-            style={[styles.sendBtn, { backgroundColor: input.trim() && !isTyping ? theme.colors.primary : theme.colors.surfaceSecondary, borderRadius: theme.radius.full }]}
-            accessibilityRole="button"
-            accessibilityLabel="Send message"
-          >
-            <Ionicons name="arrow-up" size={20} color={input.trim() && !isTyping ? '#FFFFFF' : theme.colors.textTertiary} />
-          </TouchableOpacity>
+      {isLoadingHistory ? (
+        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+          <ActivityIndicator size="large" color={theme.colors.primary} />
         </View>
-      </KeyboardAvoidingView>
+      ) : (
+        <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined} keyboardVerticalOffset={90}>
+          {/* Messages */}
+          <FlatList
+            ref={flatListRef}
+            data={messages}
+            keyExtractor={(m) => m.id}
+            contentContainerStyle={styles.messageList}
+            showsVerticalScrollIndicator={false}
+            onContentSizeChange={scrollToEnd}
+            renderItem={({ item }) => <ChatBubble message={item} />}
+            ListFooterComponent={
+              <>
+                {isTyping && <TypingIndicator />}
+
+                {/* Quick suggestions — shown only when few messages */}
+                {messages.length <= 2 && !isTyping && (
+                  <View style={styles.suggestionsWrap}>
+                    <Text style={{ color: theme.colors.textTertiary, fontSize: theme.fontSizes.sm, marginBottom: 10, paddingHorizontal: 16 }}>
+                      Try asking:
+                    </Text>
+                    <View style={styles.chips}>
+                      {SUGGESTIONS.map((s) => (
+                        <TouchableOpacity
+                          key={s}
+                          onPress={() => handleChip(s)}
+                          style={[styles.chip, { backgroundColor: theme.colors.surfaceSecondary, borderColor: theme.colors.border, borderRadius: theme.radius.full }]}
+                          accessibilityRole="button"
+                        >
+                          <Text style={{ color: theme.colors.textPrimary, fontSize: theme.fontSizes.sm }}>{s}</Text>
+                        </TouchableOpacity>
+                      ))}
+                    </View>
+                  </View>
+                )}
+              </>
+            }
+          />
+
+          {/* Input bar */}
+          <View style={[styles.inputBar, { backgroundColor: theme.colors.surface, borderTopColor: theme.colors.border }]}>
+            <TextInput
+              value={input}
+              onChangeText={setInput}
+              placeholder="Ask NutriBot anything..."
+              placeholderTextColor={theme.colors.textTertiary}
+              style={[styles.input, { backgroundColor: theme.colors.surfaceSecondary, borderRadius: theme.radius.full, color: theme.colors.textPrimary, fontSize: theme.fontSizes.body }]}
+              onSubmitEditing={handleSend}
+              returnKeyType="send"
+              accessibilityLabel="Chat message input"
+            />
+            <TouchableOpacity
+              onPress={handleSend}
+              disabled={!input.trim() || isTyping}
+              style={[styles.sendBtn, { backgroundColor: input.trim() && !isTyping ? theme.colors.primary : theme.colors.surfaceSecondary, borderRadius: theme.radius.full }]}
+              accessibilityRole="button"
+              accessibilityLabel="Send message"
+            >
+              <Ionicons name="arrow-up" size={20} color={input.trim() && !isTyping ? '#FFFFFF' : theme.colors.textTertiary} />
+            </TouchableOpacity>
+          </View>
+        </KeyboardAvoidingView>
+      )}
     </AppScreen>
   );
 }
