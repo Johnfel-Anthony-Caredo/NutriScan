@@ -60,11 +60,10 @@ export default function ProfileScreen() {
             try {
               await resetProfile();
               await signOut();
-              router.replace('/(auth)/login');
+              // Let the global route guard in _layout.tsx handle the redirect.
             } catch (error) {
               console.error('Logout failed:', error);
               Alert.alert('Error', 'Failed to log out. Please try again.');
-            } finally {
               setIsLoggingOut(false);
             }
           },

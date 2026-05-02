@@ -46,11 +46,10 @@ export default function LoginScreen() {
 
     try {
       await signIn(email.trim(), password);
-      router.replace('/');
+      // Let the global route guard in _layout.tsx handle the redirect.
     } catch {
       setAuthError('Invalid email or password');
-    } finally {
-      setIsSubmitting(false);
+      setIsSubmitting(false); // Only reset if there's an error
     }
   };
 

@@ -60,15 +60,14 @@ export default function RegisterScreen() {
 
     try {
       const data = await signUp(name.trim(), email.trim(), password);
-      if (data.session) {
-        router.replace('/');
-      } else {
+      if (!data.session) {
         setInfo('Check your email to confirm your account, then sign in.');
+        setIsSubmitting(false);
       }
+      // If data.session exists, let the global route guard in _layout.tsx handle the redirect.
     } catch (error: any) {
       const message = typeof error?.message === 'string' ? error.message : 'Sign up failed. Please try again.';
       setAuthError(message);
-    } finally {
       setIsSubmitting(false);
     }
   };

@@ -18,3 +18,4 @@ export { SkeletonLoader } from './SkeletonLoader';
 export { WeeklyChart } from './WeeklyChart';
 export { ChatBubble } from './ChatBubble';
 export { TypingIndicator } from './TypingIndicator';
+export { NutriBotShimmer } from './NutriBotShimmer';

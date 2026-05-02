@@ -1,6 +1,6 @@
 import "@supabase/functions-js/edge-runtime.d.ts"
-import { GoogleGenAI } from "https://esm.sh/@google/genai@0.1.2"
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0"
+import { GoogleGenAI } from "npm:@google/genai"
+import { createClient } from "npm:@supabase/supabase-js@2.45.0"
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -71,8 +71,8 @@ If the user asks how to use the app or where to find something, guide them using
 - "History" tab: Where they can view past scan logs, weekly trends, and their full health summary report.
 - "Profile" tab: Where they can update their health conditions, goals, and account settings.`
 
-    // We are using Gemma 2 27B (Instruction Tuned)
-    const model = 'gemma-2-27b-it'
+    // We are using Gemma 4 26B (Instruction Tuned)
+    const model = 'gemma-4-26b-a4b-it'
     
     // Format messages for @google/genai SDK
     // SDK expects: { role: 'user' | 'model', parts: [{ text: '...' }] }

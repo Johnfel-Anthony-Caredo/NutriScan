@@ -12,11 +12,11 @@
  */
 
 import React, { useState, useRef, useCallback, useEffect } from 'react';
-import { View, Text, TextInput, TouchableOpacity, FlatList, KeyboardAvoidingView, Platform, StyleSheet, ActivityIndicator } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, FlatList, KeyboardAvoidingView, Platform, StyleSheet, ActivityIndicator, ScrollView } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useTheme } from '@/hooks/useTheme';
-import { AppScreen, TopBar, ConditionPill, ChatBubble, TypingIndicator } from '@/components/ui';
+import { AppScreen, TopBar, ConditionPill, ChatBubble, NutriBotShimmer } from '@/components/ui';
 import { useProfile } from '@/context/ProfileContext';
 import { useAuth } from '@/context/AuthContext';
 import { supabase } from '@/lib/supabase';
@@ -125,7 +125,10 @@ export default function NutriBotScreen() {
 
       if (error) {
         console.error('Supabase function error:', error);
-        throw error;
+        throw new Error(error.message || 'Function invocation failed');
+      }
+      if (data?.error) {
+        throw new Error(data.error);
       }
 
       const replyText = data?.reply || 'I am sorry, I received an empty response.';
@@ -141,11 +144,12 @@ export default function NutriBotScreen() {
         disclaimer: true,
       };
       setMessages((prev) => [...prev, botMsg]);
-    } catch (err) {
+    } catch (err: any) {
       console.error('Error invoking nutribot edge function:', err);
+      const errorDetail = err.message || JSON.stringify(err);
       const errorMsg: ChatMessage = {
         id: `bot-error-${Date.now()}`,
-        text: 'I am sorry, but I am having trouble connecting to the server right now. Please try again later.',
+        text: `⚠️ Error connecting to AI: ${errorDetail}\n\nPlease check your configuration or try again later.`,
         sender: 'bot',
         timestamp: new Date(),
       };
@@ -203,31 +207,28 @@ export default function NutriBotScreen() {
             renderItem={({ item }) => <ChatBubble message={item} />}
             ListFooterComponent={
               <>
-                {isTyping && <TypingIndicator />}
-
-                {/* Quick suggestions — shown only when few messages */}
-                {messages.length <= 2 && !isTyping && (
-                  <View style={styles.suggestionsWrap}>
-                    <Text style={{ color: theme.colors.textTertiary, fontSize: theme.fontSizes.sm, marginBottom: 10, paddingHorizontal: 16 }}>
-                      Try asking:
-                    </Text>
-                    <View style={styles.chips}>
-                      {SUGGESTIONS.map((s) => (
-                        <TouchableOpacity
-                          key={s}
-                          onPress={() => handleChip(s)}
-                          style={[styles.chip, { backgroundColor: theme.colors.surfaceSecondary, borderColor: theme.colors.border, borderRadius: theme.radius.full }]}
-                          accessibilityRole="button"
-                        >
-                          <Text style={{ color: theme.colors.textPrimary, fontSize: theme.fontSizes.sm }}>{s}</Text>
-                        </TouchableOpacity>
-                      ))}
-                    </View>
-                  </View>
-                )}
+                {isTyping && <NutriBotShimmer />}
               </>
             }
           />
+
+          {/* Quick suggestions — fixed above input bar when few messages */}
+          {messages.length <= 2 && !isTyping && (
+            <View style={[styles.suggestionsWrap, { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: theme.colors.border, paddingTop: 12, backgroundColor: theme.colors.surface }]}>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chips}>
+                {SUGGESTIONS.map((s) => (
+                  <TouchableOpacity
+                    key={s}
+                    onPress={() => handleChip(s)}
+                    style={[styles.chip, { backgroundColor: theme.colors.surfaceSecondary, borderColor: theme.colors.border, borderRadius: theme.radius.full }]}
+                    accessibilityRole="button"
+                  >
+                    <Text style={{ color: theme.colors.textPrimary, fontSize: theme.fontSizes.sm }}>{s}</Text>
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
+            </View>
+          )}
 
           {/* Input bar */}
           <View style={[styles.inputBar, { backgroundColor: theme.colors.surface, borderTopColor: theme.colors.border }]}>

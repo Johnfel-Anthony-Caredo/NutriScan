@@ -10,6 +10,7 @@ import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '@/hooks/useTheme';
+import Markdown from 'react-native-markdown-display';
 
 export interface ChatMessage {
   id: string;
@@ -45,15 +46,50 @@ export function ChatBubble({ message }: ChatBubbleProps) {
           { borderRadius: theme.radius.lg },
         ]}
       >
-        <Text
-          style={{
-            color: isBot ? theme.colors.textPrimary : '#FFFFFF',
-            fontSize: theme.fontSizes.body,
-            lineHeight: theme.lineHeights.body,
-          }}
-        >
-          {message.text}
-        </Text>
+        {isBot ? (
+          <Markdown
+            style={{
+              body: {
+                color: theme.colors.textPrimary,
+                fontSize: theme.fontSizes.body,
+                lineHeight: theme.lineHeights.body,
+              },
+              heading1: { fontSize: theme.fontSizes.xl, fontWeight: '700', color: theme.colors.textPrimary, marginBottom: 8 },
+              heading2: { fontSize: theme.fontSizes.lg, fontWeight: '700', color: theme.colors.textPrimary, marginBottom: 6 },
+              heading3: { fontSize: theme.fontSizes.body, fontWeight: '700', color: theme.colors.textPrimary, marginBottom: 4 },
+              bullet_list: { marginTop: 4 },
+              ordered_list: { marginTop: 4 },
+              strong: { fontWeight: '700', color: theme.colors.textPrimary },
+              link: { color: theme.colors.primary },
+              code_inline: {
+                backgroundColor: theme.colors.surfaceSecondary,
+                color: theme.colors.textPrimary,
+                paddingHorizontal: 6,
+                borderRadius: 6,
+                fontFamily: 'monospace',
+              },
+              code_block: {
+                backgroundColor: theme.colors.surfaceSecondary,
+                padding: 10,
+                borderRadius: 8,
+                fontFamily: 'monospace',
+                fontSize: theme.fontSizes.sm,
+              },
+            }}
+          >
+            {message.text}
+          </Markdown>
+        ) : (
+          <Text
+            style={{
+              color: '#FFFFFF',
+              fontSize: theme.fontSizes.body,
+              lineHeight: theme.lineHeights.body,
+            }}
+          >
+            {message.text}
+          </Text>
+        )}
         {message.disclaimer && (
           <Text
             style={{
