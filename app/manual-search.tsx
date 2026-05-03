@@ -5,13 +5,13 @@
  * Presented as a modal from the Scan tab.
  */
 
-import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, FlatList, StyleSheet } from 'react-native';
+import { AppScreen, TopBar } from '@/components/ui';
+import { MOCK_RECENT_SEARCHES, MOCK_SEARCH_RESULTS, type SearchFoodItem } from '@/data/mockData';
+import { useTheme } from '@/hooks/useTheme';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import { useTheme } from '@/hooks/useTheme';
-import { AppScreen, TopBar, Card } from '@/components/ui';
-import { MOCK_SEARCH_RESULTS, MOCK_RECENT_SEARCHES, type SearchFoodItem } from '@/data/mockData';
+import React, { useState } from 'react';
+import { FlatList, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 
 export default function ManualSearchScreen() {
   const theme = useTheme();
@@ -22,8 +22,11 @@ export default function ManualSearchScreen() {
     ? MOCK_SEARCH_RESULTS.filter((f) => f.name.toLowerCase().includes(query.toLowerCase()))
     : [];
 
-  const handleSelect = (_item: SearchFoodItem) => {
-    router.replace('/scan-preview');
+  const handleSelect = (item: SearchFoodItem) => {
+    router.replace({
+      pathname: '/scan-preview',
+      params: { source: 'manual', foodName: item.name },
+    });
   };
 
   return (

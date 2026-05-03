@@ -14,7 +14,7 @@ import { uploadScanImage } from '@/services/storageService';
 import { insertScanLog } from '@/services/supabaseService';
 import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import React, { useState } from 'react';
+import React from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 type MealType = 'breakfast' | 'lunch' | 'dinner' | 'snack';
@@ -30,29 +30,48 @@ export default function ScanResultScreen() {
     mealType?: string;
     source?: string;
     imageUri?: string;
+    resultData?: string;
   }>();
-  const [isSaving, setIsSaving] = useState(false);
-  const [logError, setLogError] = useState('');
-  const [logged, setLogged] = useState(false);
+  const [isSaving, setIsSaving] = React.useState(false);
+  const [logError, setLogError] = React.useState('');
+  const [logged, setLogged] = React.useState(false);
 
   const foodNameParam = Array.isArray(params.foodName) ? params.foodName[0] : params.foodName;
   const mealTypeParam = Array.isArray(params.mealType) ? params.mealType[0] : params.mealType;
   const sourceParam = Array.isArray(params.source) ? params.source[0] : params.source;
   const imageUriParam = Array.isArray(params.imageUri) ? params.imageUri[0] : params.imageUri;
+  const resultDataParam = Array.isArray(params.resultData) ? params.resultData[0] : params.resultData;
 
+  const mealTypes: MealType[] = ['breakfast', 'lunch', 'dinner', 'snack'];
   const mealType = mealTypes.includes(mealTypeParam as MealType)
     ? (mealTypeParam as MealType)
-    : MOCK_RESULT_AVOID.mealType;
+    : (MOCK_RESULT_AVOID.mealType as MealType);
 
   const source = sourceParam === 'barcode' || sourceParam === 'manual' ? sourceParam : 'photo';
 
-  const result = {
-    ...MOCK_RESULT_AVOID,
-    foodName: foodNameParam ?? MOCK_RESULT_AVOID.foodName,
-    mealType,
-    scannedAt: new Date().toISOString(),
-  };
-  const [showAllNutrients, setShowAllNutrients] = useState(false);
+  // Parse the real scan result data from params, or fall back to mock data
+  const result: ScanResultData = useMemo(() => {
+    if (resultDataParam) {
+      try {
+        const parsed = JSON.parse(decodeURIComponent(resultDataParam));
+        // Ensure mealType is set (from user selection)
+        parsed.mealType = mealType;
+        parsed.scannedAt = new Date().toISOString();
+        return parsed as ScanResultData;
+      } catch (e) {
+        console.warn('Failed to parse resultData, falling back to mock:', e);
+      }
+    }
+    // Fallback: use mock data with the foodName from params
+    return {
+      ...MOCK_RESULT_AVOID,
+      foodName: foodNameParam ?? MOCK_RESULT_AVOID.foodName,
+      mealType,
+      scannedAt: new Date().toISOString(),
+    };
+  }, [resultDataParam, foodNameParam, mealType]);
+
+  const [showAllNutrients, setShowAllNutrients] = React.useState(false);
 
   const relevantNutrients = result.nutrients.filter((n) => n.overLimit || n.warning);
   const otherNutrients = result.nutrients.filter((n) => !n.overLimit && !n.warning);
