@@ -1,10 +1,3 @@
-/**
- * TopBar — screen header with title, optional back button and right action.
- *
- * Designed for screens that need a custom header outside the
- * default React Navigation header.
- */
-
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
@@ -13,11 +6,8 @@ import { useTheme } from '@/hooks/useTheme';
 
 interface TopBarProps {
   title: string;
-  /** Show a back chevron (default: false) */
   showBack?: boolean;
-  /** Custom back handler — defaults to router.back() */
   onBack?: () => void;
-  /** Render a right-side action element */
   rightAction?: React.ReactNode;
 }
 
@@ -36,8 +26,7 @@ export function TopBar({
   };
 
   return (
-    <View style={[styles.container, { borderBottomColor: theme.colors.border }]}>
-      {/* Left */}
+    <View style={[styles.container, { borderBottomColor: theme.colors.border, borderBottomWidth: 3 }]}>
       <View style={styles.side}>
         {showBack && (
           <TouchableOpacity
@@ -48,21 +37,21 @@ export function TopBar({
           >
             <Ionicons
               name="chevron-back"
-              size={26}
+              size={28}
               color={theme.colors.textPrimary}
             />
           </TouchableOpacity>
         )}
       </View>
 
-      {/* Title */}
       <Text
         style={[
           styles.title,
           {
             color: theme.colors.textPrimary,
             fontSize: theme.fontSizes.lg,
-            fontWeight: theme.fontWeights.semibold,
+            fontFamily: theme.textStyles.h2.fontFamily,
+            fontWeight: theme.fontWeights.bold,
           },
         ]}
         numberOfLines={1}
@@ -70,7 +59,6 @@ export function TopBar({
         {title}
       </Text>
 
-      {/* Right */}
       <View style={[styles.side, styles.rightSide]}>
         {rightAction}
       </View>
@@ -82,9 +70,8 @@ const styles = StyleSheet.create({
   container: {
     flexDirection: 'row',
     alignItems: 'center',
-    height: 52,
+    height: 56,
     paddingHorizontal: 16,
-    borderBottomWidth: StyleSheet.hairlineWidth,
   },
   side: {
     width: 44,
