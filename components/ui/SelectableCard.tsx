@@ -1,12 +1,5 @@
-/**
- * SelectableCard — large tappable card for multi-select choices.
- *
- * Used in onboarding condition selection and anywhere users
- * need to pick from a list of options with clear visual feedback.
- */
-
 import React from 'react';
-import { TouchableOpacity, Text, View, StyleSheet } from 'react-native';
+import { TouchableOpacity, Text, View, StyleSheet, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '@/hooks/useTheme';
 
@@ -15,7 +8,6 @@ interface SelectableCardProps {
   icon: keyof typeof Ionicons.glyphMap;
   selected: boolean;
   onPress: () => void;
-  /** Optional subtitle below the label */
   subtitle?: string;
 }
 
@@ -29,72 +21,83 @@ export function SelectableCard({
   const theme = useTheme();
 
   return (
-    <TouchableOpacity
-      onPress={onPress}
-      activeOpacity={0.7}
-      accessibilityRole="checkbox"
-      accessibilityState={{ checked: selected }}
-      accessibilityLabel={label}
-      style={[
-        styles.card,
-        {
-          backgroundColor: selected
-            ? theme.colors.primaryLight
-            : theme.colors.surface,
-          borderColor: selected
-            ? theme.colors.primary
-            : theme.colors.border,
-          borderRadius: theme.radius.md,
-          ...theme.shadows.sm,
-        },
-      ]}
-    >
-      <Ionicons
-        name={icon}
-        size={28}
-        color={selected ? theme.colors.primary : theme.colors.textTertiary}
-      />
-      <Text
+    <View style={styles.wrapper}>
+      {Platform.OS === 'android' && (
+        <View
+          style={[styles.shadowBlock, { backgroundColor: theme.colors.shadow, borderRadius: theme.radius.md }]}
+          pointerEvents="none"
+        />
+      )}
+      <TouchableOpacity
+        onPress={onPress}
+        activeOpacity={1}
+        accessibilityRole="checkbox"
+        accessibilityState={{ checked: selected }}
+        accessibilityLabel={label}
         style={[
-          styles.label,
+          styles.card,
           {
-            color: selected ? theme.colors.primary : theme.colors.textPrimary,
-            fontSize: theme.fontSizes.sm,
-            fontWeight: selected ? theme.fontWeights.semibold : theme.fontWeights.medium,
+            backgroundColor: selected ? theme.colors.primary : theme.colors.surface,
+            borderColor: theme.colors.border,
+            borderRadius: theme.radius.md,
           },
         ]}
-        numberOfLines={2}
       >
-        {label}
-      </Text>
-      {subtitle && (
+        <Ionicons
+          name={icon}
+          size={28}
+          color={selected ? theme.colors.textInverse : theme.colors.textPrimary}
+        />
         <Text
-          style={{
-            color: theme.colors.textTertiary,
-            fontSize: theme.fontSizes.xs,
-            textAlign: 'center',
-            marginTop: 2,
-          }}
-          numberOfLines={1}
+          style={[
+            styles.label,
+            {
+              color: selected ? theme.colors.textInverse : theme.colors.textPrimary,
+              fontFamily: theme.textStyles.label.fontFamily,
+              fontWeight: theme.fontWeights.bold,
+            },
+          ]}
+          numberOfLines={2}
         >
-          {subtitle}
+          {label}
         </Text>
-      )}
-      {selected && (
-        <View style={styles.check}>
-          <Ionicons name="checkmark-circle" size={20} color={theme.colors.primary} />
-        </View>
-      )}
-    </TouchableOpacity>
+        {subtitle && (
+          <Text
+            style={[
+              styles.subtitle,
+              { color: selected ? 'rgba(255,255,255,0.7)' : theme.colors.textTertiary },
+            ]}
+            numberOfLines={1}
+          >
+            {subtitle}
+          </Text>
+        )}
+        {selected && (
+          <View style={styles.check}>
+            <Ionicons name="checkmark-circle" size={20} color={theme.colors.textInverse} />
+          </View>
+        )}
+      </TouchableOpacity>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  card: {
+  wrapper: {
+    position: 'relative',
     width: '47%',
+  },
+  shadowBlock: {
+    position: 'absolute',
+    top: 5,
+    left: 5,
+    right: 0,
+    bottom: 0,
+  },
+  card: {
     paddingVertical: 20,
     paddingHorizontal: 12,
-    borderWidth: 1.5,
+    borderWidth: 3,
     alignItems: 'center',
     position: 'relative',
   },
@@ -102,6 +105,13 @@ const styles = StyleSheet.create({
     marginTop: 10,
     textAlign: 'center',
     lineHeight: 18,
+    fontSize: 14,
+  },
+  subtitle: {
+    fontSize: 11,
+    textAlign: 'center',
+    marginTop: 2,
+    lineHeight: 14,
   },
   check: {
     position: 'absolute',
