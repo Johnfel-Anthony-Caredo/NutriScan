@@ -1,10 +1,3 @@
-/**
- * VerdictBadge — displays the Safe / Caution / Avoid verdict.
- *
- * Large, clearly colored badge with an icon. The most important
- * visual element on the scan result screen.
- */
-
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
@@ -14,7 +7,6 @@ import { verdictLabels } from '@/types/health';
 
 interface VerdictBadgeProps {
   verdict: Verdict;
-  /** Show a larger version (default: false) */
   large?: boolean;
 }
 
@@ -35,14 +27,14 @@ export function VerdictBadge({ verdict, large = false }: VerdictBadgeProps) {
         large && styles.large,
         {
           backgroundColor: colors.bg,
-          borderColor: colors.border,
-          borderRadius: theme.radius.md,
+          borderColor: theme.colors.border,
+          borderRadius: theme.radius.sm,
         },
       ]}
     >
       <Ionicons
         name={verdictIcons[verdict]}
-        size={large ? 28 : 20}
+        size={large ? 24 : 18}
         color={colors.icon}
       />
       <Text
@@ -51,7 +43,8 @@ export function VerdictBadge({ verdict, large = false }: VerdictBadgeProps) {
           large && styles.largeLabel,
           {
             color: colors.text,
-            fontWeight: theme.fontWeights.semibold,
+            fontFamily: theme.textStyles.label.fontFamily,
+            fontWeight: theme.fontWeights.bold,
           },
         ]}
       >
@@ -66,22 +59,22 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     alignSelf: 'flex-start',
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderWidth: 1,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderWidth: 2,
     gap: 6,
   },
   large: {
-    paddingHorizontal: 20,
-    paddingVertical: 12,
-    gap: 10,
+    paddingHorizontal: 18,
+    paddingVertical: 10,
+    gap: 8,
   },
   label: {
-    fontSize: 14,
-    lineHeight: 18,
+    fontSize: 13,
+    lineHeight: 16,
   },
   largeLabel: {
-    fontSize: 18,
-    lineHeight: 24,
+    fontSize: 16,
+    lineHeight: 20,
   },
 });
