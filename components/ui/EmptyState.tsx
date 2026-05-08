@@ -1,10 +1,3 @@
-/**
- * EmptyState — friendly placeholder for screens with no data yet.
- *
- * Shows a centered icon + title + subtitle + optional CTA.
- * Intentionally designed to feel warm, not broken.
- */
-
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
@@ -29,32 +22,33 @@ export function EmptyState({
   const theme = useTheme();
 
   return (
-    <View style={styles.container}>
-      {/* Icon circle */}
+    <View style={[styles.container, { borderColor: theme.colors.border }]}>
       <View
         style={[
           styles.iconCircle,
-          { backgroundColor: theme.colors.primaryLight },
+          {
+            backgroundColor: theme.colors.surfaceSecondary,
+            borderColor: theme.colors.border,
+          },
         ]}
       >
         <Ionicons name={icon} size={40} color={theme.colors.primary} />
       </View>
 
-      {/* Title */}
       <Text
         style={[
           styles.title,
           {
             color: theme.colors.textPrimary,
             fontSize: theme.fontSizes.xl,
-            fontWeight: theme.fontWeights.semibold,
+            fontFamily: theme.textStyles.h2.fontFamily,
+            fontWeight: theme.fontWeights.bold,
           },
         ]}
       >
         {title}
       </Text>
 
-      {/* Subtitle */}
       {subtitle && (
         <Text
           style={[
@@ -63,6 +57,7 @@ export function EmptyState({
               color: theme.colors.textSecondary,
               fontSize: theme.fontSizes.body,
               lineHeight: theme.lineHeights.body,
+              fontFamily: theme.textStyles.body.fontFamily,
             },
           ]}
         >
@@ -70,7 +65,6 @@ export function EmptyState({
         </Text>
       )}
 
-      {/* CTA */}
       {actionLabel && onAction && (
         <PrimaryButton
           label={actionLabel}
@@ -89,6 +83,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 32,
     paddingVertical: 48,
+    borderWidth: 3,
+    margin: 16,
   },
   iconCircle: {
     width: 88,
@@ -97,6 +93,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 24,
+    borderWidth: 3,
   },
   title: {
     textAlign: 'center',
