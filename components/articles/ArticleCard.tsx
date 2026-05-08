@@ -50,9 +50,8 @@ export function ArticleCard({ article, onPress, width }: ArticleCardProps) {
         {
           width,
           backgroundColor: theme.colors.surface,
-          borderColor: theme.colors.borderLight,
+          borderColor: theme.colors.border,
           borderRadius: theme.radius.lg,
-          ...theme.shadows.sm,
         },
       ]}
     >
@@ -103,6 +102,8 @@ export function ArticleCard({ article, onPress, width }: ArticleCardProps) {
               {
                 backgroundColor: theme.colors.primary,
                 borderRadius: theme.radius.full,
+                borderColor: theme.colors.border,
+                borderWidth: 2,
               },
             ]}
           >
@@ -152,7 +153,7 @@ export function ArticleCard({ article, onPress, width }: ArticleCardProps) {
 
 const styles = StyleSheet.create({
   card: {
-    borderWidth: StyleSheet.hairlineWidth,
+    borderWidth: 3,
     overflow: 'hidden',
   },
   imageWrap: {

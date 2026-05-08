@@ -24,8 +24,10 @@ export function TakeawaysCard({ takeaways }: TakeawaysCardProps) {
       style={[
         styles.container,
         {
-          backgroundColor: theme.colors.primaryLight,
-          borderRadius: theme.radius.lg,
+          backgroundColor: theme.colors.surface,
+          borderColor: theme.colors.border,
+          borderRadius: theme.radius.md,
+          borderWidth: 3,
         },
       ]}
     >
