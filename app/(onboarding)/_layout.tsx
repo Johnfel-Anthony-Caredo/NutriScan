@@ -6,17 +6,15 @@
  */
 
 import { ProgressBar } from '@/components/ui';
-import { darkColors, lightColors } from '@/constants/theme';
+import { colors } from '@/constants/theme';
 import { Stack, useSegments } from 'expo-router';
-import { StyleSheet, useColorScheme, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 
 const STEP_ORDER = ['welcome', 'conditions', 'goals', 'nutribot-assist', 'confirmation'];
 const TOTAL_STEPS = STEP_ORDER.length;
 
 export default function OnboardingLayout() {
   const segments = useSegments();
-  const scheme = useColorScheme();
-  const colors = scheme === 'dark' ? darkColors : lightColors;
 
   // The last segment is the screen name
   const currentScreen = segments[segments.length - 1] ?? 'welcome';

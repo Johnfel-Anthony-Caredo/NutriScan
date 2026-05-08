@@ -161,7 +161,7 @@ export default function ProfileScreen() {
 
   return (
     <AppScreen scroll>
-      <View style={[styles.header, { backgroundColor: theme.colors.surface, borderColor: theme.colors.borderLight, borderRadius: theme.radius.xl, ...theme.shadows.sm }]}>
+      <View style={[styles.header, { backgroundColor: theme.colors.surface, borderColor: theme.colors.borderLight, borderRadius: theme.radius.lg, ...theme.shadows.sm }]}>
         <View style={styles.avatarWrap}>
           <View style={[styles.avatarRing, { backgroundColor: theme.colors.primaryLight, borderColor: theme.colors.borderLight }]}>
             <View style={[styles.avatar, { backgroundColor: theme.colors.surfaceSecondary }]}>

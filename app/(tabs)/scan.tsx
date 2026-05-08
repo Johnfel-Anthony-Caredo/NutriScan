@@ -110,7 +110,7 @@ export default function ScanScreen() {
         </View>
 
         {/* Camera */}
-        <View style={[styles.cameraContainer, { borderRadius: theme.radius.xl, borderColor: theme.colors.border }]}>
+        <View style={[styles.cameraContainer, { borderRadius: theme.radius.lg, borderColor: theme.colors.border }]}>
           <CameraView 
             style={StyleSheet.absoluteFillObject} 
             facing="back"

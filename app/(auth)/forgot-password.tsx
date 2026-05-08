@@ -89,7 +89,7 @@ export default function ForgotPasswordScreen() {
           {"Enter your email and we'll send you instructions to reset your password."}
         </Text>
 
-        <View style={[styles.card, { backgroundColor: theme.colors.surface, borderColor: theme.colors.borderLight, borderRadius: theme.radius.xl, ...theme.shadows.sm }]}>
+        <View style={[styles.card, { backgroundColor: theme.colors.surface, borderColor: theme.colors.borderLight, borderRadius: theme.radius.lg, ...theme.shadows.sm }]}>
           <Text style={{ color: theme.colors.textSecondary, fontSize: theme.fontSizes.sm, fontWeight: theme.fontWeights.medium, marginBottom: 6 }}>Email</Text>
           <View style={[styles.inputRow, inputStyle]}>
             <Ionicons name="mail-outline" size={18} color={focused ? theme.colors.primary : theme.colors.textTertiary} style={{ marginRight: 10 }} />

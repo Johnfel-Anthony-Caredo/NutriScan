@@ -114,7 +114,7 @@ export default function RegisterScreen() {
             </Text>
           </View>
 
-          <View style={[s.card, { backgroundColor: theme.colors.surface, borderColor: theme.colors.borderLight, borderRadius: theme.radius.xl, ...theme.shadows.sm }]}>
+          <View style={[s.card, { backgroundColor: theme.colors.surface, borderColor: theme.colors.borderLight, borderRadius: theme.radius.lg, ...theme.shadows.sm }]}>
 
         {/* Name */}
         <Text style={{ color: theme.colors.textSecondary, fontSize: theme.fontSizes.sm, fontWeight: theme.fontWeights.medium, marginBottom: 6 }}>Full Name</Text>

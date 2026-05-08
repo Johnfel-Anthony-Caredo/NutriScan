@@ -44,10 +44,10 @@ export function SkeletonLoader({ rows = 3, style }: SkeletonLoaderProps) {
           />
           <View style={styles.lines}>
             <Animated.View
-              style={[styles.line, { width: '70%', backgroundColor: theme.colors.surfaceSecondary, borderRadius: theme.radius.xs, opacity }]}
+              style={[styles.line, { width: '70%', backgroundColor: theme.colors.surfaceSecondary, borderRadius: theme.radius.sm, opacity }]}
             />
             <Animated.View
-              style={[styles.line, { width: '45%', backgroundColor: theme.colors.surfaceSecondary, borderRadius: theme.radius.xs, opacity }]}
+              style={[styles.line, { width: '45%', backgroundColor: theme.colors.surfaceSecondary, borderRadius: theme.radius.sm, opacity }]}
             />
           </View>
         </View>
