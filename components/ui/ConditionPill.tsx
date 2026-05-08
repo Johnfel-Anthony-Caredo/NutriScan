@@ -1,10 +1,3 @@
-/**
- * ConditionPill — small rounded chip for displaying a health condition.
- *
- * Used in the Home header, Profile, and NutriBot context bar
- * so users always see which conditions are active.
- */
-
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { useTheme } from '@/hooks/useTheme';
@@ -13,7 +6,6 @@ import { conditionLabels } from '@/types/health';
 
 interface ConditionPillProps {
   condition: HealthCondition;
-  /** Smaller variant for tight spaces (default: false) */
   compact?: boolean;
 }
 
@@ -26,7 +18,8 @@ export function ConditionPill({ condition, compact = false }: ConditionPillProps
         styles.pill,
         compact && styles.compact,
         {
-          backgroundColor: theme.colors.primaryLight,
+          backgroundColor: theme.colors.surfaceSecondary,
+          borderColor: theme.colors.border,
           borderRadius: theme.radius.full,
         },
       ]}
@@ -37,7 +30,8 @@ export function ConditionPill({ condition, compact = false }: ConditionPillProps
           compact && styles.compactLabel,
           {
             color: theme.colors.primary,
-            fontWeight: theme.fontWeights.medium,
+            fontFamily: theme.textStyles.label.fontFamily,
+            fontWeight: theme.fontWeights.bold,
           },
         ]}
         numberOfLines={1}
@@ -53,17 +47,18 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 6,
     alignSelf: 'flex-start',
+    borderWidth: 2,
   },
   compact: {
     paddingHorizontal: 10,
     paddingVertical: 4,
   },
   label: {
-    fontSize: 14,
-    lineHeight: 18,
+    fontSize: 13,
+    lineHeight: 16,
   },
   compactLabel: {
-    fontSize: 12,
-    lineHeight: 16,
+    fontSize: 11,
+    lineHeight: 14,
   },
 });
