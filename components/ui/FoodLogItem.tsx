@@ -1,10 +1,3 @@
-/**
- * FoodLogItem — a single food log entry row.
- *
- * Shows food name, meal type, time, and verdict badge.
- * Used in the Today's Log section on Home and in History.
- */
-
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
@@ -33,22 +26,36 @@ export function FoodLogItem({ item, onPress }: FoodLogItemProps) {
       onPress={onPress}
       disabled={!onPress}
       activeOpacity={0.7}
-      style={[styles.row, { borderBottomColor: theme.colors.borderLight }]}
+      style={[styles.row, { borderBottomColor: theme.colors.border }]}
       accessibilityRole="button"
     >
-      <View style={[styles.iconCircle, { backgroundColor: theme.colors.surfaceSecondary }]}>
+      <View style={[styles.iconCircle, { backgroundColor: theme.colors.surfaceSecondary, borderColor: theme.colors.border }]}>
         <Ionicons
           name={mealIcons[item.mealType ?? 'snack'] ?? 'restaurant-outline'}
           size={20}
-          color={theme.colors.textSecondary}
+          color={theme.colors.primary}
         />
       </View>
       <View style={styles.content}>
-        <Text style={{ color: theme.colors.textPrimary, fontSize: theme.fontSizes.body, fontWeight: theme.fontWeights.medium }}>
+        <Text
+          style={{
+            color: theme.colors.textPrimary,
+            fontSize: theme.fontSizes.body,
+            fontFamily: theme.textStyles.body.fontFamily,
+            fontWeight: theme.fontWeights.semibold,
+          }}
+        >
           {item.name}
         </Text>
-        <Text style={{ color: theme.colors.textTertiary, fontSize: theme.fontSizes.sm, marginTop: 2 }}>
-          {item.mealType ? item.mealType.charAt(0).toUpperCase() + item.mealType.slice(1) : 'Snack'} · {time}
+        <Text
+          style={{
+            color: theme.colors.textTertiary,
+            fontSize: theme.fontSizes.sm,
+            marginTop: 2,
+            fontFamily: theme.textStyles.body.fontFamily,
+          }}
+        >
+          {item.mealType ? item.mealType.charAt(0).toUpperCase() + item.mealType.slice(1) : 'Snack'} . {time}
         </Text>
       </View>
       <VerdictBadge verdict={item.verdict} />
@@ -57,7 +64,22 @@ export function FoodLogItem({ item, onPress }: FoodLogItemProps) {
 }
 
 const styles = StyleSheet.create({
-  row: { flexDirection: 'row', alignItems: 'center', paddingVertical: 12, borderBottomWidth: StyleSheet.hairlineWidth, gap: 12 },
-  iconCircle: { width: 40, height: 40, borderRadius: 20, justifyContent: 'center', alignItems: 'center' },
-  content: { flex: 1 },
+  row: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 14,
+    borderBottomWidth: 2,
+    gap: 12,
+  },
+  iconCircle: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 2,
+  },
+  content: {
+    flex: 1,
+  },
 });
