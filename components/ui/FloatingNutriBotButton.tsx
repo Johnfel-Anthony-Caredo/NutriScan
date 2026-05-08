@@ -1,10 +1,8 @@
 import React, { useEffect, useRef } from 'react';
-import { TouchableOpacity, Animated, StyleSheet, Platform } from 'react-native';
+import { TouchableOpacity, Animated, StyleSheet, Platform, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { useTheme } from '@/hooks/useTheme';
-import { teal } from '@/constants/theme';
 
 export function FloatingNutriBotButton() {
   const theme = useTheme();
@@ -22,21 +20,21 @@ export function FloatingNutriBotButton() {
 
   return (
     <Animated.View style={[styles.wrapper, { transform: [{ scale }] }]}>
+      {Platform.OS === 'android' && (
+        <View style={[styles.shadowBlock, { backgroundColor: theme.colors.shadow }]} pointerEvents="none" />
+      )}
       <TouchableOpacity
         onPress={() => router.push('/nutribot')}
-        activeOpacity={0.85}
+        activeOpacity={1}
         accessibilityRole="button"
         accessibilityLabel="Open NutriBot assistant"
-        style={[styles.touchable, theme.shadows.lg]}
+        style={[styles.touchable, {
+          backgroundColor: theme.colors.primary,
+          borderColor: theme.colors.border,
+          ...(Platform.OS === 'ios' ? theme.shadows.lg : {}),
+        }]}
       >
-        <LinearGradient
-          colors={[teal[400], teal[600]]}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-          style={styles.gradient}
-        >
-          <Ionicons name="chatbubble-ellipses" size={26} color="#FFFFFF" />
-        </LinearGradient>
+        <Ionicons name="chatbubble-ellipses" size={26} color={theme.colors.textInverse} />
       </TouchableOpacity>
     </Animated.View>
   );
@@ -49,12 +47,20 @@ const styles = StyleSheet.create({
     right: 20,
     zIndex: 100,
   },
-  touchable: { borderRadius: 30 },
-  gradient: {
+  shadowBlock: {
+    position: 'absolute',
+    top: 8,
+    left: 8,
+    right: 0,
+    bottom: 0,
+    borderRadius: 30,
+  },
+  touchable: {
     width: 60,
     height: 60,
     borderRadius: 30,
     justifyContent: 'center',
     alignItems: 'center',
+    borderWidth: 3,
   },
 });
