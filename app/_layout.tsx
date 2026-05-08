@@ -3,7 +3,7 @@ import { ProfileProvider, useProfile } from '@/context/ProfileContext';
 import { Stack, usePathname, useRouter, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import React, { useEffect } from 'react';
-import { useColorScheme } from 'react-native';
+
 import 'react-native-reanimated';
 
 function RootLayoutNav() {
@@ -40,7 +40,7 @@ function RootLayoutNav() {
 
   return (
     <>
-      <StatusBar style={colorScheme === 'dark' ? 'light' : 'dark'} />
+      <StatusBar style="dark" />
       <Stack screenOptions={{ headerShown: false }}>
         <Stack.Screen name="index" />
         <Stack.Screen name="(auth)" />
