@@ -1,10 +1,15 @@
 /**
- * NutriScan Typography Tokens
+ * NutriScan Neo-Brutalist Typography
  *
- * Body text uses 16px minimum for readability — critical for older
- * or medically-sensitive users. Line heights are generous to aid
- * scanning and comprehension.
+ * Space Grotesk for bold headings and UI labels.
+ * DM Sans for clean, readable body text.
  */
+
+export const fontFamilies = {
+  heading: 'SpaceGrotesk',
+  body: 'DMSans',
+  mono: 'SpaceGrotesk',
+} as const;
 
 export const fontSizes = {
   xs: 12,
@@ -14,6 +19,7 @@ export const fontSizes = {
   xl: 22,
   '2xl': 26,
   '3xl': 32,
+  '4xl': 40,
 } as const;
 
 export const fontWeights = {
@@ -31,54 +37,66 @@ export const lineHeights = {
   xl: 30,
   '2xl': 34,
   '3xl': 40,
+  '4xl': 44,
 } as const;
 
-/**
- * Pre-composed text styles for quick usage.
- * Use these via `theme.textStyles.heading` etc.
- */
 export const textStyles = {
-  h1: {
+  displayXl: {
+    fontFamily: fontFamilies.heading,
+    fontSize: fontSizes['4xl'],
+    lineHeight: lineHeights['4xl'],
+    fontWeight: fontWeights.bold,
+  },
+  displayMd: {
+    fontFamily: fontFamilies.heading,
     fontSize: fontSizes['3xl'],
     lineHeight: lineHeights['3xl'],
     fontWeight: fontWeights.bold,
   },
-  h2: {
+  h1: {
+    fontFamily: fontFamilies.heading,
     fontSize: fontSizes['2xl'],
     lineHeight: lineHeights['2xl'],
     fontWeight: fontWeights.bold,
   },
-  h3: {
+  h2: {
+    fontFamily: fontFamilies.heading,
     fontSize: fontSizes.xl,
     lineHeight: lineHeights.xl,
-    fontWeight: fontWeights.semibold,
+    fontWeight: fontWeights.bold,
   },
-  subtitle: {
+  h3: {
+    fontFamily: fontFamilies.heading,
     fontSize: fontSizes.lg,
     lineHeight: lineHeights.lg,
     fontWeight: fontWeights.semibold,
   },
   body: {
+    fontFamily: fontFamilies.body,
     fontSize: fontSizes.body,
     lineHeight: lineHeights.body,
     fontWeight: fontWeights.regular,
   },
   bodyMedium: {
+    fontFamily: fontFamilies.body,
     fontSize: fontSizes.body,
     lineHeight: lineHeights.body,
     fontWeight: fontWeights.medium,
   },
   caption: {
+    fontFamily: fontFamilies.body,
     fontSize: fontSizes.sm,
     lineHeight: lineHeights.sm,
     fontWeight: fontWeights.regular,
   },
   label: {
+    fontFamily: fontFamilies.heading,
     fontSize: fontSizes.sm,
     lineHeight: lineHeights.sm,
-    fontWeight: fontWeights.medium,
+    fontWeight: fontWeights.bold,
   },
   small: {
+    fontFamily: fontFamilies.body,
     fontSize: fontSizes.xs,
     lineHeight: lineHeights.xs,
     fontWeight: fontWeights.regular,
