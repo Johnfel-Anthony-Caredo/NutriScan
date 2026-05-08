@@ -1,17 +1,9 @@
-/**
- * SectionHeader — section title with optional right-side action link.
- *
- * Used throughout the app for content sections:
- *   <SectionHeader title="Today's Log" action="See all" onAction={…} />
- */
-
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { useTheme } from '@/hooks/useTheme';
 
 interface SectionHeaderProps {
   title: string;
-  /** Right-side action label (e.g., "See all") */
   action?: string;
   onAction?: () => void;
 }
@@ -27,7 +19,8 @@ export function SectionHeader({ title, action, onAction }: SectionHeaderProps) {
           {
             color: theme.colors.textPrimary,
             fontSize: theme.fontSizes.lg,
-            fontWeight: theme.fontWeights.semibold,
+            fontFamily: theme.textStyles.h2.fontFamily,
+            fontWeight: theme.fontWeights.bold,
           },
         ]}
       >
@@ -46,7 +39,8 @@ export function SectionHeader({ title, action, onAction }: SectionHeaderProps) {
               {
                 color: theme.colors.primary,
                 fontSize: theme.fontSizes.sm,
-                fontWeight: theme.fontWeights.medium,
+                fontFamily: theme.textStyles.label.fontFamily,
+                fontWeight: theme.fontWeights.bold,
               },
             ]}
           >
@@ -67,8 +61,11 @@ const styles = StyleSheet.create({
   },
   title: {
     flex: 1,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
   },
   action: {
     marginLeft: 12,
+    letterSpacing: 0.3,
   },
 });
