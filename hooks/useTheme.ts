@@ -1,15 +1,15 @@
 /**
- * useTheme — resolves light or dark theme based on device color scheme.
+ * useTheme — returns the single light-mode theme.
+ *
+ * Neo-brutalist redesign is light-mode only for maximum contrast.
  *
  * Usage:
  *   const theme = useTheme();
  *   <View style={{ backgroundColor: theme.colors.background }}>
  */
 
-import { useColorScheme } from 'react-native';
-import { lightTheme, darkTheme, type AppTheme } from '@/constants/theme';
+import { theme, type AppTheme } from '@/constants/theme';
 
 export function useTheme(): AppTheme {
-  const scheme = useColorScheme();
-  return scheme === 'dark' ? darkTheme : lightTheme;
+  return theme;
 }
