@@ -1,16 +1,12 @@
-/**
- * SecondaryButton — outline variant of PrimaryButton.
- *
- * Same accessible 52px height, but with a border instead
- * of a filled background.
- */
-
-import React from 'react';
+import React, { useRef } from 'react';
 import {
   TouchableOpacity,
   Text,
   ActivityIndicator,
+  Animated,
   StyleSheet,
+  Platform,
+  View,
   type ViewStyle,
 } from 'react-native';
 import { useTheme } from '@/hooks/useTheme';
@@ -34,59 +30,90 @@ export function SecondaryButton({
 }: SecondaryButtonProps) {
   const theme = useTheme();
   const isDisabled = disabled || loading;
+  const scale = useRef(new Animated.Value(1)).current;
+
+  const handlePressIn = () => {
+    Animated.spring(scale, {
+      toValue: 0.96,
+      tension: 150,
+      friction: 6,
+      useNativeDriver: true,
+    }).start();
+  };
+
+  const handlePressOut = () => {
+    Animated.spring(scale, {
+      toValue: 1,
+      tension: 100,
+      friction: 7,
+      useNativeDriver: true,
+    }).start();
+  };
 
   return (
-    <TouchableOpacity
-      onPress={onPress}
-      disabled={isDisabled}
-      activeOpacity={0.7}
-      accessibilityRole="button"
-      accessibilityLabel={label}
-      style={[
-        styles.button,
-        {
-          borderColor: isDisabled
-            ? theme.colors.border
-            : theme.colors.primary,
-          borderRadius: theme.radius.md,
-          opacity: isDisabled ? 0.5 : 1,
-        },
-        style,
-      ]}
-    >
-      {loading ? (
-        <ActivityIndicator color={theme.colors.primary} size="small" />
-      ) : (
-        <>
-          {icon && <>{icon}</>}
-          <Text
-            style={[
-              styles.label,
-              {
-                color: theme.colors.primary,
-                fontSize: theme.fontSizes.body,
-                fontWeight: theme.fontWeights.semibold,
-                marginLeft: icon ? 8 : 0,
-              },
-            ]}
-          >
-            {label}
-          </Text>
-        </>
+    <Animated.View style={[{ transform: [{ scale }] }, style]}>
+      {Platform.OS === 'android' && !isDisabled && (
+        <View style={[styles.shadowBlock, { backgroundColor: theme.colors.shadow, borderRadius: theme.radius.md }]} pointerEvents="none" />
       )}
-    </TouchableOpacity>
+      <TouchableOpacity
+        onPress={onPress}
+        onPressIn={handlePressIn}
+        onPressOut={handlePressOut}
+        disabled={isDisabled}
+        activeOpacity={1}
+        accessibilityRole="button"
+        accessibilityLabel={label}
+        style={[
+          styles.button,
+          {
+            backgroundColor: theme.colors.surface,
+            borderRadius: theme.radius.md,
+            borderColor: theme.colors.border,
+            opacity: isDisabled ? 0.5 : 1,
+          },
+        ]}
+      >
+        {loading ? (
+          <ActivityIndicator color={theme.colors.primary} size="small" />
+        ) : (
+          <>
+            {icon && <>{icon}</>}
+            <Text
+              style={[
+                styles.label,
+                {
+                  color: theme.colors.textPrimary,
+                  fontSize: theme.fontSizes.body,
+                  fontFamily: theme.textStyles.label.fontFamily,
+                  fontWeight: theme.fontWeights.bold,
+                  marginLeft: icon ? 8 : 0,
+                },
+              ]}
+            >
+              {label}
+            </Text>
+          </>
+        )}
+      </TouchableOpacity>
+    </Animated.View>
   );
 }
 
 const styles = StyleSheet.create({
+  shadowBlock: {
+    position: 'absolute',
+    top: 5,
+    left: 5,
+    right: 0,
+    bottom: 0,
+  },
   button: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    height: 52,
+    height: 54,
     paddingHorizontal: 24,
-    borderWidth: 1.5,
-    backgroundColor: 'transparent',
+    borderWidth: 3,
   },
   label: {
     letterSpacing: 0.3,
