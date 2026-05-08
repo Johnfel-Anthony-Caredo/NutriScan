@@ -41,6 +41,7 @@ export function TakeawaysCard({ takeaways }: TakeawaysCardProps) {
             color: theme.colors.textPrimary,
             fontSize: theme.fontSizes.body,
             fontWeight: theme.fontWeights.semibold,
+            fontFamily: theme.fontFamilies.heading,
             marginLeft: 10,
           }}
         >
@@ -50,12 +51,13 @@ export function TakeawaysCard({ takeaways }: TakeawaysCardProps) {
 
       {/* List */}
       {takeaways.map((point, i) => (
-        <View key={i} style={[styles.row, i < takeaways.length - 1 && { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: theme.colors.border }]}>
+        <View key={i} style={[styles.row, i < takeaways.length - 1 && { borderBottomWidth: 2, borderBottomColor: theme.colors.border }]}>
           <Ionicons name="checkmark-circle" size={18} color={theme.colors.safe.icon} style={{ marginTop: 1 }} />
           <Text
             style={{
               color: theme.colors.textPrimary,
               fontSize: theme.fontSizes.sm,
+              fontFamily: theme.fontFamilies.body,
               lineHeight: theme.lineHeights.sm,
               marginLeft: 10,
               flex: 1,

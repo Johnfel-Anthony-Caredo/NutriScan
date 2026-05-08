@@ -37,7 +37,7 @@ export default function ConfirmationScreen() {
         {/* ── Success Header ──────────────── */}
         <View style={styles.successHeader}>
           <View
-            style={[styles.successCircle, { backgroundColor: theme.colors.safe.bg }]}
+            style={[styles.successCircle, { backgroundColor: theme.colors.safe.bg, borderColor: theme.colors.border }]}
           >
             <Ionicons name="checkmark-circle" size={48} color={theme.colors.safe.icon} />
           </View>
@@ -48,6 +48,7 @@ export default function ConfirmationScreen() {
               fontWeight: theme.fontWeights.bold,
               textAlign: 'center',
               marginTop: 16,
+              fontFamily: theme.fontFamilies.heading,
             }}
           >
             You're all set!
@@ -60,6 +61,7 @@ export default function ConfirmationScreen() {
               textAlign: 'center',
               marginTop: 6,
               maxWidth: 300,
+              fontFamily: theme.fontFamilies.body,
             }}
           >
             We've personalized NutriScan based on your health profile. Here's what we'll watch for you:
@@ -77,6 +79,7 @@ export default function ConfirmationScreen() {
               {
                 backgroundColor: theme.colors.primaryLight,
                 borderRadius: theme.radius.md,
+                borderColor: theme.colors.border,
               },
             ]}
           >
@@ -88,6 +91,7 @@ export default function ConfirmationScreen() {
                   fontSize: theme.fontSizes.sm,
                   fontWeight: theme.fontWeights.semibold,
                   marginLeft: 6,
+                  fontFamily: theme.fontFamilies.heading,
                 }}
               >
                 Your note to NutriBot
@@ -100,6 +104,7 @@ export default function ConfirmationScreen() {
                 lineHeight: theme.lineHeights.sm,
                 marginTop: 6,
                 fontStyle: 'italic',
+                fontFamily: theme.fontFamilies.body,
               }}
             >
               "{profile.nutriBotNote}"
@@ -128,6 +133,7 @@ export default function ConfirmationScreen() {
             textAlign: 'center',
             marginTop: 16,
             lineHeight: theme.lineHeights.sm,
+            fontFamily: theme.fontFamilies.body,
           }}
         >
           You can update your health profile anytime{'\n'}from the Profile tab.
@@ -148,10 +154,12 @@ const styles = StyleSheet.create({
     borderRadius: 44,
     justifyContent: 'center',
     alignItems: 'center',
+    borderWidth: 3,
   },
   noteCard: {
     padding: 16,
     marginTop: 16,
+    borderWidth: 3,
   },
   noteHeader: {
     flexDirection: 'row',

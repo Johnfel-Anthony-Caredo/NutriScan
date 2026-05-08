@@ -165,13 +165,13 @@ export default function ScanPreviewScreen() {
       <AppScreen>
         <TopBar title="Analyzing..." />
         <View style={styles.analyzingContainer}>
-          <View style={[styles.analyzingIcon, { backgroundColor: theme.colors.primaryLight }]}>
+          <View style={[styles.analyzingIcon, { backgroundColor: theme.colors.primaryLight, borderColor: theme.colors.border }]}>
             <Ionicons name="scan" size={40} color={theme.colors.primary} />
           </View>
-          <Text style={{ color: theme.colors.textPrimary, fontSize: theme.fontSizes.xl, fontWeight: theme.fontWeights.bold, marginTop: 20, textAlign: 'center' }}>
+          <Text style={{ color: theme.colors.textPrimary, fontSize: theme.fontSizes.xl, fontWeight: theme.fontWeights.bold, fontFamily: theme.fontFamilies.heading, marginTop: 20, textAlign: 'center' }}>
             {barcodeLoading ? 'Looking up product...' : 'Analyzing your food...'}
           </Text>
-          <Text style={{ color: theme.colors.textSecondary, fontSize: theme.fontSizes.body, marginTop: 8, textAlign: 'center' }}>
+          <Text style={{ color: theme.colors.textSecondary, fontSize: theme.fontSizes.body, fontFamily: theme.fontFamilies.body, marginTop: 8, textAlign: 'center' }}>
             {barcodeLoading
               ? 'Searching Open Food Facts database'
               : 'Checking nutrients against your health profile'}
@@ -189,17 +189,17 @@ export default function ScanPreviewScreen() {
       <TopBar title="Confirm Food" showBack />
       <View style={{ paddingHorizontal: 20, paddingTop: 12, paddingBottom: 40 }}>
         {/* Captured image — show the actual photo for camera captures */}
-        <View style={[styles.imagePlaceholder, { backgroundColor: theme.colors.surfaceSecondary, borderRadius: theme.radius.lg, overflow: 'hidden' }]}>
+        <View style={[styles.imagePlaceholder, { backgroundColor: theme.colors.surfaceSecondary, borderColor: theme.colors.border, borderRadius: theme.radius.lg, overflow: 'hidden' }]}>
           {source === 'photo' && uriParam ? (
             <Image source={{ uri: uriParam }} style={styles.capturedImage} contentFit="cover" />
           ) : source === 'barcode' ? (
             <>
               <Ionicons name="barcode-outline" size={56} color={theme.colors.textTertiary} />
-              <Text style={{ color: theme.colors.textTertiary, fontSize: theme.fontSizes.sm, marginTop: 8 }}>
+              <Text style={{ color: theme.colors.textTertiary, fontSize: theme.fontSizes.sm, fontFamily: theme.fontFamilies.body, marginTop: 8 }}>
                 Barcode: {dataParam || 'N/A'}
               </Text>
               {barcodeData?.imageUrl && (
-                <Text style={{ color: theme.colors.textTertiary, fontSize: theme.fontSizes.xs, marginTop: 4 }}>
+                <Text style={{ color: theme.colors.textTertiary, fontSize: theme.fontSizes.xs, fontFamily: theme.fontFamilies.body, marginTop: 4 }}>
                   Product image available
                 </Text>
               )}
@@ -207,7 +207,7 @@ export default function ScanPreviewScreen() {
           ) : (
             <>
               <Ionicons name="image-outline" size={56} color={theme.colors.textTertiary} />
-              <Text style={{ color: theme.colors.textTertiary, fontSize: theme.fontSizes.sm, marginTop: 8 }}>
+              <Text style={{ color: theme.colors.textTertiary, fontSize: theme.fontSizes.sm, fontFamily: theme.fontFamilies.body, marginTop: 8 }}>
                 Captured image preview
               </Text>
             </>
@@ -216,26 +216,26 @@ export default function ScanPreviewScreen() {
 
         {/* Error message */}
         {error && (
-          <View style={[styles.errorBox, { backgroundColor: theme.colors.avoid.bg, borderColor: theme.colors.avoid.border, borderRadius: theme.radius.md, borderWidth: 1 }]}>
-            <Text style={{ color: theme.colors.avoid.text, fontSize: theme.fontSizes.sm }}>
+          <View style={[styles.errorBox, { backgroundColor: theme.colors.avoid.bg, borderColor: theme.colors.avoid.border, borderRadius: theme.radius.md }]}>
+            <Text style={{ color: theme.colors.avoid.text, fontSize: theme.fontSizes.sm, fontFamily: theme.fontFamilies.body }}>
               {error}
             </Text>
           </View>
         )}
 
         {/* Editable food name */}
-        <Text style={{ color: theme.colors.textSecondary, fontSize: theme.fontSizes.sm, fontWeight: theme.fontWeights.medium, marginTop: 20, marginBottom: 8 }}>
+        <Text style={{ color: theme.colors.textSecondary, fontSize: theme.fontSizes.sm, fontWeight: theme.fontWeights.medium, marginTop: 20, marginBottom: 8, fontFamily: theme.fontFamilies.body }}>
           Food Name (tap to edit)
         </Text>
         <TextInput
           value={foodName}
           onChangeText={setFoodName}
-          style={[styles.nameInput, { backgroundColor: theme.colors.surfaceSecondary, borderColor: theme.colors.border, borderRadius: theme.radius.md, color: theme.colors.textPrimary, fontSize: theme.fontSizes.lg, fontWeight: theme.fontWeights.semibold }]}
+          style={[styles.nameInput, { backgroundColor: theme.colors.surfaceSecondary, borderColor: theme.colors.border, borderRadius: theme.radius.md, color: theme.colors.textPrimary, fontSize: theme.fontSizes.lg, fontWeight: theme.fontWeights.semibold, fontFamily: theme.fontFamilies.body }]}
           accessibilityLabel="Food name"
         />
 
         {/* Meal type selector */}
-        <Text style={{ color: theme.colors.textSecondary, fontSize: theme.fontSizes.sm, fontWeight: theme.fontWeights.medium, marginTop: 20, marginBottom: 10 }}>
+        <Text style={{ color: theme.colors.textSecondary, fontSize: theme.fontSizes.sm, fontWeight: theme.fontWeights.medium, marginTop: 20, marginBottom: 10, fontFamily: theme.fontFamilies.body }}>
           Meal Type
         </Text>
         <View style={styles.mealRow}>
@@ -243,11 +243,11 @@ export default function ScanPreviewScreen() {
             <TouchableOpacity
               key={m.key}
               onPress={() => setMealType(m.key)}
-              style={[styles.mealChip, { backgroundColor: mealType === m.key ? theme.colors.primaryLight : theme.colors.surface, borderColor: mealType === m.key ? theme.colors.primary : theme.colors.border, borderRadius: theme.radius.sm }]}
+              style={[styles.mealChip, { backgroundColor: mealType === m.key ? theme.colors.primaryLight : theme.colors.surface, borderColor: theme.colors.border, borderRadius: theme.radius.sm }]}
               accessibilityRole="button"
             >
               <Ionicons name={m.icon} size={16} color={mealType === m.key ? theme.colors.primary : theme.colors.textSecondary} />
-              <Text style={{ color: mealType === m.key ? theme.colors.primary : theme.colors.textSecondary, fontSize: theme.fontSizes.sm, fontWeight: theme.fontWeights.medium, marginLeft: 4 }}>
+              <Text style={{ color: mealType === m.key ? theme.colors.primary : theme.colors.textSecondary, fontSize: theme.fontSizes.sm, fontWeight: theme.fontWeights.medium, fontFamily: theme.fontFamilies.body, marginLeft: 4 }}>
                 {m.label}
               </Text>
             </TouchableOpacity>
@@ -270,12 +270,12 @@ export default function ScanPreviewScreen() {
 }
 
 const styles = StyleSheet.create({
-  imagePlaceholder: { height: 220, justifyContent: 'center', alignItems: 'center', overflow: 'hidden' },
+  imagePlaceholder: { height: 220, justifyContent: 'center', alignItems: 'center', overflow: 'hidden', borderWidth: 3 },
   capturedImage: { width: '100%', height: '100%' },
-  nameInput: { borderWidth: 1, paddingHorizontal: 16, paddingVertical: 14 },
+  nameInput: { borderWidth: 3, paddingHorizontal: 16, paddingVertical: 14 },
   mealRow: { flexDirection: 'row', gap: 8, flexWrap: 'wrap' },
-  mealChip: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 14, paddingVertical: 10, borderWidth: 1 },
+  mealChip: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 14, paddingVertical: 10, borderWidth: 3 },
   analyzingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 20 },
-  analyzingIcon: { width: 88, height: 88, borderRadius: 44, justifyContent: 'center', alignItems: 'center' },
-  errorBox: { marginTop: 12, padding: 12 },
+  analyzingIcon: { width: 88, height: 88, borderRadius: 44, justifyContent: 'center', alignItems: 'center', borderWidth: 3 },
+  errorBox: { marginTop: 12, padding: 12, borderWidth: 3 },
 });

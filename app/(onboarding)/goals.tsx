@@ -60,6 +60,7 @@ export default function GoalsScreen() {
             fontSize: theme.fontSizes.xl,
             fontWeight: theme.fontWeights.bold,
             marginBottom: 6,
+            fontFamily: theme.fontFamilies.heading,
           }}
         >
           What matters most to you?
@@ -70,6 +71,7 @@ export default function GoalsScreen() {
             fontSize: theme.fontSizes.body,
             lineHeight: theme.lineHeights.body,
             marginBottom: 24,
+            fontFamily: theme.fontFamilies.body,
           }}
         >
           Pick the goals that feel important right now. You can always change these later.
@@ -108,6 +110,7 @@ export default function GoalsScreen() {
             textAlign: 'center',
             marginTop: 16,
             lineHeight: theme.lineHeights.sm,
+            fontFamily: theme.fontFamilies.body,
           }}
         >
           Don't worry — we won't judge your choices.{'\n'}These goals help us focus on what matters to you.

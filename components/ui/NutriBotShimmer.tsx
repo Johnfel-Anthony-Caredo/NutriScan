@@ -31,7 +31,7 @@ export function NutriBotShimmer() {
 
   return (
     <View style={[styles.row, { paddingHorizontal: 16, paddingRight: 48 }]}>
-      <View style={[styles.avatar, { backgroundColor: theme.colors.primaryLight }]}>
+      <View style={[styles.avatar, { backgroundColor: theme.colors.primaryLight, borderColor: theme.colors.border }]}>
         <Ionicons name="chatbubble-ellipses" size={14} color={theme.colors.primary} />
       </View>
       <View
@@ -39,7 +39,7 @@ export function NutriBotShimmer() {
           styles.bubble,
           {
             backgroundColor: theme.colors.surface,
-            borderColor: theme.colors.borderLight,
+            borderColor: theme.colors.border,
             borderRadius: theme.radius.lg,
           },
         ]}
@@ -56,8 +56,8 @@ export function NutriBotShimmer() {
 
 const styles = StyleSheet.create({
   row: { flexDirection: 'row', alignItems: 'flex-end', marginBottom: 12 },
-  avatar: { width: 28, height: 28, borderRadius: 14, justifyContent: 'center', alignItems: 'center', marginRight: 8, marginBottom: 4 },
-  bubble: { padding: 14, borderWidth: StyleSheet.hairlineWidth, width: '75%' },
+  avatar: { width: 28, height: 28, borderRadius: 14, justifyContent: 'center', alignItems: 'center', marginRight: 8, marginBottom: 4, borderWidth: 2 },
+  bubble: { padding: 14, borderWidth: 3, width: '75%' },
   shimmerWrap: {
     gap: 10,
     width: '100%',

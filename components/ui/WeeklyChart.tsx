@@ -40,7 +40,7 @@ export function WeeklyChart({ data }: WeeklyChartProps) {
                   <View style={[styles.segment, { height: 4, backgroundColor: theme.colors.surfaceSecondary, borderRadius: 2 }]} />
                 )}
               </View>
-              <Text style={{ color: theme.colors.textTertiary, fontSize: theme.fontSizes.xs, marginTop: 6 }}>
+              <Text style={{ color: theme.colors.textTertiary, fontSize: theme.fontSizes.xs, fontFamily: theme.fontFamilies.body, marginTop: 6 }}>
                 {day.day}
               </Text>
             </View>
@@ -56,8 +56,8 @@ export function WeeklyChart({ data }: WeeklyChartProps) {
           { label: 'Avoid', color: theme.colors.avoid.icon },
         ].map((l) => (
           <View key={l.label} style={styles.legendItem}>
-            <View style={[styles.legendDot, { backgroundColor: l.color }]} />
-            <Text style={{ color: theme.colors.textTertiary, fontSize: theme.fontSizes.xs }}>{l.label}</Text>
+            <View style={[styles.legendDot, { backgroundColor: l.color, borderColor: theme.colors.border }]} />
+            <Text style={{ color: theme.colors.textTertiary, fontSize: theme.fontSizes.xs, fontFamily: theme.fontFamilies.body }}>{l.label}</Text>
           </View>
         ))}
       </View>
@@ -73,5 +73,5 @@ const styles = StyleSheet.create({
   segment: { width: 20 },
   legend: { flexDirection: 'row', justifyContent: 'center', marginTop: 12, gap: 16 },
   legendItem: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  legendDot: { width: 8, height: 8, borderRadius: 4 },
+  legendDot: { width: 10, height: 10, borderRadius: 5, borderWidth: 2 },
 });

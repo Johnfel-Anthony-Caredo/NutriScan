@@ -35,6 +35,7 @@ export function ArticleHero({ imageUrl, categoryLabel, height = 220 }: ArticleHe
         {
           height,
           backgroundColor: theme.colors.surfaceSecondary,
+          borderColor: theme.colors.border,
         },
       ]}
     >
@@ -59,7 +60,7 @@ export function ArticleHero({ imageUrl, categoryLabel, height = 220 }: ArticleHe
       ) : (
         /* Fallback */
         <View style={styles.fallback}>
-          <View style={[styles.fallbackIconWrap, { backgroundColor: theme.colors.primaryLight }]}>
+          <View style={[styles.fallbackIconWrap, { backgroundColor: theme.colors.primaryLight, borderColor: theme.colors.border }]}>
             <Ionicons name="newspaper-outline" size={40} color={theme.colors.primary} />
           </View>
         </View>
@@ -80,7 +81,7 @@ export function ArticleHero({ imageUrl, categoryLabel, height = 220 }: ArticleHe
           ]}
         >
           <Text
-            style={[styles.categoryText, { color: theme.colors.textInverse, fontSize: theme.fontSizes.xs }]}
+            style={[styles.categoryText, { color: theme.colors.textInverse, fontSize: theme.fontSizes.xs, fontFamily: theme.fontFamilies.heading }]}
             numberOfLines={1}
           >
             {categoryLabel}
@@ -97,6 +98,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     overflow: 'hidden',
     position: 'relative',
+    borderWidth: 3,
   },
   fallback: {
     justifyContent: 'center',
@@ -110,6 +112,7 @@ const styles = StyleSheet.create({
     borderRadius: 40,
     justifyContent: 'center',
     alignItems: 'center',
+    borderWidth: 2,
   },
   overlay: {
     ...StyleSheet.absoluteFillObject,

@@ -60,13 +60,13 @@ export default function AuthCallbackScreen() {
     return (
       <AppScreen>
         <View style={styles.centered}>
-          <View style={[styles.iconCircle, { backgroundColor: theme.colors.safe.bg }]}>
+          <View style={[styles.iconCircle, { backgroundColor: theme.colors.safe.bg, borderColor: theme.colors.border }]}>
             <Ionicons name="checkmark-circle" size={48} color={theme.colors.safe.icon} />
           </View>
-          <Text style={{ color: theme.colors.textPrimary, fontSize: theme.fontSizes['2xl'], fontWeight: theme.fontWeights.bold, textAlign: 'center', marginTop: 20 }}>
+          <Text style={{ color: theme.colors.textPrimary, fontSize: theme.fontSizes['2xl'], fontWeight: theme.fontWeights.bold, textAlign: 'center', marginTop: 20, fontFamily: theme.fontFamilies.heading }}>
             Password Updated
           </Text>
-          <Text style={{ color: theme.colors.textSecondary, fontSize: theme.fontSizes.body, textAlign: 'center', marginTop: 8 }}>
+          <Text style={{ color: theme.colors.textSecondary, fontSize: theme.fontSizes.body, textAlign: 'center', marginTop: 8, fontFamily: theme.fontFamilies.body }}>
             Your password has been changed successfully.
           </Text>
           <PrimaryButton label="Sign In" onPress={() => router.replace('/(auth)/login')} style={{ marginTop: 28 }} />
@@ -79,7 +79,7 @@ export default function AuthCallbackScreen() {
     return (
       <AppScreen>
         <View style={styles.centered}>
-          <Text style={{ color: theme.colors.textSecondary, fontSize: theme.fontSizes.body, textAlign: 'center' }}>
+          <Text style={{ color: theme.colors.textSecondary, fontSize: theme.fontSizes.body, textAlign: 'center', fontFamily: theme.fontFamilies.body }}>
             Processing authentication...
           </Text>
         </View>
@@ -90,17 +90,17 @@ export default function AuthCallbackScreen() {
   return (
     <AppScreen>
       <View style={styles.centered}>
-        <View style={[styles.iconCircle, { backgroundColor: theme.colors.primaryLight }]}>
+        <View style={[styles.iconCircle, { backgroundColor: theme.colors.primaryLight, borderColor: theme.colors.border }]}>
           <Ionicons name="lock-closed" size={36} color={theme.colors.primary} />
         </View>
-        <Text style={{ color: theme.colors.textPrimary, fontSize: theme.fontSizes.xl, fontWeight: theme.fontWeights.bold, textAlign: 'center', marginTop: 16 }}>
+        <Text style={{ color: theme.colors.textPrimary, fontSize: theme.fontSizes.xl, fontWeight: theme.fontWeights.bold, textAlign: 'center', marginTop: 16, fontFamily: theme.fontFamilies.heading }}>
           Set New Password
         </Text>
-        <Text style={{ color: theme.colors.textSecondary, fontSize: theme.fontSizes.body, textAlign: 'center', marginTop: 8, marginBottom: 24 }}>
+        <Text style={{ color: theme.colors.textSecondary, fontSize: theme.fontSizes.body, textAlign: 'center', marginTop: 8, marginBottom: 24, fontFamily: theme.fontFamilies.body }}>
           Enter your new password below.
         </Text>
 
-        <View style={[styles.inputRow, { backgroundColor: theme.colors.surfaceSecondary, borderColor: error ? theme.colors.avoid.icon : theme.colors.border, borderWidth: 1.5, borderRadius: theme.radius.md, paddingHorizontal: 16, paddingVertical: 14, width: '100%' }]}>
+        <View style={[styles.inputRow, { backgroundColor: theme.colors.surfaceSecondary, borderColor: error ? theme.colors.avoid.icon : theme.colors.border, borderWidth: 3, borderRadius: theme.radius.md, paddingHorizontal: 16, paddingVertical: 14, width: '100%' }]}>
           <Ionicons name="lock-closed-outline" size={18} color={theme.colors.textTertiary} style={{ marginRight: 10 }} />
           <TextInput
             value={newPassword}
@@ -108,13 +108,13 @@ export default function AuthCallbackScreen() {
             placeholder="New password (min 6 characters)"
             placeholderTextColor={theme.colors.textTertiary}
             secureTextEntry={!showPassword}
-            style={{ flex: 1, fontSize: theme.fontSizes.body, color: theme.colors.textPrimary }}
+            style={{ flex: 1, fontSize: theme.fontSizes.body, fontFamily: theme.fontFamilies.body, color: theme.colors.textPrimary }}
           />
           <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
             <Ionicons name={showPassword ? 'eye-off-outline' : 'eye-outline'} size={20} color={theme.colors.textTertiary} />
           </TouchableOpacity>
         </View>
-        {error ? <Text style={{ color: theme.colors.avoid.text, fontSize: theme.fontSizes.sm, marginTop: 4 }}>{error}</Text> : null}
+        {error ? <Text style={{ color: theme.colors.avoid.text, fontSize: theme.fontSizes.sm, fontFamily: theme.fontFamilies.body, marginTop: 4 }}>{error}</Text> : null}
 
         <PrimaryButton label="Update Password" onPress={handleUpdatePassword} style={{ marginTop: 24 }} loading={isSubmitting} />
       </View>
@@ -124,6 +124,6 @@ export default function AuthCallbackScreen() {
 
 const styles = StyleSheet.create({
   centered: { flex: 1, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 20 },
-  iconCircle: { width: 88, height: 88, borderRadius: 44, justifyContent: 'center', alignItems: 'center' },
+  iconCircle: { width: 88, height: 88, borderRadius: 44, justifyContent: 'center', alignItems: 'center', borderWidth: 3 },
   inputRow: { flexDirection: 'row', alignItems: 'center' },
 });

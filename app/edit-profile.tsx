@@ -153,7 +153,7 @@ export default function EditProfileScreen() {
       <Text style={[styles.fieldLabel, { color: theme.colors.textSecondary, fontSize: theme.fontSizes.sm }]}>
         {label}
       </Text>
-      <View style={[styles.inputRow, { backgroundColor: theme.colors.surfaceSecondary, borderColor: focusedField === label ? theme.colors.primary : theme.colors.borderLight, borderRadius: theme.radius.lg }]}>
+      <View style={[styles.inputRow, { backgroundColor: theme.colors.surfaceSecondary, borderColor: focusedField === label ? theme.colors.primary : theme.colors.border, borderRadius: theme.radius.md }]}>
         <Ionicons name={label === 'Name' ? 'person-outline' : label === 'Age' ? 'time-outline' : label === 'Height' ? 'body-outline' : 'barbell-outline'} size={18} color={focusedField === label ? theme.colors.primary : theme.colors.textTertiary} style={styles.inputIcon} />
         <TextInput
           value={value}
@@ -168,7 +168,7 @@ export default function EditProfileScreen() {
           placeholderTextColor={theme.colors.textTertiary}
           keyboardType={options?.keyboardType ?? 'default'}
           maxLength={options?.maxLength ?? 50}
-          style={[styles.input, { color: theme.colors.textPrimary, fontSize: theme.fontSizes.body }]}
+          style={[styles.input, { color: theme.colors.textPrimary, fontSize: theme.fontSizes.body, fontFamily: theme.fontFamilies.body }]}
           autoCapitalize={label === 'Name' ? 'words' : 'none'}
         />
         {options?.suffix && (
@@ -186,21 +186,21 @@ export default function EditProfileScreen() {
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={styles.keyboardWrap}>
       <View style={styles.container}>
         <View style={styles.avatarSection}>
-          <View style={[styles.avatarRing, { backgroundColor: theme.colors.primaryLight, borderColor: theme.colors.borderLight }]}>
+          <View style={[styles.avatarRing, { backgroundColor: theme.colors.primaryLight, borderColor: theme.colors.border }]}>
             <View style={[styles.avatar, { backgroundColor: theme.colors.surfaceSecondary }]}>
               {avatarUri ? <Image source={{ uri: avatarUri }} style={styles.avatarImage} /> : <Ionicons name="person" size={40} color={theme.colors.primary} />}
             </View>
           </View>
-          <Text style={{ color: theme.colors.textPrimary, fontSize: theme.fontSizes.xl, fontWeight: theme.fontWeights.bold, marginTop: 14 }}>
+          <Text style={{ color: theme.colors.textPrimary, fontSize: theme.fontSizes.xl, fontWeight: theme.fontWeights.bold, fontFamily: theme.fontFamilies.heading, marginTop: 14 }}>
             Personal Information
           </Text>
-          <Text style={{ color: theme.colors.textSecondary, fontSize: theme.fontSizes.sm, marginTop: 6, textAlign: 'center', lineHeight: theme.lineHeights.sm }}>
+          <Text style={{ color: theme.colors.textSecondary, fontSize: theme.fontSizes.sm, fontFamily: theme.fontFamilies.body, marginTop: 6, textAlign: 'center', lineHeight: theme.lineHeights.sm }}>
             Update the details used across your health profile.
           </Text>
         </View>
 
         <Card style={styles.formCard}>
-          <Text style={{ color: theme.colors.textPrimary, fontSize: theme.fontSizes.body, fontWeight: theme.fontWeights.semibold, marginBottom: 18 }}>Basic details</Text>
+          <Text style={{ color: theme.colors.textPrimary, fontSize: theme.fontSizes.body, fontWeight: theme.fontWeights.semibold, fontFamily: theme.fontFamilies.heading, marginBottom: 18 }}>Basic details</Text>
           {renderField('Name', name, setName, { placeholder: 'Your full name' })}
           {renderField('Age', age, setAge, { placeholder: 'e.g. 28', keyboardType: 'numeric', suffix: 'years', maxLength: 3 })}
           {renderField('Height', height, setHeight, { placeholder: 'e.g. 170', keyboardType: 'decimal-pad', suffix: 'cm', maxLength: 5 })}
@@ -226,7 +226,7 @@ export default function EditProfileScreen() {
                       styles.bloodTypeChip,
                       {
                         backgroundColor: isSelected ? theme.colors.primary : theme.colors.surfaceSecondary,
-                        borderColor: isSelected ? theme.colors.primary : theme.colors.borderLight,
+                        borderColor: isSelected ? theme.colors.primary : theme.colors.border,
                         borderRadius: theme.radius.md,
                       },
                     ]}
@@ -235,6 +235,7 @@ export default function EditProfileScreen() {
                     <Text style={{
                       color: isSelected ? theme.colors.textInverse : theme.colors.textPrimary,
                       fontSize: theme.fontSizes.sm,
+                      fontFamily: theme.fontFamilies.body,
                       fontWeight: isSelected ? theme.fontWeights.semibold : theme.fontWeights.regular,
                     }}>
                       {bt}
@@ -248,18 +249,18 @@ export default function EditProfileScreen() {
 
         {/* ── Feedback ─────────────────────── */}
         {saveError ? (
-          <View style={[styles.feedbackRow, { backgroundColor: theme.colors.avoid.bg, borderColor: theme.colors.avoid.border, borderRadius: theme.radius.md }]}>
+          <View style={[styles.feedbackRow, { backgroundColor: theme.colors.avoid.bg, borderColor: theme.colors.border, borderRadius: theme.radius.md }]}>
             <Ionicons name="alert-circle" size={18} color={theme.colors.avoid.icon} />
-            <Text style={{ color: theme.colors.avoid.text, fontSize: theme.fontSizes.sm, marginLeft: 8, flex: 1 }}>
+            <Text style={{ color: theme.colors.avoid.text, fontSize: theme.fontSizes.sm, fontFamily: theme.fontFamilies.body, marginLeft: 8, flex: 1 }}>
               {saveError}
             </Text>
           </View>
         ) : null}
 
         {saveSuccess ? (
-          <View style={[styles.feedbackRow, { backgroundColor: theme.colors.safe.bg, borderColor: theme.colors.safe.border, borderRadius: theme.radius.md }]}>
+          <View style={[styles.feedbackRow, { backgroundColor: theme.colors.safe.bg, borderColor: theme.colors.border, borderRadius: theme.radius.md }]}>
             <Ionicons name="checkmark-circle" size={18} color={theme.colors.safe.icon} />
-            <Text style={{ color: theme.colors.safe.text, fontSize: theme.fontSizes.sm, marginLeft: 8, flex: 1 }}>
+            <Text style={{ color: theme.colors.safe.text, fontSize: theme.fontSizes.sm, fontFamily: theme.fontFamilies.body, marginLeft: 8, flex: 1 }}>
               Profile updated successfully!
             </Text>
           </View>
@@ -284,18 +285,18 @@ const styles = StyleSheet.create({
   keyboardWrap: { flex: 1 },
   container: { paddingHorizontal: 20, paddingTop: 12, paddingBottom: 40 },
   avatarSection: { alignItems: 'center', paddingVertical: 20 },
-  avatarRing: { width: 104, height: 104, borderRadius: 52, alignItems: 'center', justifyContent: 'center', borderWidth: 1 },
+  avatarRing: { width: 104, height: 104, borderRadius: 52, alignItems: 'center', justifyContent: 'center', borderWidth: 3 },
   avatar: { width: 88, height: 88, borderRadius: 44, overflow: 'hidden', justifyContent: 'center', alignItems: 'center' },
   avatarImage: { width: '100%', height: '100%' },
   formCard: { marginBottom: 12 },
   fieldContainer: { marginBottom: 18 },
-  fieldLabel: { marginBottom: 8, fontWeight: '500' as const },
-  inputRow: { flexDirection: 'row', alignItems: 'center', borderWidth: 1, paddingHorizontal: 14, minHeight: 54 },
+  fieldLabel: { marginBottom: 8, fontWeight: '500' as const, fontFamily: 'DM Sans' },
+  inputRow: { flexDirection: 'row', alignItems: 'center', borderWidth: 3, paddingHorizontal: 14, minHeight: 54 },
   inputIcon: { marginRight: 10 },
   input: { flex: 1, paddingVertical: 15, paddingHorizontal: 0 },
   suffix: { marginLeft: 8 },
   bloodTypeGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
-  bloodTypeChip: { paddingHorizontal: 16, paddingVertical: 11, borderWidth: 1, minWidth: 58, alignItems: 'center' },
-  feedbackRow: { flexDirection: 'row', alignItems: 'center', padding: 12, borderWidth: 1, marginTop: 14 },
+  bloodTypeChip: { paddingHorizontal: 16, paddingVertical: 11, borderWidth: 3, minWidth: 58, alignItems: 'center' },
+  feedbackRow: { flexDirection: 'row', alignItems: 'center', padding: 12, borderWidth: 3, marginTop: 14 },
   saveButton: { marginTop: 24, height: 56 },
 });

@@ -207,10 +207,10 @@ export default function HomeScreen() {
       {/* ── Greeting ───────────────────── */}
       <View style={styles.greetingRow}>
         <View style={{ flex: 1 }}>
-          <Text style={{ color: theme.colors.textSecondary, fontSize: theme.fontSizes.body, marginBottom: 2 }}>Good morning 👋</Text>
-          <Text style={{ color: theme.colors.textPrimary, fontSize: theme.fontSizes['2xl'], fontWeight: theme.fontWeights.bold }}>Welcome back</Text>
+          <Text style={{ color: theme.colors.textSecondary, fontSize: theme.fontSizes.body, fontFamily: theme.fontFamilies.body, marginBottom: 2 }}>Good morning 👋</Text>
+          <Text style={{ color: theme.colors.textPrimary, fontSize: theme.fontSizes['2xl'], fontWeight: theme.fontWeights.bold, fontFamily: theme.fontFamilies.heading }}>Welcome back</Text>
         </View>
-        <View style={[styles.avatarCircle, { backgroundColor: theme.colors.primaryLight }]}>
+        <View style={[styles.avatarCircle, { backgroundColor: theme.colors.primaryLight, borderColor: theme.colors.border }]}>
           <Ionicons name="person" size={24} color={theme.colors.primary} />
         </View>
       </View>
@@ -230,7 +230,7 @@ export default function HomeScreen() {
         <Card>
           <View style={styles.emptyLog}>
             <Ionicons name="cloud-offline-outline" size={28} color={theme.colors.caution.icon} />
-            <Text style={{ color: theme.colors.textSecondary, fontSize: theme.fontSizes.body, marginTop: 8, textAlign: 'center' }}>
+            <Text style={{ color: theme.colors.textSecondary, fontSize: theme.fontSizes.body, marginTop: 8, textAlign: 'center', fontFamily: theme.fontFamilies.body }}>
               {loadError}
             </Text>
           </View>
@@ -241,10 +241,10 @@ export default function HomeScreen() {
           {/* Simple donut-like ring */}
           <View style={styles.donutContainer}>
             <View style={[styles.donutOuter, { borderColor: theme.colors.safe.icon }]}>
-              <Text style={{ color: theme.colors.textPrimary, fontSize: theme.fontSizes['2xl'], fontWeight: theme.fontWeights.bold }}>
+              <Text style={{ color: theme.colors.textPrimary, fontSize: theme.fontSizes['2xl'], fontWeight: theme.fontWeights.bold, fontFamily: theme.fontFamilies.heading }}>
                 {weeklySummary ? weeklySummary.safe + weeklySummary.caution + weeklySummary.avoid : 0}
               </Text>
-              <Text style={{ color: theme.colors.textTertiary, fontSize: theme.fontSizes.xs }}>scans</Text>
+              <Text style={{ color: theme.colors.textTertiary, fontSize: theme.fontSizes.xs, fontFamily: theme.fontFamilies.body }}>scans</Text>
             </View>
           </View>
           <View style={styles.summaryStats}>
@@ -254,9 +254,9 @@ export default function HomeScreen() {
               { label: 'Avoid', count: hasLogs ? todayLog.filter((l) => l.verdict === 'avoid').length : 0, color: theme.colors.avoid.icon },
             ].map((s) => (
               <View key={s.label} style={styles.statItem}>
-                <View style={[styles.statDot, { backgroundColor: s.color }]} />
-                <Text style={{ color: theme.colors.textPrimary, fontSize: theme.fontSizes.body, fontWeight: theme.fontWeights.semibold, marginLeft: 6 }}>{s.count}</Text>
-                <Text style={{ color: theme.colors.textTertiary, fontSize: theme.fontSizes.sm, marginLeft: 4 }}>{s.label}</Text>
+                <View style={[styles.statDot, { backgroundColor: s.color, borderColor: theme.colors.border }]} />
+                <Text style={{ color: theme.colors.textPrimary, fontSize: theme.fontSizes.body, fontWeight: theme.fontWeights.semibold, fontFamily: theme.fontFamilies.body, marginLeft: 6 }}>{s.count}</Text>
+                <Text style={{ color: theme.colors.textTertiary, fontSize: theme.fontSizes.sm, fontFamily: theme.fontFamilies.body, marginLeft: 4 }}>{s.label}</Text>
               </View>
             ))}
           </View>
@@ -281,7 +281,7 @@ export default function HomeScreen() {
         <Card>
           <View style={styles.emptyLog}>
             <Ionicons name="restaurant-outline" size={28} color={theme.colors.textTertiary} />
-            <Text style={{ color: theme.colors.textSecondary, fontSize: theme.fontSizes.body, marginTop: 8, textAlign: 'center' }}>
+            <Text style={{ color: theme.colors.textSecondary, fontSize: theme.fontSizes.body, marginTop: 8, textAlign: 'center', fontFamily: theme.fontFamilies.body }}>
               No meals scanned today.{'\n'}Tap "Scan Your Food" to get started!
             </Text>
           </View>
@@ -295,9 +295,9 @@ export default function HomeScreen() {
           <Card style={styles.nutrientCard}>
             {profile.nutrientTargets.slice(0, 4).map((nt) => (
               <View key={nt.nutrient} style={styles.nutrientRow}>
-                <View style={[styles.nutrientDot, { backgroundColor: theme.colors.primary }]} />
-                <Text style={{ color: theme.colors.textPrimary, fontSize: theme.fontSizes.body, flex: 1 }}>{nt.label}</Text>
-                <Text style={{ color: theme.colors.textSecondary, fontSize: theme.fontSizes.sm }}>≤ {nt.dailyLimit} {nt.unit}</Text>
+                <View style={[styles.nutrientDot, { backgroundColor: theme.colors.primary, borderColor: theme.colors.border }]} />
+                <Text style={{ color: theme.colors.textPrimary, fontSize: theme.fontSizes.body, fontFamily: theme.fontFamilies.body, flex: 1 }}>{nt.label}</Text>
+                <Text style={{ color: theme.colors.textSecondary, fontSize: theme.fontSizes.sm, fontFamily: theme.fontFamilies.body }}>≤ {nt.dailyLimit} {nt.unit}</Text>
               </View>
             ))}
           </Card>
@@ -351,7 +351,7 @@ export default function HomeScreen() {
 
 const styles = StyleSheet.create({
   greetingRow: { flexDirection: 'row', alignItems: 'center', paddingTop: 16, marginBottom: 16 },
-  avatarCircle: { width: 48, height: 48, borderRadius: 24, justifyContent: 'center', alignItems: 'center' },
+  avatarCircle: { width: 48, height: 48, borderRadius: 24, justifyContent: 'center', alignItems: 'center', borderWidth: 3 },
   pillRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 24 },
   summaryCard: { marginBottom: 20 },
   donutRow: { flexDirection: 'row', alignItems: 'center' },
@@ -359,12 +359,12 @@ const styles = StyleSheet.create({
   donutOuter: { width: 80, height: 80, borderRadius: 40, borderWidth: 6, justifyContent: 'center', alignItems: 'center' },
   summaryStats: { flex: 1, gap: 8 },
   statItem: { flexDirection: 'row', alignItems: 'center' },
-  statDot: { width: 10, height: 10, borderRadius: 5 },
+  statDot: { width: 12, height: 12, borderRadius: 6, borderWidth: 2 },
   scanBtn: { marginBottom: 28 },
   logCard: { marginBottom: 24 },
   emptyLog: { alignItems: 'center', paddingVertical: 20 },
   nutrientCard: { marginBottom: 24 },
   nutrientRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 8, gap: 10 },
-  nutrientDot: { width: 8, height: 8, borderRadius: 4 },
+  nutrientDot: { width: 10, height: 10, borderRadius: 5, borderWidth: 2 },
   tipsScroll: { paddingRight: 20, gap: 12, paddingBottom: 4 },
 });

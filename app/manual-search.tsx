@@ -89,11 +89,11 @@ export default function ManualSearchScreen() {
   const renderItem = ({ item }: { item: SearchProduct }) => (
     <TouchableOpacity
       onPress={() => handleSelect(item)}
-      style={[styles.resultRow, { borderBottomColor: theme.colors.borderLight }]}
+      style={[styles.resultRow, { borderBottomColor: theme.colors.border }]}
       accessibilityRole="button"
     >
       {/* Thumbnail */}
-      <View style={[styles.thumb, { backgroundColor: theme.colors.surfaceSecondary, borderRadius: theme.radius.md }]}>
+      <View style={[styles.thumb, { backgroundColor: theme.colors.surfaceSecondary, borderColor: theme.colors.border, borderRadius: theme.radius.md }]}>
         {item.imageUrl ? (
           <Image source={{ uri: item.imageUrl }} style={styles.thumbImg} contentFit="cover" transition={200} />
         ) : (
@@ -103,11 +103,11 @@ export default function ManualSearchScreen() {
 
       {/* Info */}
       <View style={{ flex: 1, marginLeft: 12 }}>
-        <Text style={{ color: theme.colors.textPrimary, fontSize: theme.fontSizes.body, fontWeight: theme.fontWeights.medium }} numberOfLines={1}>
+        <Text style={{ color: theme.colors.textPrimary, fontSize: theme.fontSizes.body, fontWeight: theme.fontWeights.medium, fontFamily: theme.fontFamilies.body }} numberOfLines={1}>
           {item.productName}
         </Text>
         {item.brand ? (
-          <Text style={{ color: theme.colors.textTertiary, fontSize: theme.fontSizes.sm, marginTop: 2 }} numberOfLines={1}>
+          <Text style={{ color: theme.colors.textTertiary, fontSize: theme.fontSizes.sm, fontFamily: theme.fontFamilies.body, marginTop: 2 }} numberOfLines={1}>
             {item.brand}{item.quantity ? ` · ${item.quantity}` : ''}
           </Text>
         ) : null}
@@ -115,7 +115,7 @@ export default function ManualSearchScreen() {
 
       {/* Nutri-Score */}
       {item.nutriscoreGrade ? (
-        <View style={[styles.nutriscoreBadge, { backgroundColor: NUTRISCORE_COLORS[item.nutriscoreGrade] ?? theme.colors.surfaceSecondary, borderRadius: theme.radius.sm }]}>
+        <View style={[styles.nutriscoreBadge, { backgroundColor: NUTRISCORE_COLORS[item.nutriscoreGrade] ?? theme.colors.surfaceSecondary, borderColor: theme.colors.border, borderRadius: theme.radius.sm }]}>
           <Text style={{ color: '#FFFFFF', fontSize: 11, fontWeight: theme.fontWeights.bold }}>
             {item.nutriscoreGrade.toUpperCase()}
           </Text>
@@ -138,7 +138,7 @@ export default function ManualSearchScreen() {
             onChangeText={setQuery}
             placeholder="Search for a food item..."
             placeholderTextColor={theme.colors.textTertiary}
-            style={{ flex: 1, color: theme.colors.textPrimary, fontSize: theme.fontSizes.body, marginLeft: 10 }}
+            style={{ flex: 1, color: theme.colors.textPrimary, fontSize: theme.fontSizes.body, fontFamily: theme.fontFamilies.body, marginLeft: 10 }}
             autoFocus
             returnKeyType="search"
             accessibilityLabel="Search food"
@@ -161,7 +161,7 @@ export default function ManualSearchScreen() {
         {!isSearching && error && (
           <View style={styles.stateContainer}>
             <Ionicons name="cloud-offline-outline" size={40} color={theme.colors.caution.icon} />
-            <Text style={{ color: theme.colors.textSecondary, fontSize: theme.fontSizes.body, marginTop: 12, textAlign: 'center' }}>
+            <Text style={{ color: theme.colors.textSecondary, fontSize: theme.fontSizes.body, fontFamily: theme.fontFamilies.body, marginTop: 12, textAlign: 'center' }}>
               {error}
             </Text>
             <TouchableOpacity
@@ -169,7 +169,7 @@ export default function ManualSearchScreen() {
               style={[styles.retryBtn, { borderColor: theme.colors.border, borderRadius: theme.radius.md }]}
             >
               <Ionicons name="refresh" size={18} color={theme.colors.primary} />
-              <Text style={{ color: theme.colors.primary, fontSize: theme.fontSizes.body, fontWeight: theme.fontWeights.medium, marginLeft: 6 }}>
+              <Text style={{ color: theme.colors.primary, fontSize: theme.fontSizes.body, fontWeight: theme.fontWeights.medium, fontFamily: theme.fontFamilies.body, marginLeft: 6 }}>
                 Retry
               </Text>
             </TouchableOpacity>
@@ -180,10 +180,10 @@ export default function ManualSearchScreen() {
         {!isSearching && !error && hasSearched && results.length === 0 && (
           <View style={styles.stateContainer}>
             <Ionicons name="search-outline" size={40} color={theme.colors.textTertiary} />
-            <Text style={{ color: theme.colors.textSecondary, fontSize: theme.fontSizes.body, marginTop: 12, textAlign: 'center' }}>
+            <Text style={{ color: theme.colors.textSecondary, fontSize: theme.fontSizes.body, fontFamily: theme.fontFamilies.body, marginTop: 12, textAlign: 'center' }}>
               No products found for "{debouncedQuery}"
             </Text>
-            <Text style={{ color: theme.colors.textTertiary, fontSize: theme.fontSizes.sm, marginTop: 4, textAlign: 'center' }}>
+            <Text style={{ color: theme.colors.textTertiary, fontSize: theme.fontSizes.sm, fontFamily: theme.fontFamilies.body, marginTop: 4, textAlign: 'center' }}>
               Try a different search term
             </Text>
           </View>
@@ -204,7 +204,7 @@ export default function ManualSearchScreen() {
         {!hasSearched && !query.trim() && (
           <View style={styles.stateContainer}>
             <Ionicons name="search-outline" size={48} color={theme.colors.textTertiary} />
-            <Text style={{ color: theme.colors.textSecondary, fontSize: theme.fontSizes.body, marginTop: 12, textAlign: 'center' }}>
+            <Text style={{ color: theme.colors.textSecondary, fontSize: theme.fontSizes.body, fontFamily: theme.fontFamilies.body, marginTop: 12, textAlign: 'center' }}>
               Search for a food product from{'\n'}Open Food Facts database
             </Text>
           </View>
@@ -212,7 +212,7 @@ export default function ManualSearchScreen() {
 
         {/* Attribution */}
         <View style={styles.attribution}>
-          <Text style={{ color: theme.colors.textTertiary, fontSize: theme.fontSizes.xs, textAlign: 'center', lineHeight: 14 }}>
+          <Text style={{ color: theme.colors.textTertiary, fontSize: theme.fontSizes.xs, fontFamily: theme.fontFamilies.body, textAlign: 'center', lineHeight: 14 }}>
             Product data from Open Food Facts ({results.length > 0 ? `${results.length} results` : ''})
           </Text>
         </View>
@@ -222,12 +222,12 @@ export default function ManualSearchScreen() {
 }
 
 const styles = StyleSheet.create({
-  searchBar: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 14, paddingVertical: 12, borderWidth: 1, marginTop: 8, marginBottom: 12 },
-  resultRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 12, borderBottomWidth: StyleSheet.hairlineWidth },
-  thumb: { width: 48, height: 48, justifyContent: 'center', alignItems: 'center', overflow: 'hidden' },
+  searchBar: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 14, paddingVertical: 12, borderWidth: 3, marginTop: 8, marginBottom: 12 },
+  resultRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 12, borderBottomWidth: 2 },
+  thumb: { width: 48, height: 48, justifyContent: 'center', alignItems: 'center', overflow: 'hidden', borderWidth: 2 },
   thumbImg: { width: '100%', height: '100%' },
-  nutriscoreBadge: { width: 26, height: 26, justifyContent: 'center', alignItems: 'center' },
+  nutriscoreBadge: { width: 26, height: 26, justifyContent: 'center', alignItems: 'center', borderWidth: 2 },
   stateContainer: { alignItems: 'center', paddingTop: 40, paddingHorizontal: 20 },
-  retryBtn: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20, paddingVertical: 10, borderWidth: 1, marginTop: 16 },
+  retryBtn: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20, paddingVertical: 10, borderWidth: 3, marginTop: 16 },
   attribution: { paddingVertical: 12 },
 });

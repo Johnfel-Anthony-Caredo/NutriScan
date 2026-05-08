@@ -23,7 +23,7 @@ export default function WelcomeScreen() {
       <View style={styles.container}>
         <View style={styles.top}>
           <View
-            style={[styles.iconCircle, { backgroundColor: theme.colors.primaryLight }]}
+            style={[styles.iconCircle, { backgroundColor: theme.colors.primaryLight, borderColor: theme.colors.border }]}
           >
             <Ionicons name="heart" size={52} color={theme.colors.primary} />
           </View>
@@ -35,6 +35,7 @@ export default function WelcomeScreen() {
               fontWeight: theme.fontWeights.bold,
               textAlign: 'center',
               marginTop: 28,
+              fontFamily: theme.fontFamilies.heading,
             }}
           >
             Let's personalize{'\n'}your experience
@@ -48,6 +49,7 @@ export default function WelcomeScreen() {
               textAlign: 'center',
               marginTop: 12,
               maxWidth: 300,
+              fontFamily: theme.fontFamilies.body,
             }}
           >
             Tell us about your health so we can give you accurate, helpful food guidance.
@@ -60,13 +62,14 @@ export default function WelcomeScreen() {
               { icon: 'create' as const, text: 'You can change this anytime' },
             ].map((item) => (
               <View key={item.text} style={styles.highlightRow}>
-                <View style={[styles.highlightIcon, { backgroundColor: theme.colors.primaryLight }]}>
+                <View style={[styles.highlightIcon, { backgroundColor: theme.colors.primaryLight, borderColor: theme.colors.border }]}>
                   <Ionicons name={item.icon} size={18} color={theme.colors.primary} />
                 </View>
                 <Text
                   style={{
                     color: theme.colors.textSecondary,
                     fontSize: theme.fontSizes.body,
+                    fontFamily: theme.fontFamilies.body,
                     marginLeft: 12,
                     flex: 1,
                   }}
@@ -98,6 +101,7 @@ export default function WelcomeScreen() {
               textAlign: 'center',
               marginTop: 16,
               lineHeight: theme.lineHeights.sm,
+              fontFamily: theme.fontFamilies.body,
             }}
           >
             You can always update your health profile{'\n'}from Settings later.
@@ -111,9 +115,9 @@ export default function WelcomeScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1, justifyContent: 'space-between', paddingTop: 60, paddingBottom: 40 },
   top: { alignItems: 'center' },
-  iconCircle: { width: 108, height: 108, borderRadius: 54, justifyContent: 'center', alignItems: 'center' },
+  iconCircle: { width: 108, height: 108, borderRadius: 54, justifyContent: 'center', alignItems: 'center', borderWidth: 3 },
   highlights: { marginTop: 40, alignSelf: 'stretch', gap: 16, paddingHorizontal: 8 },
   highlightRow: { flexDirection: 'row', alignItems: 'center' },
-  highlightIcon: { width: 36, height: 36, borderRadius: 18, justifyContent: 'center', alignItems: 'center' },
+  highlightIcon: { width: 36, height: 36, borderRadius: 18, justifyContent: 'center', alignItems: 'center', borderWidth: 2 },
   actions: {},
 });

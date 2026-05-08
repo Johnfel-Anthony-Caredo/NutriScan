@@ -27,10 +27,10 @@ export function TypingIndicator() {
 
   return (
     <View style={[styles.row, { paddingHorizontal: 16, paddingRight: 48 }]}>
-      <View style={[styles.avatar, { backgroundColor: theme.colors.primaryLight }]}>
+      <View style={[styles.avatar, { backgroundColor: theme.colors.primaryLight, borderColor: theme.colors.border }]}>
         <Ionicons name="chatbubble-ellipses" size={14} color={theme.colors.primary} />
       </View>
-      <View style={[styles.bubble, { backgroundColor: theme.colors.surface, borderColor: theme.colors.borderLight, borderRadius: theme.radius.lg }]}>
+      <View style={[styles.bubble, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border, borderRadius: theme.radius.lg }]}>
         <View style={styles.dotsRow}>
           {dots.map((dot, i) => (
             <Animated.View
@@ -46,8 +46,8 @@ export function TypingIndicator() {
 
 const styles = StyleSheet.create({
   row: { flexDirection: 'row', alignItems: 'flex-end', marginBottom: 12 },
-  avatar: { width: 28, height: 28, borderRadius: 14, justifyContent: 'center', alignItems: 'center', marginRight: 8, marginBottom: 4 },
-  bubble: { padding: 14, borderWidth: StyleSheet.hairlineWidth },
+  avatar: { width: 28, height: 28, borderRadius: 14, justifyContent: 'center', alignItems: 'center', marginRight: 8, marginBottom: 4, borderWidth: 2 },
+  bubble: { padding: 14, borderWidth: 3 },
   dotsRow: { flexDirection: 'row', gap: 4 },
   dot: { width: 8, height: 8, borderRadius: 4 },
 });

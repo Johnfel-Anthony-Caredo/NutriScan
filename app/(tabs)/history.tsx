@@ -160,10 +160,10 @@ export default function HistoryScreen() {
     >
       {/* ── Header ─────────────────────── */}
       <View style={styles.header}>
-        <Text style={{ color: theme.colors.textPrimary, fontSize: theme.fontSizes['2xl'], fontWeight: theme.fontWeights.bold }}>
+        <Text style={{ color: theme.colors.textPrimary, fontSize: theme.fontSizes['2xl'], fontWeight: theme.fontWeights.bold, fontFamily: theme.fontFamilies.heading }}>
           History
         </Text>
-        <Text style={{ color: theme.colors.textSecondary, fontSize: theme.fontSizes.body, marginTop: 4 }}>
+        <Text style={{ color: theme.colors.textSecondary, fontSize: theme.fontSizes.body, fontFamily: theme.fontFamilies.body, marginTop: 4 }}>
           Track your food choices over time
         </Text>
       </View>
@@ -192,8 +192,8 @@ export default function HistoryScreen() {
       <Card style={styles.weekCard}>
         <View style={styles.weekStats}>
           <View style={styles.weekStatItem}>
-            <Text style={{ color: theme.colors.textPrimary, fontSize: theme.fontSizes['3xl'], fontWeight: theme.fontWeights.bold }}>{total}</Text>
-            <Text style={{ color: theme.colors.textTertiary, fontSize: theme.fontSizes.sm }}>Total Scans</Text>
+            <Text style={{ color: theme.colors.textPrimary, fontSize: theme.fontSizes['3xl'], fontWeight: theme.fontWeights.bold, fontFamily: theme.fontFamilies.heading }}>{total}</Text>
+            <Text style={{ color: theme.colors.textTertiary, fontSize: theme.fontSizes.sm, fontFamily: theme.fontFamilies.body }}>Total Scans</Text>
           </View>
           <View style={styles.weekStatDivider} />
           {[
@@ -202,8 +202,8 @@ export default function HistoryScreen() {
             { label: 'Avoid', count: weeklySummary.avoid, verdict: 'avoid' as const },
           ].map((s) => (
             <View key={s.verdict} style={styles.weekStatSmall}>
-              <Text style={{ color: theme.colors[s.verdict].text, fontSize: theme.fontSizes.xl, fontWeight: theme.fontWeights.bold }}>{s.count}</Text>
-              <Text style={{ color: theme.colors.textTertiary, fontSize: theme.fontSizes.xs, marginTop: 2 }}>{s.label}</Text>
+              <Text style={{ color: theme.colors[s.verdict].text, fontSize: theme.fontSizes.xl, fontWeight: theme.fontWeights.bold, fontFamily: theme.fontFamilies.heading }}>{s.count}</Text>
+              <Text style={{ color: theme.colors.textTertiary, fontSize: theme.fontSizes.xs, fontFamily: theme.fontFamilies.body, marginTop: 2 }}>{s.label}</Text>
             </View>
           ))}
         </View>
@@ -228,6 +228,7 @@ export default function HistoryScreen() {
             <Text style={{
               color: selectedDay === i ? theme.colors.textInverse : theme.colors.textPrimary,
               fontSize: theme.fontSizes.sm,
+              fontFamily: theme.fontFamilies.body,
               fontWeight: selectedDay === i ? theme.fontWeights.semibold : theme.fontWeights.regular,
             }}>
               {day}
@@ -241,7 +242,7 @@ export default function HistoryScreen() {
         <Card style={styles.dailySummary}>
           <View style={styles.dailySummaryRow}>
             <Ionicons name="checkmark-circle" size={18} color={theme.colors.safe.icon} />
-            <Text style={{ color: theme.colors.textPrimary, fontSize: theme.fontSizes.body, marginLeft: 8 }}>
+            <Text style={{ color: theme.colors.textPrimary, fontSize: theme.fontSizes.body, fontFamily: theme.fontFamilies.body, marginLeft: 8 }}>
               {todayLog.filter((l) => l.verdict === 'safe').length} safe, {todayLog.filter((l) => l.verdict === 'caution').length} caution, {todayLog.filter((l) => l.verdict === 'avoid').length} avoid
             </Text>
           </View>
@@ -273,11 +274,11 @@ export default function HistoryScreen() {
           <SectionHeader title="Foods to Watch" />
           <Card>
             {todayLog.filter((l) => l.verdict === 'avoid' || l.verdict === 'caution').slice(0, 3).map((food) => (
-              <View key={food.id} style={[styles.riskyRow, { borderBottomColor: theme.colors.borderLight }]}>
+              <View key={food.id} style={[styles.riskyRow, { borderBottomColor: theme.colors.border }]}>
                 <Ionicons name="alert-circle" size={18} color={theme.colors[food.verdict].icon} style={{ marginRight: 10 }} />
                 <View style={{ flex: 1 }}>
-                  <Text style={{ color: theme.colors.textPrimary, fontSize: theme.fontSizes.body, fontWeight: theme.fontWeights.medium }}>{food.name}</Text>
-                  <Text style={{ color: theme.colors.textTertiary, fontSize: theme.fontSizes.sm }}>{food.mealType}</Text>
+                  <Text style={{ color: theme.colors.textPrimary, fontSize: theme.fontSizes.body, fontWeight: theme.fontWeights.medium, fontFamily: theme.fontFamilies.body }}>{food.name}</Text>
+                  <Text style={{ color: theme.colors.textTertiary, fontSize: theme.fontSizes.sm, fontFamily: theme.fontFamilies.body }}>{food.mealType}</Text>
                 </View>
                 <VerdictBadge verdict={food.verdict} />
               </View>
@@ -296,11 +297,11 @@ export default function HistoryScreen() {
       {/* ── View Full Report ───────────── */}
       <TouchableOpacity
         onPress={() => router.push('/health-report')}
-        style={[styles.reportBtn, { backgroundColor: theme.colors.primaryLight, borderRadius: theme.radius.md }]}
+        style={[styles.reportBtn, { backgroundColor: theme.colors.primaryLight, borderColor: theme.colors.border, borderRadius: theme.radius.md }]}
         accessibilityRole="button"
       >
         <Ionicons name="stats-chart" size={20} color={theme.colors.primary} />
-        <Text style={{ color: theme.colors.primary, fontSize: theme.fontSizes.body, fontWeight: theme.fontWeights.semibold, marginLeft: 8 }}>
+        <Text style={{ color: theme.colors.primary, fontSize: theme.fontSizes.body, fontWeight: theme.fontWeights.semibold, fontFamily: theme.fontFamilies.body, marginLeft: 8 }}>
           View Full Report
         </Text>
         <Ionicons name="chevron-forward" size={18} color={theme.colors.primary} style={{ marginLeft: 'auto' }} />
@@ -316,13 +317,13 @@ const styles = StyleSheet.create({
   weekCard: { marginBottom: 24 },
   weekStats: { flexDirection: 'row', alignItems: 'center', marginBottom: 12 },
   weekStatItem: { alignItems: 'center' },
-  weekStatDivider: { width: 1, height: 36, backgroundColor: 'rgba(0,0,0,0.08)', marginHorizontal: 16 },
+  weekStatDivider: { width: 2, height: 36, backgroundColor: theme.colors.border, marginHorizontal: 16 },
   weekStatSmall: { alignItems: 'center', flex: 1 },
   dayScroll: { gap: 8, paddingBottom: 16 },
-  dayChip: { paddingHorizontal: 18, paddingVertical: 10, borderWidth: 1 },
+  dayChip: { paddingHorizontal: 18, paddingVertical: 10, borderWidth: 3 },
   dailySummary: { marginBottom: 12 },
   dailySummaryRow: { flexDirection: 'row', alignItems: 'center' },
-  riskyRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 12, borderBottomWidth: StyleSheet.hairlineWidth },
+  riskyRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 12, borderBottomWidth: 2 },
   emptyState: { alignItems: 'center', paddingVertical: 20 },
-  reportBtn: { flexDirection: 'row', alignItems: 'center', paddingVertical: 16, paddingHorizontal: 16, marginTop: 20 },
+  reportBtn: { flexDirection: 'row', alignItems: 'center', paddingVertical: 16, paddingHorizontal: 16, marginTop: 20, borderWidth: 3 },
 });

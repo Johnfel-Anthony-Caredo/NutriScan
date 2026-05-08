@@ -39,7 +39,7 @@ export default function ForgotPasswordScreen() {
   const inputStyle = {
     backgroundColor: theme.colors.surfaceSecondary,
     borderColor: error ? theme.colors.avoid.icon : focused ? theme.colors.primary : theme.colors.border,
-    borderWidth: 1.5,
+    borderWidth: 3,
     borderRadius: theme.radius.lg,
     paddingHorizontal: 16,
     minHeight: 56,
@@ -53,17 +53,17 @@ export default function ForgotPasswordScreen() {
           <View style={[styles.sentCircle, { backgroundColor: theme.colors.safe.bg }]}>
             <Ionicons name="mail-open" size={48} color={theme.colors.safe.icon} />
           </View>
-          <Text style={{ color: theme.colors.textPrimary, fontSize: theme.fontSizes['2xl'], fontWeight: theme.fontWeights.bold, textAlign: 'center', marginTop: 20 }}>
+          <Text style={{ color: theme.colors.textPrimary, fontSize: theme.fontSizes['2xl'], fontWeight: theme.fontWeights.bold, textAlign: 'center', marginTop: 20, fontFamily: theme.fontFamilies.heading }}>
             Email Sent!
           </Text>
-          <Text style={{ color: theme.colors.textSecondary, fontSize: theme.fontSizes.body, textAlign: 'center', marginTop: 8, maxWidth: 280, lineHeight: theme.lineHeights.body }}>
+          <Text style={{ color: theme.colors.textSecondary, fontSize: theme.fontSizes.body, textAlign: 'center', marginTop: 8, maxWidth: 280, lineHeight: theme.lineHeights.body, fontFamily: theme.fontFamilies.body }}>
             {"We've sent password reset instructions to "}
-            <Text style={{ fontWeight: theme.fontWeights.semibold, color: theme.colors.textPrimary }}>{email}</Text>
+            <Text style={{ fontWeight: theme.fontWeights.semibold, color: theme.colors.textPrimary, fontFamily: theme.fontFamilies.body }}>{email}</Text>
           </Text>
           <Card style={{ marginTop: 28, width: '100%' }}>
             <View style={styles.tipRow}>
               <Ionicons name="information-circle" size={18} color={theme.colors.primary} />
-              <Text style={{ color: theme.colors.textSecondary, fontSize: theme.fontSizes.sm, marginLeft: 8, flex: 1 }}>
+              <Text style={{ color: theme.colors.textSecondary, fontSize: theme.fontSizes.sm, marginLeft: 8, flex: 1, fontFamily: theme.fontFamilies.body }}>
                 {"Didn't receive the email? Check your spam folder or try again."}
               </Text>
             </View>
@@ -79,24 +79,24 @@ export default function ForgotPasswordScreen() {
       <TopBar title="Reset Password" showBack />
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={styles.keyboardWrap}>
         <View style={styles.content}>
-          <View style={[styles.iconWrap, { backgroundColor: theme.colors.primaryLight }]}>
+          <View style={[styles.iconWrap, { backgroundColor: theme.colors.primaryLight, borderColor: theme.colors.border }]}>
           <Ionicons name="key-outline" size={36} color={theme.colors.primary} />
         </View>
-        <Text style={{ color: theme.colors.textPrimary, fontSize: theme.fontSizes.xl, fontWeight: theme.fontWeights.bold, textAlign: 'center', marginTop: 16 }}>
+        <Text style={{ color: theme.colors.textPrimary, fontSize: theme.fontSizes.xl, fontWeight: theme.fontWeights.bold, textAlign: 'center', marginTop: 16, fontFamily: theme.fontFamilies.heading }}>
           Forgot your password?
         </Text>
-        <Text style={{ color: theme.colors.textSecondary, fontSize: theme.fontSizes.body, textAlign: 'center', marginTop: 8, lineHeight: theme.lineHeights.body, maxWidth: 320 }}>
+        <Text style={{ color: theme.colors.textSecondary, fontSize: theme.fontSizes.body, textAlign: 'center', marginTop: 8, lineHeight: theme.lineHeights.body, fontFamily: theme.fontFamilies.body, maxWidth: 320 }}>
           {"Enter your email and we'll send you instructions to reset your password."}
         </Text>
 
-        <View style={[styles.card, { backgroundColor: theme.colors.surface, borderColor: theme.colors.borderLight, borderRadius: theme.radius.lg, ...theme.shadows.sm }]}>
-          <Text style={{ color: theme.colors.textSecondary, fontSize: theme.fontSizes.sm, fontWeight: theme.fontWeights.medium, marginBottom: 6 }}>Email</Text>
+        <View style={[styles.card, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border, borderRadius: theme.radius.lg }]}>
+          <Text style={{ color: theme.colors.textSecondary, fontSize: theme.fontSizes.sm, fontWeight: theme.fontWeights.medium, marginBottom: 6, fontFamily: theme.fontFamilies.body }}>Email</Text>
           <View style={[styles.inputRow, inputStyle]}>
             <Ionicons name="mail-outline" size={18} color={focused ? theme.colors.primary : theme.colors.textTertiary} style={{ marginRight: 10 }} />
-            <TextInput value={email} onChangeText={(t) => { setEmail(t); setError(''); }} onFocus={() => setFocused(true)} onBlur={() => setFocused(false)} placeholder="your@email.com" placeholderTextColor={theme.colors.textTertiary} style={styles.inputText} keyboardType="email-address" autoCapitalize="none" />
+            <TextInput value={email} onChangeText={(t) => { setEmail(t); setError(''); }} onFocus={() => setFocused(true)} onBlur={() => setFocused(false)} placeholder="your@email.com" placeholderTextColor={theme.colors.textTertiary} style={{ flex: 1, fontSize: 16, fontFamily: theme.fontFamilies.body, paddingVertical: 16, color: theme.colors.textPrimary }} keyboardType="email-address" autoCapitalize="none" />
             {email.trim() ? <Ionicons name="checkmark-circle" size={18} color={theme.colors.primary} /> : null}
           </View>
-          {error ? <View style={styles.errorRow}><Ionicons name="alert-circle" size={14} color={theme.colors.avoid.icon} /><Text style={{ color: theme.colors.avoid.text, fontSize: theme.fontSizes.sm }}>{error}</Text></View> : null}
+          {error ? <View style={styles.errorRow}><Ionicons name="alert-circle" size={14} color={theme.colors.avoid.icon} /><Text style={{ color: theme.colors.avoid.text, fontSize: theme.fontSizes.sm, fontFamily: theme.fontFamilies.body }}>{error}</Text></View> : null}
 
           <PrimaryButton label="Send Reset Link" onPress={handleSend} style={{ marginTop: 24, height: 56, borderRadius: theme.radius.lg }} loading={isSubmitting} />
         </View>
@@ -109,8 +109,8 @@ export default function ForgotPasswordScreen() {
 const styles = StyleSheet.create({
   keyboardWrap: { flex: 1 },
   content: { flex: 1, paddingHorizontal: 20, paddingTop: 24 },
-  iconWrap: { width: 80, height: 80, borderRadius: 40, justifyContent: 'center', alignItems: 'center', alignSelf: 'center' },
-  card: { borderWidth: 1, padding: 20, marginTop: 28 },
+  iconWrap: { width: 80, height: 80, borderRadius: 40, justifyContent: 'center', alignItems: 'center', alignSelf: 'center', borderWidth: 3 },
+  card: { borderWidth: 3, padding: 20, marginTop: 28 },
   inputRow: { flexDirection: 'row', alignItems: 'center' },
   inputText: { flex: 1, fontSize: 16, paddingVertical: 16 },
   errorRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 8 },

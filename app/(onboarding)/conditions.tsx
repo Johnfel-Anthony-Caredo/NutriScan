@@ -92,6 +92,7 @@ export default function ConditionsScreen() {
             fontSize: theme.fontSizes.xl,
             fontWeight: theme.fontWeights.bold,
             marginBottom: 6,
+            fontFamily: theme.fontFamilies.heading,
           }}
         >
           What are you managing?
@@ -102,6 +103,7 @@ export default function ConditionsScreen() {
             fontSize: theme.fontSizes.body,
             lineHeight: theme.lineHeights.body,
             marginBottom: 24,
+            fontFamily: theme.fontFamilies.body,
           }}
         >
           Pick the one that best describes your situation. You can always update this later.
@@ -127,7 +129,7 @@ export default function ConditionsScreen() {
               onChangeText={setCustomText}
               placeholder="Describe your condition, e.g. Thyroid disorder, Asthma..."
               placeholderTextColor={theme.colors.textTertiary}
-              style={{ flex: 1, color: theme.colors.textPrimary, fontSize: theme.fontSizes.body, padding: 16, minHeight: 60 }}
+              style={{ flex: 1, color: theme.colors.textPrimary, fontSize: theme.fontSizes.body, fontFamily: theme.fontFamilies.body, padding: 16, minHeight: 60 }}
               multiline
               autoFocus
               accessibilityLabel="Describe your condition"
@@ -138,7 +140,7 @@ export default function ConditionsScreen() {
         {/* Divider for bottom options */}
         <View style={styles.dividerRow}>
           <View style={[styles.dividerLine, { backgroundColor: theme.colors.border }]} />
-          <Text style={{ color: theme.colors.textTertiary, fontSize: theme.fontSizes.sm, marginHorizontal: 12 }}>or</Text>
+          <Text style={{ color: theme.colors.textTertiary, fontSize: theme.fontSizes.sm, marginHorizontal: 12, fontFamily: theme.fontFamilies.body }}>or</Text>
           <View style={[styles.dividerLine, { backgroundColor: theme.colors.border }]} />
         </View>
 
@@ -169,6 +171,7 @@ export default function ConditionsScreen() {
               fontSize: theme.fontSizes.sm,
               textAlign: 'center',
               marginTop: 12,
+              fontFamily: theme.fontFamilies.body,
             }}
           >
             Please describe your condition to continue.
@@ -207,13 +210,13 @@ const styles = StyleSheet.create({
   },
   dividerLine: {
     flex: 1,
-    height: 1,
+    height: 2,
   },
   bottomOptions: {
     gap: 4,
   },
   customInputWrap: {
-    borderWidth: 1,
+    borderWidth: 3,
     marginTop: 12,
     marginBottom: 4,
   },

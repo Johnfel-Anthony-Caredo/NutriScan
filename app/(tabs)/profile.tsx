@@ -25,13 +25,13 @@ function MenuRow({ icon, label, subtitle, onPress, color }: {
 }) {
   const theme = useTheme();
   return (
-    <TouchableOpacity onPress={onPress} activeOpacity={0.82} style={[styles.menuRow, { borderBottomColor: theme.colors.borderLight }]} accessibilityRole="button">
-      <View style={[styles.menuIcon, { backgroundColor: theme.colors.surfaceSecondary }]}>
+    <TouchableOpacity onPress={onPress} activeOpacity={0.82} style={[styles.menuRow, { borderBottomColor: theme.colors.border }]} accessibilityRole="button">
+      <View style={[styles.menuIcon, { backgroundColor: theme.colors.surfaceSecondary, borderColor: theme.colors.border }]}>
         <Ionicons name={icon} size={18} color={color ?? theme.colors.primary} />
       </View>
       <View style={styles.menuCopy}>
-        <Text style={{ color: theme.colors.textPrimary, fontSize: theme.fontSizes.body, fontWeight: subtitle ? theme.fontWeights.semibold : theme.fontWeights.medium }}>{label}</Text>
-        {subtitle && <Text style={{ color: theme.colors.textTertiary, fontSize: theme.fontSizes.sm, marginTop: 2 }}>{subtitle}</Text>}
+        <Text style={{ color: theme.colors.textPrimary, fontSize: theme.fontSizes.body, fontFamily: theme.fontFamilies.body, fontWeight: subtitle ? theme.fontWeights.semibold : theme.fontWeights.medium }}>{label}</Text>
+        {subtitle && <Text style={{ color: theme.colors.textTertiary, fontSize: theme.fontSizes.sm, fontFamily: theme.fontFamilies.body, marginTop: 2 }}>{subtitle}</Text>}
       </View>
       <Ionicons name="chevron-forward" size={20} color={subtitle ? theme.colors.primary : theme.colors.textTertiary} />
     </TouchableOpacity>
@@ -161,33 +161,33 @@ export default function ProfileScreen() {
 
   return (
     <AppScreen scroll>
-      <View style={[styles.header, { backgroundColor: theme.colors.surface, borderColor: theme.colors.borderLight, borderRadius: theme.radius.lg, ...theme.shadows.sm }]}>
+      <View style={[styles.header, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border, borderWidth: 3, borderRadius: theme.radius.md }]}>
         <View style={styles.avatarWrap}>
-          <View style={[styles.avatarRing, { backgroundColor: theme.colors.primaryLight, borderColor: theme.colors.borderLight }]}>
+          <View style={[styles.avatarRing, { backgroundColor: theme.colors.primaryLight, borderColor: theme.colors.border }]}>
             <View style={[styles.avatar, { backgroundColor: theme.colors.surfaceSecondary }]}>
           {avatarUri ? <Image source={{ uri: avatarUri }} style={styles.avatarImage} /> : <Ionicons name="person" size={36} color={theme.colors.primary} />}
             </View>
-            {user ? <View style={[styles.activeBadge, { backgroundColor: '#16a34a18', borderColor: '#16a34a40' }]}><View style={styles.activeDot} /><Text style={styles.activeText}>Active</Text></View> : null}
+            {user ? <View style={[styles.activeBadge, { backgroundColor: '#E0F2F1', borderColor: theme.colors.border }]}><View style={styles.activeDot} /><Text style={styles.activeText}>Active</Text></View> : null}
           </View>
         </View>
 
-        <Text style={{ color: theme.colors.textPrimary, fontSize: theme.fontSizes['2xl'], fontWeight: theme.fontWeights.bold, marginTop: 16, textAlign: 'center' }}>
+        <Text style={{ color: theme.colors.textPrimary, fontSize: theme.fontSizes['2xl'], fontWeight: theme.fontWeights.bold, fontFamily: theme.fontFamilies.heading, marginTop: 16, textAlign: 'center' }}>
           {profile.name || 'NutriScan User'}
         </Text>
-        <Text style={{ color: theme.colors.textSecondary, fontSize: theme.fontSizes.body, marginTop: 4, textAlign: 'center' }}>
+        <Text style={{ color: theme.colors.textSecondary, fontSize: theme.fontSizes.body, fontFamily: theme.fontFamilies.body, marginTop: 4, textAlign: 'center' }}>
           {user?.email ?? 'Health-conscious eater'}
         </Text>
-        <Text style={{ color: theme.colors.textSecondary, fontSize: theme.fontSizes.sm, marginTop: 10, textAlign: 'center', lineHeight: theme.lineHeights.sm }}>
+        <Text style={{ color: theme.colors.textSecondary, fontSize: theme.fontSizes.sm, fontFamily: theme.fontFamilies.body, marginTop: 10, textAlign: 'center', lineHeight: theme.lineHeights.sm }}>
           {profile.conditions.length > 0 ? `Managing ${profile.conditions.length} condition${profile.conditions.length > 1 ? 's' : ''}` : 'Personalized nutrition profile'}
         </Text>
 
         <TouchableOpacity
           onPress={() => router.push('/edit-profile')}
-          style={[styles.editProfileBtn, { backgroundColor: theme.colors.primaryLight, borderColor: theme.colors.borderLight, borderRadius: theme.radius.full }]}
+          style={[styles.editProfileBtn, { backgroundColor: theme.colors.primaryLight, borderColor: theme.colors.border, borderRadius: theme.radius.full }]}
           accessibilityRole="button"
         >
           <Ionicons name="create-outline" size={16} color={theme.colors.primary} />
-          <Text style={{ color: theme.colors.primary, fontSize: theme.fontSizes.sm, fontWeight: theme.fontWeights.medium, marginLeft: 6 }}>
+          <Text style={{ color: theme.colors.primary, fontSize: theme.fontSizes.sm, fontWeight: theme.fontWeights.medium, fontFamily: theme.fontFamilies.body, marginLeft: 6 }}>
             Edit Profile
           </Text>
         </TouchableOpacity>
@@ -199,7 +199,7 @@ export default function ProfileScreen() {
         <Card style={styles.emptyCard}><View style={styles.pillRow}>{profile.conditions.map((c) => (<ConditionPill key={c} condition={c} />))}</View></Card>
       ) : (
         <Card style={styles.emptyCard}>
-          <Text style={{ color: theme.colors.textTertiary, fontSize: theme.fontSizes.body, textAlign: 'center' }}>No conditions set yet</Text>
+          <Text style={{ color: theme.colors.textTertiary, fontSize: theme.fontSizes.body, fontFamily: theme.fontFamilies.body, textAlign: 'center' }}>No conditions set yet</Text>
           <SecondaryButton label="Set Up Profile" onPress={handleEditProfile} style={{ marginTop: 12 }} />
         </Card>
       )}
@@ -207,19 +207,19 @@ export default function ProfileScreen() {
       {profile.goals.length > 0 && (
         <>
           <SectionHeader title="My Goals" action="Edit" onAction={() => router.push('/(onboarding)/goals')} />
-          <Card><View style={styles.goalWrap}>{profile.goals.map((g) => (<View key={g} style={[styles.goalChip, { backgroundColor: theme.colors.surfaceSecondary, borderColor: theme.colors.borderLight, borderRadius: theme.radius.full }]}><Text style={styles.goalEmoji}>{goalIcons[g as HealthGoal] ?? '🎯'}</Text><Text style={{ color: theme.colors.textPrimary, fontSize: theme.fontSizes.sm, fontWeight: theme.fontWeights.medium }}>{goalLabels[g as HealthGoal] ?? g}</Text></View>))}</View></Card>
+          <Card><View style={styles.goalWrap}>{profile.goals.map((g) => (<View key={g} style={[styles.goalChip, { backgroundColor: theme.colors.surfaceSecondary, borderColor: theme.colors.border, borderRadius: theme.radius.full }]}><Text style={styles.goalEmoji}>{goalIcons[g as HealthGoal] ?? '🎯'}</Text><Text style={{ color: theme.colors.textPrimary, fontSize: theme.fontSizes.sm, fontWeight: theme.fontWeights.medium, fontFamily: theme.fontFamilies.body }}>{goalLabels[g as HealthGoal] ?? g}</Text></View>))}</View></Card>
         </>
       )}
 
       {/* ── Quick Stats ────────────────── */}
       <SectionHeader title="My Stats" />
-      <View style={styles.statsGrid}>{[{ icon: 'scan' as const, label: 'Total Scans', value: stats.total.toString() }, { icon: 'checkmark-circle' as const, label: 'Safe Scans', value: stats.total > 0 ? `${stats.safePercent}%` : '—' }, { icon: 'flame' as const, label: 'Day Streak', value: stats.streak.toString() }].map((stat) => (<Card key={stat.label} style={styles.statCard}><View style={[styles.statIconWrap, { backgroundColor: theme.colors.primaryLight }]}><Ionicons name={stat.icon} size={20} color={theme.colors.primary} /></View><Text style={{ color: theme.colors.textSecondary, fontSize: theme.fontSizes.xs, fontWeight: theme.fontWeights.medium, marginTop: 12 }}>{stat.label}</Text><Text style={{ color: theme.colors.textPrimary, fontSize: theme.fontSizes['2xl'], fontWeight: theme.fontWeights.bold, marginTop: 4 }}>{stat.value}</Text></Card>))}</View>
+      <View style={styles.statsGrid}>{[{ icon: 'scan' as const, label: 'Total Scans', value: stats.total.toString() }, { icon: 'checkmark-circle' as const, label: 'Safe Scans', value: stats.total > 0 ? `${stats.safePercent}%` : '—' }, { icon: 'flame' as const, label: 'Day Streak', value: stats.streak.toString() }].map((stat) => (<Card key={stat.label} style={styles.statCard}><View style={[styles.statIconWrap, { backgroundColor: theme.colors.primaryLight, borderColor: theme.colors.border }]}><Ionicons name={stat.icon} size={20} color={theme.colors.primary} /></View><Text style={{ color: theme.colors.textSecondary, fontSize: theme.fontSizes.xs, fontWeight: theme.fontWeights.medium, fontFamily: theme.fontFamilies.body, marginTop: 12 }}>{stat.label}</Text><Text style={{ color: theme.colors.textPrimary, fontSize: theme.fontSizes['2xl'], fontWeight: theme.fontWeights.bold, fontFamily: theme.fontFamilies.heading, marginTop: 4 }}>{stat.value}</Text></Card>))}</View>
 
       {/* ── Nutrient Monitoring ─────────── */}
       {profile.nutrientTargets.length > 0 && (
         <>
           <SectionHeader title="Nutrient Monitoring" action="Edit" onAction={handleEditProfile} />
-          <Card>{profile.nutrientTargets.map((nt, index) => (<View key={nt.nutrient} style={[styles.nutrientRow, index < profile.nutrientTargets.length - 1 && { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: theme.colors.borderLight }]}><View style={[styles.nutrientDot, { backgroundColor: theme.colors.primary }]} /><View style={styles.nutrientCopy}><View style={styles.nutrientTopRow}><Text style={{ color: theme.colors.textPrimary, fontSize: theme.fontSizes.body, flex: 1 }}>{nt.label}</Text><Text style={{ color: theme.colors.textSecondary, fontSize: theme.fontSizes.sm, fontWeight: theme.fontWeights.medium }}>{'≤'} {nt.dailyLimit} {nt.unit}/day</Text></View><View style={[styles.nutrientTrack, { backgroundColor: theme.colors.surfaceSecondary }]}><View style={[styles.nutrientFill, { backgroundColor: theme.colors.primary }]} /></View></View></View>))}</Card>
+          <Card>{profile.nutrientTargets.map((nt, index) => (<View key={nt.nutrient} style={[styles.nutrientRow, index < profile.nutrientTargets.length - 1 && { borderBottomWidth: 2, borderBottomColor: theme.colors.border }]}><View style={[styles.nutrientDot, { backgroundColor: theme.colors.primary, borderColor: theme.colors.border }]} /><View style={styles.nutrientCopy}><View style={styles.nutrientTopRow}><Text style={{ color: theme.colors.textPrimary, fontSize: theme.fontSizes.body, fontFamily: theme.fontFamilies.body, flex: 1 }}>{nt.label}</Text><Text style={{ color: theme.colors.textSecondary, fontSize: theme.fontSizes.sm, fontWeight: theme.fontWeights.medium, fontFamily: theme.fontFamilies.body }}>{'≤'} {nt.dailyLimit} {nt.unit}/day</Text></View><View style={[styles.nutrientTrack, { backgroundColor: theme.colors.surfaceSecondary, borderColor: theme.colors.border }]}><View style={[styles.nutrientFill, { backgroundColor: theme.colors.primary }]} /></View></View></View>))}</Card>
         </>
       )}
 
@@ -258,11 +258,11 @@ export default function ProfileScreen() {
       <View style={styles.actionGroup}>
         <TouchableOpacity
           onPress={handleResetProfile}
-          style={[styles.actionBtn, { backgroundColor: theme.colors.caution.bg, borderColor: theme.colors.caution.border, borderRadius: theme.radius.lg }]}
+          style={[styles.actionBtn, { backgroundColor: theme.colors.caution.bg, borderColor: theme.colors.border, borderRadius: theme.radius.md }]}
           accessibilityRole="button"
         >
           <Ionicons name="refresh-outline" size={20} color={theme.colors.caution.icon} />
-          <Text style={{ color: theme.colors.caution.text, fontSize: theme.fontSizes.body, fontWeight: theme.fontWeights.medium, marginLeft: 8 }}>
+          <Text style={{ color: theme.colors.caution.text, fontSize: theme.fontSizes.body, fontWeight: theme.fontWeights.medium, fontFamily: theme.fontFamilies.body, marginLeft: 8 }}>
             Reset Profile & Restart Onboarding
           </Text>
         </TouchableOpacity>
@@ -270,21 +270,21 @@ export default function ProfileScreen() {
         <TouchableOpacity
           onPress={handleLogout}
           disabled={isLoggingOut}
-          style={[styles.actionBtn, { backgroundColor: theme.colors.avoid.bg, borderColor: theme.colors.avoid.border, borderRadius: theme.radius.lg, opacity: isLoggingOut ? 0.6 : 1 }]}
+          style={[styles.actionBtn, { backgroundColor: theme.colors.avoid.bg, borderColor: theme.colors.border, borderRadius: theme.radius.md, opacity: isLoggingOut ? 0.6 : 1 }]}
           accessibilityRole="button"
         >
           <Ionicons name="log-out-outline" size={20} color={theme.colors.avoid.icon} />
-          <Text style={{ color: theme.colors.avoid.text, fontSize: theme.fontSizes.body, fontWeight: theme.fontWeights.medium, marginLeft: 8 }}>
+          <Text style={{ color: theme.colors.avoid.text, fontSize: theme.fontSizes.body, fontWeight: theme.fontWeights.medium, fontFamily: theme.fontFamilies.body, marginLeft: 8 }}>
             {isLoggingOut ? 'Logging Out...' : 'Log Out'}
           </Text>
         </TouchableOpacity>
       </View>
 
       {/* ── Medical Disclaimer ─────────── */}
-      <Card style={styles.disclaimer}>
+      <Card style={[styles.disclaimer, { borderColor: theme.colors.border, borderWidth: 3 }]}>
         <View style={styles.disclaimerRow}>
           <Ionicons name="medical-outline" size={16} color={theme.colors.caution.icon} />
-          <Text style={{ color: theme.colors.textTertiary, fontSize: theme.fontSizes.xs, marginLeft: 6, flex: 1, lineHeight: theme.lineHeights.xs }}>
+          <Text style={{ color: theme.colors.textTertiary, fontSize: theme.fontSizes.xs, fontFamily: theme.fontFamilies.body, marginLeft: 6, flex: 1, lineHeight: theme.lineHeights.xs }}>
             NutriScan provides general guidance, not medical advice. Always consult your healthcare provider.
           </Text>
         </View>
@@ -296,34 +296,34 @@ export default function ProfileScreen() {
 }
 
 const styles = StyleSheet.create({
-  header: { alignItems: 'center', paddingHorizontal: 20, paddingTop: 20, paddingBottom: 22, marginBottom: 28, borderWidth: 1 },
+  header: { alignItems: 'center', paddingHorizontal: 20, paddingTop: 20, paddingBottom: 22, marginBottom: 28 },
   avatarWrap: { position: 'relative' },
-  avatarRing: { width: 108, height: 108, borderRadius: 54, alignItems: 'center', justifyContent: 'center', borderWidth: 1 },
+  avatarRing: { width: 108, height: 108, borderRadius: 54, alignItems: 'center', justifyContent: 'center', borderWidth: 3 },
   avatar: { width: 92, height: 92, borderRadius: 46, overflow: 'hidden', justifyContent: 'center', alignItems: 'center' },
   avatarImage: { width: '100%', height: '100%' },
-  activeBadge: { position: 'absolute', right: -8, bottom: 4, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 20, borderWidth: 1 },
+  activeBadge: { position: 'absolute', right: -8, bottom: 4, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 20, borderWidth: 2 },
   activeDot: { width: 7, height: 7, borderRadius: 4, backgroundColor: '#16a34a', marginRight: 5 },
-  activeText: { color: '#16a34a', fontSize: 11, fontWeight: '600' as const, letterSpacing: 0.3 },
-  editProfileBtn: { flexDirection: 'row', alignItems: 'center', marginTop: 16, paddingHorizontal: 16, paddingVertical: 10, borderWidth: 1 },
+  activeText: { color: '#16a34a', fontSize: 11, fontWeight: '600' as const, fontFamily: 'DM Sans' as const, letterSpacing: 0.3 },
+  editProfileBtn: { flexDirection: 'row', alignItems: 'center', marginTop: 16, paddingHorizontal: 16, paddingVertical: 10, borderWidth: 3 },
   pillRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
   emptyCard: { marginBottom: 28, alignItems: 'center', paddingVertical: 20 },
   goalWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
-  goalChip: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 14, paddingVertical: 10, borderWidth: 1 },
+  goalChip: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 14, paddingVertical: 10, borderWidth: 3 },
   goalEmoji: { fontSize: 18, marginRight: 8 },
   statsGrid: { flexDirection: 'row', gap: 12, marginBottom: 28 },
   statCard: { flex: 1, alignItems: 'flex-start', paddingVertical: 18 },
-  statIconWrap: { width: 42, height: 42, borderRadius: 21, alignItems: 'center', justifyContent: 'center' },
+  statIconWrap: { width: 42, height: 42, borderRadius: 21, alignItems: 'center', justifyContent: 'center', borderWidth: 2 },
   nutrientRow: { flexDirection: 'row', alignItems: 'flex-start', paddingVertical: 14, gap: 10 },
-  nutrientDot: { width: 10, height: 10, borderRadius: 5, marginTop: 6 },
+  nutrientDot: { width: 10, height: 10, borderRadius: 5, marginTop: 6, borderWidth: 2 },
   nutrientCopy: { flex: 1 },
   nutrientTopRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12 },
-  nutrientTrack: { height: 6, borderRadius: 999, marginTop: 10, overflow: 'hidden' },
+  nutrientTrack: { height: 6, borderRadius: 999, marginTop: 10, overflow: 'hidden', borderWidth: 2 },
   nutrientFill: { width: '100%', height: '100%', opacity: 0.22 },
-  menuRow: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 16, minHeight: 72, borderBottomWidth: StyleSheet.hairlineWidth },
+  menuRow: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 16, minHeight: 72, borderBottomWidth: 2 },
   menuCopy: { flex: 1 },
-  menuIcon: { width: 40, height: 40, borderRadius: 12, justifyContent: 'center', alignItems: 'center', marginRight: 12 },
+  menuIcon: { width: 40, height: 40, borderRadius: 12, justifyContent: 'center', alignItems: 'center', marginRight: 12, borderWidth: 2 },
   actionGroup: { marginTop: 24, gap: 12 },
-  actionBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingHorizontal: 16, paddingVertical: 16, minHeight: 56, borderWidth: 1.5 },
+  actionBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingHorizontal: 16, paddingVertical: 16, minHeight: 56, borderWidth: 3 },
   disclaimer: { marginTop: 16, opacity: 0.8 },
   disclaimerRow: { flexDirection: 'row', alignItems: 'flex-start' },
 });

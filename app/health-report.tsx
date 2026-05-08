@@ -113,10 +113,10 @@ export default function HealthReportScreen() {
         <TopBar title="Health Summary" showBack />
         <View style={{ paddingHorizontal: 20, paddingTop: 60, alignItems: 'center' }}>
           <Ionicons name="stats-chart-outline" size={64} color={theme.colors.textTertiary} />
-          <Text style={{ color: theme.colors.textPrimary, fontSize: theme.fontSizes.lg, fontWeight: theme.fontWeights.bold, marginTop: 20, textAlign: 'center' }}>
+          <Text style={{ color: theme.colors.textPrimary, fontSize: theme.fontSizes.lg, fontWeight: theme.fontWeights.bold, fontFamily: theme.fontFamilies.heading, marginTop: 20, textAlign: 'center' }}>
             No data yet
           </Text>
-          <Text style={{ color: theme.colors.textSecondary, fontSize: theme.fontSizes.body, marginTop: 8, textAlign: 'center', maxWidth: 280 }}>
+          <Text style={{ color: theme.colors.textSecondary, fontSize: theme.fontSizes.body, fontFamily: theme.fontFamilies.body, marginTop: 8, textAlign: 'center', maxWidth: 280 }}>
             Start scanning food to see your weekly health summary and trends.
           </Text>
         </View>
@@ -136,10 +136,10 @@ export default function HealthReportScreen() {
       <View style={{ paddingHorizontal: 20, paddingTop: 8, paddingBottom: 40 }}>
 
         {/* Header */}
-        <Text style={{ color: theme.colors.textPrimary, fontSize: theme.fontSizes['2xl'], fontWeight: theme.fontWeights.bold }}>
+        <Text style={{ color: theme.colors.textPrimary, fontSize: theme.fontSizes['2xl'], fontWeight: theme.fontWeights.bold, fontFamily: theme.fontFamilies.heading }}>
           {r.period}
         </Text>
-        <Text style={{ color: theme.colors.textSecondary, fontSize: theme.fontSizes.body, marginTop: 4, marginBottom: 8 }}>
+        <Text style={{ color: theme.colors.textSecondary, fontSize: theme.fontSizes.body, fontFamily: theme.fontFamilies.body, marginTop: 4, marginBottom: 8 }}>
           {r.totalScans} total scans
         </Text>
         {profile.conditions.length > 0 && (
@@ -155,8 +155,8 @@ export default function HealthReportScreen() {
             {/* Ring */}
             <View style={styles.ringWrap}>
               <View style={[styles.ring, { borderColor: theme.colors.safe.icon }]}>
-                <Text style={{ color: theme.colors.safe.text, fontSize: theme.fontSizes['2xl'], fontWeight: theme.fontWeights.bold }}>{safePct}%</Text>
-                <Text style={{ color: theme.colors.textTertiary, fontSize: theme.fontSizes.xs }}>Safe</Text>
+                <Text style={{ color: theme.colors.safe.text, fontSize: theme.fontSizes['2xl'], fontWeight: theme.fontWeights.bold, fontFamily: theme.fontFamilies.heading }}>{safePct}%</Text>
+                <Text style={{ color: theme.colors.textTertiary, fontSize: theme.fontSizes.xs, fontFamily: theme.fontFamilies.body }}>Safe</Text>
               </View>
             </View>
             {/* Breakdown */}
@@ -167,10 +167,10 @@ export default function HealthReportScreen() {
                 { label: 'Avoid', count: r.avoid, pct: avoidPct, color: theme.colors.avoid.icon },
               ].map((item) => (
                 <View key={item.label} style={styles.breakdownItem}>
-                  <View style={[styles.breakdownDot, { backgroundColor: item.color }]} />
-                  <Text style={{ color: theme.colors.textPrimary, fontSize: theme.fontSizes.body, fontWeight: theme.fontWeights.medium, flex: 1 }}>{item.label}</Text>
-                  <Text style={{ color: theme.colors.textSecondary, fontSize: theme.fontSizes.body }}>{item.count}</Text>
-                  <Text style={{ color: theme.colors.textTertiary, fontSize: theme.fontSizes.sm, marginLeft: 4, width: 36, textAlign: 'right' }}>{item.pct}%</Text>
+                  <View style={[styles.breakdownDot, { backgroundColor: item.color, borderColor: theme.colors.border }]} />
+                  <Text style={{ color: theme.colors.textPrimary, fontSize: theme.fontSizes.body, fontWeight: theme.fontWeights.medium, fontFamily: theme.fontFamilies.body, flex: 1 }}>{item.label}</Text>
+                  <Text style={{ color: theme.colors.textSecondary, fontSize: theme.fontSizes.body, fontFamily: theme.fontFamilies.body }}>{item.count}</Text>
+                  <Text style={{ color: theme.colors.textTertiary, fontSize: theme.fontSizes.sm, fontFamily: theme.fontFamilies.body, marginLeft: 4, width: 36, textAlign: 'right' }}>{item.pct}%</Text>
                 </View>
               ))}
             </View>
@@ -181,12 +181,12 @@ export default function HealthReportScreen() {
         <SectionHeader title="Daily Scan Activity" />
         <Card>
           <View style={styles.calHeader}>
-            <Text style={{ color: theme.colors.textSecondary, fontSize: theme.fontSizes.sm }}>
+            <Text style={{ color: theme.colors.textSecondary, fontSize: theme.fontSizes.sm, fontFamily: theme.fontFamilies.body }}>
               {r.totalScans} scan{r.totalScans !== 1 ? 's' : ''} this week
             </Text>
           </View>
           <View style={{ paddingVertical: 8 }}>
-            <Text style={{ color: theme.colors.textPrimary, fontSize: theme.fontSizes.body }}>
+            <Text style={{ color: theme.colors.textPrimary, fontSize: theme.fontSizes.body, fontFamily: theme.fontFamilies.body }}>
               🟢 {r.safe} Safe · 🟡 {r.caution} Caution · 🔴 {r.avoid} Avoid
             </Text>
           </View>
@@ -196,14 +196,14 @@ export default function HealthReportScreen() {
         <SectionHeader title="Frequent Risky Foods" />
         <Card>
           {r.riskyFoods.map((food, i) => (
-            <View key={food.name} style={[styles.riskyRow, i < r.riskyFoods.length - 1 && { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: theme.colors.borderLight }]}>
+            <View key={food.name} style={[styles.riskyRow, i < r.riskyFoods.length - 1 && { borderBottomWidth: 2, borderBottomColor: theme.colors.border }]}>
               <Ionicons name="alert-circle" size={18} color={theme.colors.avoid.icon} style={{ marginRight: 10 }} />
               <View style={{ flex: 1 }}>
-                <Text style={{ color: theme.colors.textPrimary, fontSize: theme.fontSizes.body, fontWeight: theme.fontWeights.medium }}>{food.name}</Text>
-                <Text style={{ color: theme.colors.textTertiary, fontSize: theme.fontSizes.sm, marginTop: 2 }}>Scanned {food.count} times this week</Text>
+                <Text style={{ color: theme.colors.textPrimary, fontSize: theme.fontSizes.body, fontWeight: theme.fontWeights.medium, fontFamily: theme.fontFamilies.body }}>{food.name}</Text>
+                <Text style={{ color: theme.colors.textTertiary, fontSize: theme.fontSizes.sm, fontFamily: theme.fontFamilies.body, marginTop: 2 }}>Scanned {food.count} times this week</Text>
               </View>
-              <View style={[styles.tagPill, { backgroundColor: theme.colors.avoid.bg, borderRadius: theme.radius.full }]}>
-                <Text style={{ color: theme.colors.avoid.text, fontSize: 11, fontWeight: theme.fontWeights.semibold }}>{food.tag}</Text>
+              <View style={[styles.tagPill, { backgroundColor: theme.colors.avoid.bg, borderColor: theme.colors.border, borderRadius: theme.radius.full }]}>
+                <Text style={{ color: theme.colors.avoid.text, fontSize: 11, fontWeight: theme.fontWeights.semibold, fontFamily: theme.fontFamilies.heading }}>{food.tag}</Text>
               </View>
             </View>
           ))}
@@ -215,14 +215,14 @@ export default function HealthReportScreen() {
             <SectionHeader title="Nutrient Monitoring" />
             <Card>
               {profile.nutrientTargets.map((nt, i) => (
-                <View key={nt.nutrient} style={[styles.nutrientItem, i < profile.nutrientTargets.length - 1 && { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: theme.colors.borderLight }]}>
+                <View key={nt.nutrient} style={[styles.nutrientItem, i < profile.nutrientTargets.length - 1 && { borderBottomWidth: 2, borderBottomColor: theme.colors.border }]}>
                   <View style={styles.nutrientHeader}>
-                    <Text style={{ color: theme.colors.textPrimary, fontSize: theme.fontSizes.body, fontWeight: theme.fontWeights.medium, flex: 1 }}>{nt.label}</Text>
-                    <Text style={{ color: theme.colors.textSecondary, fontSize: theme.fontSizes.sm, fontWeight: theme.fontWeights.semibold }}>
+                    <Text style={{ color: theme.colors.textPrimary, fontSize: theme.fontSizes.body, fontWeight: theme.fontWeights.medium, fontFamily: theme.fontFamilies.body, flex: 1 }}>{nt.label}</Text>
+                    <Text style={{ color: theme.colors.textSecondary, fontSize: theme.fontSizes.sm, fontWeight: theme.fontWeights.semibold, fontFamily: theme.fontFamilies.body }}>
                       ≤ {nt.dailyLimit} {nt.unit}
                     </Text>
                   </View>
-                  <Text style={{ color: theme.colors.textTertiary, fontSize: theme.fontSizes.xs, marginTop: 4 }}>
+                  <Text style={{ color: theme.colors.textTertiary, fontSize: theme.fontSizes.xs, fontFamily: theme.fontFamilies.body, marginTop: 4 }}>
                     Daily limit based on your health profile
                   </Text>
                 </View>
@@ -235,20 +235,20 @@ export default function HealthReportScreen() {
         <View style={{ marginTop: 24, gap: 10 }}>
           <TouchableOpacity
             onPress={() => Alert.alert('Share', 'Health summary will be exported as an image.')}
-            style={[styles.actionBtn, { backgroundColor: theme.colors.primary, borderRadius: theme.radius.md }]}
+            style={[styles.actionBtn, { backgroundColor: theme.colors.primary, borderColor: theme.colors.border, borderRadius: theme.radius.md }]}
             accessibilityRole="button"
           >
             <Ionicons name="share-outline" size={20} color="#FFFFFF" />
-            <Text style={{ color: '#FFFFFF', fontSize: theme.fontSizes.body, fontWeight: theme.fontWeights.semibold, marginLeft: 8 }}>Share as Image</Text>
+            <Text style={{ color: '#FFFFFF', fontSize: theme.fontSizes.body, fontWeight: theme.fontWeights.semibold, fontFamily: theme.fontFamilies.body, marginLeft: 8 }}>Share as Image</Text>
           </TouchableOpacity>
           <TouchableOpacity
             disabled
-            style={[styles.actionBtn, { backgroundColor: theme.colors.surfaceSecondary, borderRadius: theme.radius.md, opacity: 0.5 }]}
+            style={[styles.actionBtn, { backgroundColor: theme.colors.surfaceSecondary, borderColor: theme.colors.border, borderRadius: theme.radius.md, opacity: 0.5 }]}
           >
             <Ionicons name="download-outline" size={20} color={theme.colors.textTertiary} />
-            <Text style={{ color: theme.colors.textTertiary, fontSize: theme.fontSizes.body, fontWeight: theme.fontWeights.medium, marginLeft: 8 }}>Export CSV</Text>
-            <View style={[styles.comingSoon, { backgroundColor: theme.colors.caution.bg, borderRadius: theme.radius.full, marginLeft: 8 }]}>
-              <Text style={{ color: theme.colors.caution.text, fontSize: 10, fontWeight: theme.fontWeights.semibold }}>v1.1</Text>
+            <Text style={{ color: theme.colors.textTertiary, fontSize: theme.fontSizes.body, fontWeight: theme.fontWeights.medium, fontFamily: theme.fontFamilies.body, marginLeft: 8 }}>Export CSV</Text>
+            <View style={[styles.comingSoon, { backgroundColor: theme.colors.caution.bg, borderColor: theme.colors.border, borderRadius: theme.radius.full, marginLeft: 8 }]}>
+              <Text style={{ color: theme.colors.caution.text, fontSize: 10, fontWeight: theme.fontWeights.semibold, fontFamily: theme.fontFamilies.heading }}>v1.1</Text>
             </View>
           </TouchableOpacity>
         </View>
@@ -264,23 +264,12 @@ const styles = StyleSheet.create({
   ring: { width: 100, height: 100, borderRadius: 50, borderWidth: 8, justifyContent: 'center', alignItems: 'center' },
   breakdownCol: { flex: 1, gap: 8 },
   breakdownItem: { flexDirection: 'row', alignItems: 'center' },
-  breakdownDot: { width: 10, height: 10, borderRadius: 5, marginRight: 8 },
+  breakdownDot: { width: 10, height: 10, borderRadius: 5, borderWidth: 2, marginRight: 8 },
   calHeader: { marginBottom: 12 },
-  calChart: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end', height: 100 },
-  calCol: { alignItems: 'center', flex: 1 },
-  calBarWrap: { justifyContent: 'flex-end', width: 20, position: 'relative' },
-  calBar: { width: 20 },
-  goalLine: { position: 'absolute', left: -4, right: -4, height: 1.5 },
-  calLegend: { flexDirection: 'row', justifyContent: 'center', marginTop: 12, gap: 16 },
-  legendItem: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  legendDot: { width: 8, height: 8, borderRadius: 4 },
-  goalLineLegend: { width: 12, height: 2 },
   riskyRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 12 },
-  tagPill: { paddingHorizontal: 8, paddingVertical: 4 },
+  tagPill: { paddingHorizontal: 8, paddingVertical: 4, borderWidth: 2 },
   nutrientItem: { paddingVertical: 12 },
   nutrientHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 6 },
-  barTrack: { height: 6, overflow: 'hidden' },
-  barFill: { height: 6 },
-  actionBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: 16 },
-  comingSoon: { paddingHorizontal: 8, paddingVertical: 2 },
+  actionBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: 16, borderWidth: 3 },
+  comingSoon: { paddingHorizontal: 8, paddingVertical: 2, borderWidth: 2 },
 });

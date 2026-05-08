@@ -41,7 +41,7 @@ export function NutrientRow({ nutrient }: NutrientRowProps) {
       </View>
 
       {/* Progress bar */}
-      <View style={[styles.track, { backgroundColor: theme.colors.surfaceSecondary, borderRadius: theme.radius.full }]}>
+      <View style={[styles.track, { backgroundColor: theme.colors.surfaceSecondary, borderColor: theme.colors.border, borderRadius: theme.radius.full }]}>
         <View style={[styles.bar, { width: `${barWidth}%`, backgroundColor: barColor, borderRadius: theme.radius.full }]} />
       </View>
 
@@ -61,7 +61,7 @@ export function NutrientRow({ nutrient }: NutrientRowProps) {
 const styles = StyleSheet.create({
   container: { paddingVertical: 10 },
   header: { flexDirection: 'row', alignItems: 'center', marginBottom: 6 },
-  track: { height: 6, overflow: 'hidden' },
-  bar: { height: 6 },
+  track: { height: 10, overflow: 'hidden', borderWidth: 2 },
+  bar: { height: 6, marginTop: 2, marginLeft: 2 },
   warningRow: { flexDirection: 'row', alignItems: 'center', marginTop: 4 },
 });

@@ -130,24 +130,24 @@ export default function NutriBotAssistScreen() {
     return (
       <AppScreen>
         <View style={styles.resultContainer}>
-          <View style={[styles.resultIcon, { backgroundColor: theme.colors.primaryLight }]}>
+          <View style={[styles.resultIcon, { backgroundColor: theme.colors.primaryLight, borderColor: theme.colors.border }]}>
             <Ionicons name={icon} size={48} color={theme.colors.primary} />
           </View>
-          <Text style={{ color: theme.colors.textPrimary, fontSize: theme.fontSizes.xl, fontWeight: theme.fontWeights.bold, textAlign: 'center', marginTop: 20 }}>
+          <Text style={{ color: theme.colors.textPrimary, fontSize: theme.fontSizes.xl, fontWeight: theme.fontWeights.bold, textAlign: 'center', marginTop: 20, fontFamily: theme.fontFamilies.heading }}>
             Based on your answers
           </Text>
-          <Text style={{ color: theme.colors.textSecondary, fontSize: theme.fontSizes.body, textAlign: 'center', marginTop: 8, marginBottom: 24, lineHeight: theme.lineHeights.body }}>
+          <Text style={{ color: theme.colors.textSecondary, fontSize: theme.fontSizes.body, textAlign: 'center', marginTop: 8, marginBottom: 24, lineHeight: theme.lineHeights.body, fontFamily: theme.fontFamilies.body }}>
             NutriBot suggests the following category for personalized guidance:
           </Text>
 
           <Card style={styles.suggestionCard}>
             <ConditionPill condition={suggested || 'other'} />
-            <Text style={{ color: theme.colors.textTertiary, fontSize: theme.fontSizes.sm, textAlign: 'center', marginTop: 12, lineHeight: theme.lineHeights.sm }}>
+            <Text style={{ color: theme.colors.textTertiary, fontSize: theme.fontSizes.sm, textAlign: 'center', marginTop: 12, lineHeight: theme.lineHeights.sm, fontFamily: theme.fontFamilies.body }}>
               We'll tailor food recommendations and nutrient monitoring around this focus area.
             </Text>
           </Card>
 
-          <Text style={{ color: theme.colors.textTertiary, fontSize: theme.fontSizes.sm, textAlign: 'center', marginTop: 12, fontStyle: 'italic' }}>
+          <Text style={{ color: theme.colors.textTertiary, fontSize: theme.fontSizes.sm, textAlign: 'center', marginTop: 12, fontStyle: 'italic', fontFamily: theme.fontFamilies.body }}>
             NutriScan provides general guidance, not medical advice. This suggestion helps us personalize the app for you.
           </Text>
 
@@ -176,16 +176,16 @@ export default function NutriBotAssistScreen() {
     <AppScreen>
       <View style={styles.container}>
         {/* Progress */}
-        <View style={[styles.progressTrack, { backgroundColor: theme.colors.surfaceSecondary, borderRadius: theme.radius.full }]}>
+        <View style={[styles.progressTrack, { backgroundColor: theme.colors.surfaceSecondary, borderColor: theme.colors.border, borderRadius: theme.radius.full }]}>
           <View style={[styles.progressFill, { width: `${progress}%`, backgroundColor: theme.colors.primary, borderRadius: theme.radius.full }]} />
         </View>
-        <Text style={{ color: theme.colors.textTertiary, fontSize: theme.fontSizes.xs, textAlign: 'right', marginTop: 4 }}>
+        <Text style={{ color: theme.colors.textTertiary, fontSize: theme.fontSizes.xs, fontFamily: theme.fontFamilies.body, textAlign: 'right', marginTop: 4 }}>
           Question {currentQuestion + 1} of {QUESTIONS.length}
         </Text>
 
         {/* Question card */}
         <View style={{ marginTop: 24, flex: 1 }}>
-          <Text style={{ color: theme.colors.textPrimary, fontSize: theme.fontSizes.xl, fontWeight: theme.fontWeights.bold, marginBottom: 20 }}>
+          <Text style={{ color: theme.colors.textPrimary, fontSize: theme.fontSizes.xl, fontWeight: theme.fontWeights.bold, fontFamily: theme.fontFamilies.heading, marginBottom: 20 }}>
             {q.text}
           </Text>
           <View style={styles.optionsList}>
@@ -196,7 +196,7 @@ export default function NutriBotAssistScreen() {
                 style={[styles.optionCard, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border, borderRadius: theme.radius.md }]}
                 accessibilityRole="button"
               >
-                <Text style={{ color: theme.colors.textPrimary, fontSize: theme.fontSizes.body, fontWeight: theme.fontWeights.medium }}>
+                <Text style={{ color: theme.colors.textPrimary, fontSize: theme.fontSizes.body, fontWeight: theme.fontWeights.medium, fontFamily: theme.fontFamilies.body, flex: 1 }}>
                   {opt.label}
                 </Text>
                 <Ionicons name="chevron-forward" size={18} color={theme.colors.textTertiary} style={{ marginLeft: 8 }} />
@@ -206,7 +206,7 @@ export default function NutriBotAssistScreen() {
         </View>
 
         {/* Disclaimer */}
-        <Text style={{ color: theme.colors.textTertiary, fontSize: theme.fontSizes.xs, textAlign: 'center', marginTop: 16, lineHeight: theme.lineHeights.xs }}>
+        <Text style={{ color: theme.colors.textTertiary, fontSize: theme.fontSizes.xs, textAlign: 'center', marginTop: 16, lineHeight: theme.lineHeights.xs, fontFamily: theme.fontFamilies.body }}>
           These questions help us match you with the right guidance category.{"\n"}NutriScan does not diagnose — always consult your doctor.
         </Text>
       </View>
@@ -224,6 +224,7 @@ const styles = StyleSheet.create({
   progressTrack: {
     height: 6,
     overflow: 'hidden',
+    borderWidth: 2,
   },
   progressFill: {
     height: '100%',
@@ -236,7 +237,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 16,
     paddingVertical: 16,
-    borderWidth: 1,
+    borderWidth: 3,
   },
   resultContainer: {
     flex: 1,
@@ -250,6 +251,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     alignSelf: 'center',
+    borderWidth: 3,
   },
   suggestionCard: {
     alignItems: 'center',

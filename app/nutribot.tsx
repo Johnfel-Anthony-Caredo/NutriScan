@@ -189,15 +189,15 @@ export default function NutriBotScreen() {
 
       {/* Condition context bar */}
       {profile.conditions.length > 0 && (
-        <View style={[styles.contextBar, { borderBottomColor: theme.colors.border }]}>
-          <Text style={{ color: theme.colors.textTertiary, fontSize: theme.fontSizes.sm, marginRight: 8 }}>
+        <View style={[styles.contextBar, { borderBottomColor: theme.colors.border, borderBottomWidth: 2 }]}>
+          <Text style={{ color: theme.colors.textTertiary, fontSize: theme.fontSizes.sm, fontFamily: theme.fontFamilies.body, marginRight: 8 }}>
             Your conditions:
           </Text>
           {profile.conditions.slice(0, 3).map((c) => (
             <ConditionPill key={c} condition={c} compact />
           ))}
           {profile.conditions.length > 3 && (
-            <Text style={{ color: theme.colors.textTertiary, fontSize: theme.fontSizes.xs }}>+{profile.conditions.length - 3}</Text>
+            <Text style={{ color: theme.colors.textTertiary, fontSize: theme.fontSizes.xs, fontFamily: theme.fontFamilies.body }}>+{profile.conditions.length - 3}</Text>
           )}
         </View>
       )}
@@ -222,7 +222,7 @@ export default function NutriBotScreen() {
 
           {/* Quick suggestions — fixed above input bar when few messages */}
           {messages.length <= 2 && !isTyping && (
-            <View style={[styles.suggestionsWrap, { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: theme.colors.border, paddingTop: 12, backgroundColor: theme.colors.surface }]}>
+            <View style={[styles.suggestionsWrap, { borderTopWidth: 2, borderTopColor: theme.colors.border, paddingTop: 12, backgroundColor: theme.colors.surface }]}>
               <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chips}>
                 {SUGGESTIONS.map((s) => (
                   <TouchableOpacity
@@ -231,7 +231,7 @@ export default function NutriBotScreen() {
                     style={[styles.chip, { backgroundColor: theme.colors.surfaceSecondary, borderColor: theme.colors.border, borderRadius: theme.radius.full }]}
                     accessibilityRole="button"
                   >
-                    <Text style={{ color: theme.colors.textPrimary, fontSize: theme.fontSizes.sm }}>{s}</Text>
+                    <Text style={{ color: theme.colors.textPrimary, fontSize: theme.fontSizes.sm, fontFamily: theme.fontFamilies.body }}>{s}</Text>
                   </TouchableOpacity>
                 ))}
               </ScrollView>
@@ -239,13 +239,13 @@ export default function NutriBotScreen() {
           )}
 
           {/* Input bar */}
-          <View style={[styles.inputBar, { backgroundColor: theme.colors.surface, borderTopColor: theme.colors.border }]}>
+          <View style={[styles.inputBar, { backgroundColor: theme.colors.surface, borderTopColor: theme.colors.border, borderTopWidth: 2 }]}>
             <TextInput
               value={input}
               onChangeText={setInput}
               placeholder="Ask NutriBot anything..."
               placeholderTextColor={theme.colors.textTertiary}
-              style={[styles.input, { backgroundColor: theme.colors.surfaceSecondary, borderRadius: theme.radius.full, color: theme.colors.textPrimary, fontSize: theme.fontSizes.body }]}
+              style={[styles.input, { backgroundColor: theme.colors.surfaceSecondary, borderRadius: theme.radius.full, color: theme.colors.textPrimary, fontSize: theme.fontSizes.body, fontFamily: theme.fontFamilies.body }]}
               onSubmitEditing={handleSend}
               returnKeyType="send"
               accessibilityLabel="Chat message input"
@@ -253,7 +253,7 @@ export default function NutriBotScreen() {
             <TouchableOpacity
               onPress={handleSend}
               disabled={!input.trim() || isTyping}
-              style={[styles.sendBtn, { backgroundColor: input.trim() && !isTyping ? theme.colors.primary : theme.colors.surfaceSecondary, borderRadius: theme.radius.full }]}
+              style={[styles.sendBtn, { backgroundColor: input.trim() && !isTyping ? theme.colors.primary : theme.colors.surfaceSecondary, borderColor: theme.colors.border, borderRadius: theme.radius.full }]}
               accessibilityRole="button"
               accessibilityLabel="Send message"
             >
@@ -267,12 +267,12 @@ export default function NutriBotScreen() {
 }
 
 const styles = StyleSheet.create({
-  contextBar: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', paddingHorizontal: 16, paddingVertical: 10, borderBottomWidth: StyleSheet.hairlineWidth, gap: 6 },
+  contextBar: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', paddingHorizontal: 16, paddingVertical: 10, gap: 6 },
   messageList: { paddingTop: 16, paddingBottom: 8 },
   suggestionsWrap: { paddingTop: 8, paddingBottom: 16 },
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, paddingHorizontal: 16 },
-  chip: { paddingHorizontal: 16, paddingVertical: 10, borderWidth: 1 },
-  inputBar: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 12, paddingVertical: 10, borderTopWidth: StyleSheet.hairlineWidth, gap: 10 },
+  chip: { paddingHorizontal: 16, paddingVertical: 10, borderWidth: 3 },
+  inputBar: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 12, paddingVertical: 10, gap: 10 },
   input: { flex: 1, height: 44, paddingHorizontal: 18 },
-  sendBtn: { width: 40, height: 40, justifyContent: 'center', alignItems: 'center' },
+  sendBtn: { width: 40, height: 40, justifyContent: 'center', alignItems: 'center', borderWidth: 3 },
 });

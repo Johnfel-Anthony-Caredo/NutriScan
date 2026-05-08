@@ -34,6 +34,7 @@ export function ProfileSummaryCard({ profile, compact = false }: ProfileSummaryC
               color: theme.colors.textPrimary,
               fontSize: theme.fontSizes.body,
               fontWeight: theme.fontWeights.semibold,
+              fontFamily: theme.fontFamilies.heading,
               marginLeft: 8,
             }}
           >
@@ -46,7 +47,7 @@ export function ProfileSummaryCard({ profile, compact = false }: ProfileSummaryC
               <ConditionPill key={c} condition={c} />
             ))
           ) : (
-            <Text style={{ color: theme.colors.textTertiary, fontSize: theme.fontSizes.body }}>
+            <Text style={{ color: theme.colors.textTertiary, fontSize: theme.fontSizes.body, fontFamily: theme.fontFamilies.body }}>
               No conditions selected
             </Text>
           )}
@@ -63,6 +64,7 @@ export function ProfileSummaryCard({ profile, compact = false }: ProfileSummaryC
                 color: theme.colors.textPrimary,
                 fontSize: theme.fontSizes.body,
                 fontWeight: theme.fontWeights.semibold,
+                fontFamily: theme.fontFamilies.heading,
                 marginLeft: 8,
               }}
             >
@@ -76,6 +78,7 @@ export function ProfileSummaryCard({ profile, compact = false }: ProfileSummaryC
                 style={{
                   color: theme.colors.textPrimary,
                   fontSize: theme.fontSizes.body,
+                  fontFamily: theme.fontFamilies.body,
                   marginLeft: 8,
                 }}
               >
@@ -96,6 +99,7 @@ export function ProfileSummaryCard({ profile, compact = false }: ProfileSummaryC
                 color: theme.colors.textPrimary,
                 fontSize: theme.fontSizes.body,
                 fontWeight: theme.fontWeights.semibold,
+                fontFamily: theme.fontFamilies.heading,
                 marginLeft: 8,
               }}
             >
@@ -108,6 +112,7 @@ export function ProfileSummaryCard({ profile, compact = false }: ProfileSummaryC
                 style={{
                   color: theme.colors.textPrimary,
                   fontSize: theme.fontSizes.body,
+                  fontFamily: theme.fontFamilies.body,
                   flex: 1,
                 }}
               >
@@ -118,6 +123,7 @@ export function ProfileSummaryCard({ profile, compact = false }: ProfileSummaryC
                   color: theme.colors.textSecondary,
                   fontSize: theme.fontSizes.body,
                   fontWeight: theme.fontWeights.medium,
+                  fontFamily: theme.fontFamilies.body,
                 }}
               >
                 {nt.dailyLimit} {nt.unit}/day
@@ -160,7 +166,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     paddingVertical: 6,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: 'rgba(0,0,0,0.06)',
+    borderBottomWidth: 2,
+    borderBottomColor: '#0A0A0A',
   },
 });

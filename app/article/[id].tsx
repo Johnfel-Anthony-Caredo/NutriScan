@@ -132,11 +132,11 @@ export default function ArticleDetailScreen() {
   return (
     <AppScreen scroll noPadding>
       {/* ── Top Bar ──────────────────── */}
-      <View style={[styles.topBar, { borderBottomColor: theme.colors.borderLight }]}>
+      <View style={[styles.topBar, { borderBottomColor: theme.colors.border }]}>
         <TouchableOpacity onPress={() => router.back()} accessibilityRole="button" style={styles.backBtn}>
           <Ionicons name="arrow-back" size={24} color={theme.colors.textPrimary} />
         </TouchableOpacity>
-        <Text style={{ color: theme.colors.textPrimary, fontSize: theme.fontSizes.sm, fontWeight: theme.fontWeights.medium, flex: 1 }} numberOfLines={1}>
+        <Text style={{ color: theme.colors.textPrimary, fontSize: theme.fontSizes.sm, fontWeight: theme.fontWeights.medium, fontFamily: theme.fontFamilies.body, flex: 1 }} numberOfLines={1}>
           {article.title}
         </Text>
       </View>
@@ -153,6 +153,7 @@ export default function ArticleDetailScreen() {
             color: theme.colors.textPrimary,
             fontSize: theme.fontSizes['2xl'],
             fontWeight: theme.fontWeights.bold,
+            fontFamily: theme.fontFamilies.heading,
             lineHeight: theme.lineHeights['2xl'],
             marginTop: 20,
           }}
@@ -163,7 +164,7 @@ export default function ArticleDetailScreen() {
         {/* Source credit */}
         <View style={styles.sourceRow}>
           <Ionicons name="globe-outline" size={14} color={theme.colors.textTertiary} />
-          <Text style={{ color: theme.colors.textTertiary, fontSize: theme.fontSizes.sm, marginLeft: 5 }}>
+          <Text style={{ color: theme.colors.textTertiary, fontSize: theme.fontSizes.sm, fontFamily: theme.fontFamilies.body, marginLeft: 5 }}>
             Wikipedia &middot; Open access
           </Text>
         </View>
@@ -174,6 +175,7 @@ export default function ArticleDetailScreen() {
             style={{
               color: theme.colors.textPrimary,
               fontSize: theme.fontSizes.body,
+              fontFamily: theme.fontFamilies.body,
               lineHeight: theme.lineHeights.body,
               marginTop: 20,
             }}
@@ -183,7 +185,7 @@ export default function ArticleDetailScreen() {
         ) : null}
 
         {/* Divider */}
-        <View style={[styles.divider, { backgroundColor: theme.colors.borderLight }]} />
+        <View style={[styles.divider, { backgroundColor: theme.colors.border }]} />
 
         {/* Body content */}
         {article.content && article.content !== article.summary ? (
@@ -191,6 +193,7 @@ export default function ArticleDetailScreen() {
             style={{
               color: theme.colors.textPrimary,
               fontSize: theme.fontSizes.body,
+              fontFamily: theme.fontFamilies.body,
               lineHeight: theme.lineHeights.body,
               marginBottom: 16,
             }}
@@ -210,7 +213,7 @@ export default function ArticleDetailScreen() {
             accessibilityRole="button"
           >
             <Ionicons name="globe-outline" size={18} color={theme.colors.primary} />
-            <Text style={{ color: theme.colors.primary, fontSize: theme.fontSizes.sm, fontWeight: theme.fontWeights.medium, marginLeft: 8, flex: 1 }} numberOfLines={1}>
+            <Text style={{ color: theme.colors.primary, fontSize: theme.fontSizes.sm, fontWeight: theme.fontWeights.medium, fontFamily: theme.fontFamilies.body, marginLeft: 8, flex: 1 }} numberOfLines={1}>
               Read full article on Wikipedia
             </Text>
             <Ionicons name="open-outline" size={16} color={theme.colors.primary} />
@@ -225,6 +228,7 @@ export default function ArticleDetailScreen() {
                 color: theme.colors.textPrimary,
                 fontSize: theme.fontSizes.lg,
                 fontWeight: theme.fontWeights.semibold,
+                fontFamily: theme.fontFamilies.heading,
                 marginBottom: 14,
               }}
             >
@@ -235,18 +239,18 @@ export default function ArticleDetailScreen() {
                 key={rel.slug}
                 onPress={() => router.replace(`/article/${rel.slug}`)}
                 activeOpacity={0.7}
-                style={[styles.relatedCard, { backgroundColor: theme.colors.surface, borderColor: theme.colors.borderLight, borderRadius: theme.radius.md, ...theme.shadows.sm }]}
+                style={[styles.relatedCard, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border, borderRadius: theme.radius.md }]}
                 accessibilityRole="button"
               >
                 <Text
-                  style={{ color: theme.colors.textPrimary, fontSize: theme.fontSizes.sm, fontWeight: theme.fontWeights.semibold }}
+                  style={{ color: theme.colors.textPrimary, fontSize: theme.fontSizes.sm, fontWeight: theme.fontWeights.semibold, fontFamily: theme.fontFamilies.body }}
                   numberOfLines={2}
                 >
                   {rel.title}
                 </Text>
                 {rel.summary ? (
                   <Text
-                    style={{ color: theme.colors.textSecondary, fontSize: theme.fontSizes.xs, marginTop: 4, lineHeight: theme.lineHeights.xs }}
+                    style={{ color: theme.colors.textSecondary, fontSize: theme.fontSizes.xs, fontFamily: theme.fontFamilies.body, marginTop: 4, lineHeight: theme.lineHeights.xs }}
                     numberOfLines={2}
                   >
                     {rel.summary}
@@ -262,10 +266,10 @@ export default function ArticleDetailScreen() {
 }
 
 const styles = StyleSheet.create({
-  topBar: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 8, paddingVertical: 10, borderBottomWidth: StyleSheet.hairlineWidth, gap: 4 },
+  topBar: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 8, paddingVertical: 10, gap: 4 },
   backBtn: { padding: 8 },
   sourceRow: { flexDirection: 'row', alignItems: 'center', marginTop: 10 },
-  divider: { height: 1, marginVertical: 20 },
-  sourceBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: 14, borderWidth: 1.5, marginTop: 20, paddingHorizontal: 16 },
-  relatedCard: { padding: 14, marginBottom: 10, borderWidth: StyleSheet.hairlineWidth },
+  divider: { height: 2, marginVertical: 20 },
+  sourceBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: 14, borderWidth: 3, marginTop: 20, paddingHorizontal: 16 },
+  relatedCard: { padding: 14, marginBottom: 10, borderWidth: 3 },
 });

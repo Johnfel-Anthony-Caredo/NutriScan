@@ -33,7 +33,7 @@ export function ChatBubble({ message }: ChatBubbleProps) {
   return (
     <View style={[styles.row, isBot ? styles.botRow : styles.userRow]}>
       {isBot && (
-        <View style={[styles.avatar, { backgroundColor: theme.colors.primaryLight }]}>
+        <View style={[styles.avatar, { backgroundColor: theme.colors.primaryLight, borderColor: theme.colors.border }]}>
           <Ionicons name="chatbubble-ellipses" size={14} color={theme.colors.primary} />
         </View>
       )}
@@ -41,7 +41,7 @@ export function ChatBubble({ message }: ChatBubbleProps) {
         style={[
           styles.bubble,
           isBot
-            ? { backgroundColor: theme.colors.surface, borderColor: theme.colors.borderLight, borderWidth: StyleSheet.hairlineWidth, borderTopLeftRadius: 4 }
+            ? { backgroundColor: theme.colors.surface, borderColor: theme.colors.border, borderWidth: 3, borderTopLeftRadius: 4 }
             : { backgroundColor: theme.colors.primary, borderTopRightRadius: 4 },
           { borderRadius: theme.radius.lg },
         ]}
@@ -52,6 +52,7 @@ export function ChatBubble({ message }: ChatBubbleProps) {
               body: {
                 color: theme.colors.textPrimary,
                 fontSize: theme.fontSizes.body,
+                fontFamily: theme.fontFamilies.body,
                 lineHeight: theme.lineHeights.body,
               },
               heading1: { fontSize: theme.fontSizes.xl, fontWeight: '700', color: theme.colors.textPrimary, marginBottom: 8 },
@@ -84,6 +85,7 @@ export function ChatBubble({ message }: ChatBubbleProps) {
             style={{
               color: '#FFFFFF',
               fontSize: theme.fontSizes.body,
+              fontFamily: theme.fontFamilies.body,
               lineHeight: theme.lineHeights.body,
             }}
           >
@@ -122,6 +124,6 @@ const styles = StyleSheet.create({
   row: { marginBottom: 12, paddingHorizontal: 16 },
   botRow: { flexDirection: 'row', alignItems: 'flex-end', paddingRight: 48 },
   userRow: { flexDirection: 'row', justifyContent: 'flex-end', paddingLeft: 48 },
-  avatar: { width: 28, height: 28, borderRadius: 14, justifyContent: 'center', alignItems: 'center', marginRight: 8, marginBottom: 4 },
+  avatar: { width: 28, height: 28, borderRadius: 14, justifyContent: 'center', alignItems: 'center', marginRight: 8, marginBottom: 4, borderWidth: 2 },
   bubble: { padding: 14, maxWidth: '88%' },
 });

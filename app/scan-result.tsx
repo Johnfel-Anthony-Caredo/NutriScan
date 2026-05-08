@@ -70,10 +70,10 @@ export default function ScanResultScreen() {
         <TopBar title="Scan Result" showBack onBack={() => router.replace('/(tabs)')} />
         <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 20 }}>
           <Ionicons name="cloud-offline-outline" size={56} color={theme.colors.caution.icon} />
-          <Text style={{ color: theme.colors.textPrimary, fontSize: theme.fontSizes.lg, fontWeight: theme.fontWeights.bold, textAlign: 'center', marginTop: 16 }}>
+          <Text style={{ color: theme.colors.textPrimary, fontSize: theme.fontSizes.lg, fontWeight: theme.fontWeights.bold, fontFamily: theme.fontFamilies.heading, textAlign: 'center', marginTop: 16 }}>
             No scan data available
           </Text>
-          <Text style={{ color: theme.colors.textSecondary, fontSize: theme.fontSizes.body, textAlign: 'center', marginTop: 8 }}>
+          <Text style={{ color: theme.colors.textSecondary, fontSize: theme.fontSizes.body, fontFamily: theme.fontFamilies.body, textAlign: 'center', marginTop: 8 }}>
             The scan analysis result was not received. Please try scanning again.
           </Text>
           <PrimaryButton label="Go to Scan" onPress={() => router.replace('/(tabs)/scan')} style={{ marginTop: 24 }} />
@@ -122,24 +122,24 @@ export default function ScanResultScreen() {
         {/* ── Verdict Header ─────────────── */}
         <View style={styles.verdictHeader}>
           <VerdictBadge verdict={result.verdict} large />
-          <Text style={{ color: theme.colors.textPrimary, fontSize: theme.fontSizes['2xl'], fontWeight: theme.fontWeights.bold, marginTop: 16 }}>
+          <Text style={{ color: theme.colors.textPrimary, fontSize: theme.fontSizes['2xl'], fontWeight: theme.fontWeights.bold, fontFamily: theme.fontFamilies.heading, marginTop: 16 }}>
             {result.foodName}
           </Text>
-          <Text style={{ color: theme.colors.textTertiary, fontSize: theme.fontSizes.sm, marginTop: 4 }}>
+          <Text style={{ color: theme.colors.textTertiary, fontSize: theme.fontSizes.sm, fontFamily: theme.fontFamilies.body, marginTop: 4 }}>
             {result.mealType.charAt(0).toUpperCase() + result.mealType.slice(1)} · {new Date(result.scannedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
           </Text>
         </View>
 
         {/* ── Alert Card (for caution/avoid) ── */}
         {(result.verdict === 'caution' || result.verdict === 'avoid') && (
-          <Card style={[styles.alertCard, { backgroundColor: theme.colors[result.verdict].bg, borderColor: theme.colors[result.verdict].border }]}>
+          <Card style={[styles.alertCard, { backgroundColor: theme.colors[result.verdict].bg, borderColor: theme.colors.border }]}>
             <View style={styles.alertRow}>
               <Ionicons name={result.verdict === 'avoid' ? 'warning' : 'alert-circle'} size={22} color={theme.colors[result.verdict].icon} />
-              <Text style={{ color: theme.colors[result.verdict].text, fontSize: theme.fontSizes.body, fontWeight: theme.fontWeights.semibold, marginLeft: 8 }}>
+              <Text style={{ color: theme.colors[result.verdict].text, fontSize: theme.fontSizes.body, fontWeight: theme.fontWeights.semibold, fontFamily: theme.fontFamilies.body, marginLeft: 8 }}>
                 {result.verdict === 'avoid' ? 'Not recommended for you' : 'Use with caution'}
               </Text>
             </View>
-            <Text style={{ color: theme.colors[result.verdict].text, fontSize: theme.fontSizes.body, lineHeight: theme.lineHeights.body, marginTop: 8 }}>
+            <Text style={{ color: theme.colors[result.verdict].text, fontSize: theme.fontSizes.body, fontFamily: theme.fontFamilies.body, lineHeight: theme.lineHeights.body, marginTop: 8 }}>
               {result.explanation}
             </Text>
           </Card>
@@ -147,10 +147,10 @@ export default function ScanResultScreen() {
 
         {/* ── Safe message ─────────────────── */}
         {result.verdict === 'safe' && result.safeMessage && (
-          <Card style={[styles.alertCard, { backgroundColor: theme.colors.safe.bg, borderColor: theme.colors.safe.border }]}>
+          <Card style={[styles.alertCard, { backgroundColor: theme.colors.safe.bg, borderColor: theme.colors.border }]}>
             <View style={styles.alertRow}>
               <Ionicons name="checkmark-circle" size={22} color={theme.colors.safe.icon} />
-              <Text style={{ color: theme.colors.safe.text, fontSize: theme.fontSizes.body, fontWeight: theme.fontWeights.semibold, marginLeft: 8, flex: 1 }}>
+              <Text style={{ color: theme.colors.safe.text, fontSize: theme.fontSizes.body, fontWeight: theme.fontWeights.semibold, fontFamily: theme.fontFamilies.body, marginLeft: 8, flex: 1 }}>
                 {result.safeMessage}
               </Text>
             </View>
@@ -179,9 +179,9 @@ export default function ScanResultScreen() {
             <SectionHeader title="Better Alternatives" />
             <Card>
               {result.alternatives.map((alt) => (
-                <View key={alt.name} style={[styles.altRow, { borderBottomColor: theme.colors.borderLight }]}>
+                <View key={alt.name} style={[styles.altRow, { borderBottomColor: theme.colors.border }]}>
                   <Ionicons name="swap-horizontal" size={18} color={theme.colors.primary} style={{ marginRight: 10 }} />
-                  <Text style={{ color: theme.colors.textPrimary, fontSize: theme.fontSizes.body, flex: 1 }}>{alt.name}</Text>
+                  <Text style={{ color: theme.colors.textPrimary, fontSize: theme.fontSizes.body, fontFamily: theme.fontFamilies.body, flex: 1 }}>{alt.name}</Text>
                   <VerdictBadge verdict={alt.verdict} />
                 </View>
               ))}
@@ -206,9 +206,9 @@ export default function ScanResultScreen() {
               />
             </>
           ) : (
-            <Card style={{ backgroundColor: theme.colors.safe.bg, alignItems: 'center', paddingVertical: 16 }}>
+            <Card style={{ backgroundColor: theme.colors.safe.bg, borderColor: theme.colors.border, alignItems: 'center', paddingVertical: 16 }}>
               <Ionicons name="checkmark-circle" size={28} color={theme.colors.safe.icon} />
-              <Text style={{ color: theme.colors.safe.text, fontSize: theme.fontSizes.body, fontWeight: theme.fontWeights.semibold, marginTop: 6 }}>
+              <Text style={{ color: theme.colors.safe.text, fontSize: theme.fontSizes.body, fontWeight: theme.fontWeights.semibold, fontFamily: theme.fontFamilies.body, marginTop: 6 }}>
                 Added to your food log!
               </Text>
             </Card>
@@ -222,9 +222,9 @@ export default function ScanResultScreen() {
 
 const styles = StyleSheet.create({
   verdictHeader: { alignItems: 'center', paddingVertical: 20, marginBottom: 8 },
-  alertCard: { borderWidth: 1, marginBottom: 24 },
+  alertCard: { borderWidth: 3, marginBottom: 24 },
   alertRow: { flexDirection: 'row', alignItems: 'center' },
   showMore: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingTop: 12, gap: 4 },
-  altRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 12, borderBottomWidth: StyleSheet.hairlineWidth },
+  altRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 12, borderBottomWidth: 2 },
   actions: { marginTop: 28 },
 });
