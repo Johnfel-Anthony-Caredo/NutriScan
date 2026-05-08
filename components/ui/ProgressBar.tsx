@@ -1,10 +1,3 @@
-/**
- * ProgressBar — step progress indicator for onboarding.
- *
- * Shows which step the user is on with filled/unfilled segments.
- * Reduces anxiety by making progress visible and the flow feel short.
- */
-
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { useTheme } from '@/hooks/useTheme';
@@ -12,7 +5,6 @@ import { useTheme } from '@/hooks/useTheme';
 interface ProgressBarProps {
   currentStep: number;
   totalSteps: number;
-  /** Optional step label like "Step 2 of 4" */
   showLabel?: boolean;
 }
 
@@ -27,26 +19,29 @@ export function ProgressBar({
     <View style={styles.container}>
       {showLabel && (
         <Text
-          style={{
-            color: theme.colors.textTertiary,
-            fontSize: theme.fontSizes.sm,
-            fontWeight: theme.fontWeights.medium,
-            marginBottom: 8,
-          }}
+          style={[
+            styles.label,
+            {
+              color: theme.colors.textSecondary,
+              fontSize: theme.fontSizes.sm,
+              fontFamily: theme.textStyles.label.fontFamily,
+              fontWeight: theme.fontWeights.bold,
+            },
+          ]}
         >
-          Step {currentStep} of {totalSteps}
+          STEP {currentStep} OF {totalSteps}
         </Text>
       )}
-      <View style={[styles.track, { backgroundColor: theme.colors.surfaceSecondary, borderRadius: theme.radius.full }]}>
+      <View style={[styles.track, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }]}>
         {Array.from({ length: totalSteps }).map((_, i) => (
           <View
             key={i}
             style={[
               styles.segment,
               {
-                backgroundColor:
-                  i < currentStep ? theme.colors.primary : 'transparent',
-                borderRadius: theme.radius.full,
+                backgroundColor: i < currentStep ? theme.colors.primary : 'transparent',
+                borderColor: theme.colors.border,
+                borderRightWidth: i < totalSteps - 1 ? 2 : 0,
               },
             ]}
           />
@@ -62,14 +57,18 @@ const styles = StyleSheet.create({
     paddingTop: 8,
     paddingBottom: 4,
   },
+  label: {
+    marginBottom: 8,
+    letterSpacing: 0.5,
+  },
   track: {
     flexDirection: 'row',
-    height: 6,
-    gap: 4,
+    height: 12,
+    borderWidth: 2,
     overflow: 'hidden',
   },
   segment: {
     flex: 1,
-    height: 6,
+    height: 12,
   },
 });
