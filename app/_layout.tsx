@@ -7,7 +7,6 @@ import React, { useEffect } from 'react';
 import 'react-native-reanimated';
 
 function RootLayoutNav() {
-  const colorScheme = useColorScheme();
   const { session, isLoading: authLoading } = useAuth();
   const { profile, isHydrated: profileHydrated } = useProfile();
   const segments = useSegments();
