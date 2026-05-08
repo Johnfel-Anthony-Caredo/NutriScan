@@ -101,13 +101,14 @@ export default function SplashScreen() {
           },
         ]}
       >
-        <View style={[styles.logoCircle, { backgroundColor: theme.colors.primaryLight }]}>
+        <View style={[styles.logoCircle, { backgroundColor: theme.colors.primaryLight, borderColor: theme.colors.border, borderWidth: 3 }]}>
           <Ionicons name="leaf" size={56} color={theme.colors.primary} />
         </View>
         <Text
           style={{
             color: theme.colors.textPrimary,
             fontSize: theme.fontSizes['3xl'],
+            fontFamily: theme.textStyles.displayMd.fontFamily,
             fontWeight: theme.fontWeights.bold,
             marginTop: 20,
             letterSpacing: 0.5,
@@ -129,6 +130,7 @@ export default function SplashScreen() {
           style={{
             color: theme.colors.textSecondary,
             fontSize: theme.fontSizes.lg,
+            fontFamily: theme.textStyles.body.fontFamily,
             lineHeight: theme.lineHeights.lg,
             textAlign: 'center',
           }}
