@@ -1,8 +1,10 @@
 /**
- * NutriScan Shadow Tokens
+ * NutriScan Neo-Brutalist Shadows
  *
- * Platform-aware: uses `elevation` on Android and
- * `shadow*` properties on iOS.
+ * Hard offset shadows — 0 blur, deep black color.
+ * iOS: shadowRadius: 0 produces a crisp hard shadow.
+ * Android: elevation provides subtle depth (platform limitation).
+ * For a true hard shadow on Android, the Card component uses a View-based approach.
  */
 
 import { Platform, type ViewStyle } from 'react-native';
@@ -16,29 +18,26 @@ type ShadowStyle = Pick<
   | 'elevation'
 >;
 
-const createShadow = (
-  offsetY: number,
-  blurRadius: number,
-  opacity: number,
+const createBrutalShadow = (
+  offset: number,
   elevation: number,
-  color = '#1A1918',
 ): ShadowStyle => {
   if (Platform.OS === 'android') {
     return { elevation };
   }
   return {
-    shadowColor: color,
-    shadowOffset: { width: 0, height: offsetY },
-    shadowOpacity: opacity,
-    shadowRadius: blurRadius,
+    shadowColor: '#0A0A0A',
+    shadowOffset: { width: offset, height: offset },
+    shadowOpacity: 1,
+    shadowRadius: 0,
   };
 };
 
 export const shadows = {
-  /** Subtle — cards on surface */
-  sm: createShadow(1, 3, 0.06, 1),
-  /** Medium — elevated cards, dropdowns */
-  md: createShadow(2, 8, 0.1, 3),
-  /** Large — modals, floating buttons */
-  lg: createShadow(4, 16, 0.14, 6),
+  /** 3px offset — small cards, pills */
+  sm: createBrutalShadow(3, 4),
+  /** 5px offset — standard cards, buttons */
+  md: createBrutalShadow(5, 6),
+  /** 8px offset — modals, floating elements */
+  lg: createBrutalShadow(8, 10),
 } as const;
