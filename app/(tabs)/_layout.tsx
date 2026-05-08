@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, StyleSheet } from 'react-native';
+import { View, StyleSheet, Platform } from 'react-native';
 import { Tabs } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '@/hooks/useTheme';
@@ -32,14 +32,20 @@ export default function TabsLayout() {
           tabBarStyle: {
             backgroundColor: theme.colors.tabBar,
             borderTopColor: theme.colors.tabBarBorder,
-            borderTopWidth: StyleSheet.hairlineWidth,
-            height: 64,
-            paddingBottom: 8,
+            borderTopWidth: 3,
+            height: Platform.OS === 'ios' ? 88 : 68,
+            paddingBottom: Platform.OS === 'ios' ? 28 : 10,
             paddingTop: 8,
           },
           tabBarLabelStyle: {
-            fontSize: theme.fontSizes.xs,
-            fontWeight: theme.fontWeights.medium,
+            fontSize: 11,
+            fontFamily: theme.textStyles.label.fontFamily,
+            fontWeight: theme.fontWeights.bold,
+            letterSpacing: 0.3,
+          },
+          tabBarActiveBackgroundColor: 'transparent',
+          tabBarItemStyle: {
+            paddingTop: 4,
           },
         }}
       >
@@ -52,7 +58,7 @@ export default function TabsLayout() {
               tabBarIcon: ({ focused, color, size }) => (
                 <Ionicons
                   name={focused ? tab.iconFocused : tab.icon}
-                  size={size}
+                  size={focused ? size + 2 : size}
                   color={color}
                 />
               ),
@@ -61,7 +67,6 @@ export default function TabsLayout() {
         ))}
       </Tabs>
 
-      {/* FAB visible on all tab screens — hidden on Scan via the Scan screen itself */}
       <FloatingNutriBotButton />
     </View>
   );
