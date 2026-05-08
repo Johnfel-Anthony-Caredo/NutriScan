@@ -11,9 +11,10 @@ import { useProfile } from '@/context/ProfileContext';
 import { useTheme } from '@/hooks/useTheme';
 import { goalIcons, goalLabels, type HealthGoal } from '@/types/health';
 import { Ionicons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
-import React, { useState } from 'react';
-import { Alert, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { getAllUserScans, updateUserProfile, upsertNutrientTargets, upsertUserConditions } from '@/services/supabaseService';
+import { useFocusEffect, useRouter } from 'expo-router';
+import React, { useCallback, useState } from 'react';
+import { Alert, Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 function MenuRow({ icon, label, subtitle, onPress, color }: {
   icon: keyof typeof Ionicons.glyphMap;
@@ -24,15 +25,15 @@ function MenuRow({ icon, label, subtitle, onPress, color }: {
 }) {
   const theme = useTheme();
   return (
-    <TouchableOpacity onPress={onPress} style={[styles.menuRow, { borderBottomColor: theme.colors.borderLight }]} accessibilityRole="button">
+    <TouchableOpacity onPress={onPress} activeOpacity={0.82} style={[styles.menuRow, { borderBottomColor: theme.colors.borderLight }]} accessibilityRole="button">
       <View style={[styles.menuIcon, { backgroundColor: theme.colors.surfaceSecondary }]}>
         <Ionicons name={icon} size={18} color={color ?? theme.colors.primary} />
       </View>
-      <View style={{ flex: 1 }}>
-        <Text style={{ color: theme.colors.textPrimary, fontSize: theme.fontSizes.body, fontWeight: theme.fontWeights.medium }}>{label}</Text>
-        {subtitle && <Text style={{ color: theme.colors.textTertiary, fontSize: theme.fontSizes.sm, marginTop: 1 }}>{subtitle}</Text>}
+      <View style={styles.menuCopy}>
+        <Text style={{ color: theme.colors.textPrimary, fontSize: theme.fontSizes.body, fontWeight: subtitle ? theme.fontWeights.semibold : theme.fontWeights.medium }}>{label}</Text>
+        {subtitle && <Text style={{ color: theme.colors.textTertiary, fontSize: theme.fontSizes.sm, marginTop: 2 }}>{subtitle}</Text>}
       </View>
-      <Ionicons name="chevron-forward" size={18} color={theme.colors.textTertiary} />
+      <Ionicons name="chevron-forward" size={20} color={subtitle ? theme.colors.primary : theme.colors.textTertiary} />
     </TouchableOpacity>
   );
 }
@@ -43,6 +44,62 @@ export default function ProfileScreen() {
   const { profile, resetProfile } = useProfile();
   const { user, signOut } = useAuth();
   const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const [stats, setStats] = useState({ total: 0, safePercent: 0, streak: 0 });
+  const avatarUri = typeof user?.user_metadata?.avatar_url === 'string' ? user.user_metadata.avatar_url : undefined;
+
+  useFocusEffect(
+    useCallback(() => {
+      let isActive = true;
+      if (!user) return;
+
+      const loadStats = async () => {
+        try {
+          const scans = await getAllUserScans(user.id);
+          if (!isActive) return;
+
+          const total = scans.length;
+          let safePercent = 0;
+          let streak = 0;
+
+          if (total > 0) {
+            const safeCount = scans.filter(s => s.verdict === 'safe').length;
+            safePercent = Math.round((safeCount / total) * 100);
+
+            let currentStreak = 0;
+            let currentDate = new Date();
+            currentDate.setHours(0, 0, 0, 0);
+
+            const scanDates = new Set(scans.map(s => {
+              const d = new Date(s.scanned_at);
+              d.setHours(0, 0, 0, 0);
+              return d.getTime();
+            }));
+
+            let checkDate = new Date(currentDate);
+            if (!scanDates.has(checkDate.getTime())) {
+              checkDate.setDate(checkDate.getDate() - 1);
+            }
+
+            while (scanDates.has(checkDate.getTime())) {
+              currentStreak++;
+              checkDate.setDate(checkDate.getDate() - 1);
+            }
+            streak = currentStreak;
+          }
+
+          setStats({ total, safePercent, streak });
+        } catch (error) {
+          console.error('Failed to load stats:', error);
+        }
+      };
+
+      loadStats();
+
+      return () => {
+        isActive = false;
+      };
+    }, [user])
+  );
 
   const handleEditProfile = () => router.push('/(onboarding)/conditions');
 
@@ -104,27 +161,42 @@ export default function ProfileScreen() {
 
   return (
     <AppScreen scroll>
-      {/* ── Profile Header ─────────────── */}
-      <View style={styles.header}>
-        <View style={[styles.avatar, { backgroundColor: theme.colors.primaryLight }]}>
-          <Ionicons name="person" size={36} color={theme.colors.primary} />
+      <View style={[styles.header, { backgroundColor: theme.colors.surface, borderColor: theme.colors.borderLight, borderRadius: theme.radius.xl, ...theme.shadows.sm }]}>
+        <View style={styles.avatarWrap}>
+          <View style={[styles.avatarRing, { backgroundColor: theme.colors.primaryLight, borderColor: theme.colors.borderLight }]}>
+            <View style={[styles.avatar, { backgroundColor: theme.colors.surfaceSecondary }]}>
+          {avatarUri ? <Image source={{ uri: avatarUri }} style={styles.avatarImage} /> : <Ionicons name="person" size={36} color={theme.colors.primary} />}
+            </View>
+            {user ? <View style={[styles.activeBadge, { backgroundColor: '#16a34a18', borderColor: '#16a34a40' }]}><View style={styles.activeDot} /><Text style={styles.activeText}>Active</Text></View> : null}
+          </View>
         </View>
-        <Text style={{ color: theme.colors.textPrimary, fontSize: theme.fontSizes['2xl'], fontWeight: theme.fontWeights.bold, marginTop: 12 }}>
-          NutriScan User
+
+        <Text style={{ color: theme.colors.textPrimary, fontSize: theme.fontSizes['2xl'], fontWeight: theme.fontWeights.bold, marginTop: 16, textAlign: 'center' }}>
+          {profile.name || 'NutriScan User'}
         </Text>
-        <Text style={{ color: theme.colors.textSecondary, fontSize: theme.fontSizes.body, marginTop: 2 }}>
-          {profile.conditions.length > 0
-            ? `Managing ${profile.conditions.length} condition${profile.conditions.length > 1 ? 's' : ''}`
-            : 'Health-conscious eater'}
+        <Text style={{ color: theme.colors.textSecondary, fontSize: theme.fontSizes.body, marginTop: 4, textAlign: 'center' }}>
+          {user?.email ?? 'Health-conscious eater'}
         </Text>
+        <Text style={{ color: theme.colors.textSecondary, fontSize: theme.fontSizes.sm, marginTop: 10, textAlign: 'center', lineHeight: theme.lineHeights.sm }}>
+          {profile.conditions.length > 0 ? `Managing ${profile.conditions.length} condition${profile.conditions.length > 1 ? 's' : ''}` : 'Personalized nutrition profile'}
+        </Text>
+
+        <TouchableOpacity
+          onPress={() => router.push('/edit-profile')}
+          style={[styles.editProfileBtn, { backgroundColor: theme.colors.primaryLight, borderColor: theme.colors.borderLight, borderRadius: theme.radius.full }]}
+          accessibilityRole="button"
+        >
+          <Ionicons name="create-outline" size={16} color={theme.colors.primary} />
+          <Text style={{ color: theme.colors.primary, fontSize: theme.fontSizes.sm, fontWeight: theme.fontWeights.medium, marginLeft: 6 }}>
+            Edit Profile
+          </Text>
+        </TouchableOpacity>
       </View>
 
       {/* ── Conditions ─────────────────── */}
       <SectionHeader title="My Conditions" action="Edit" onAction={handleEditProfile} />
       {profile.conditions.length > 0 ? (
-        <View style={styles.pillRow}>
-          {profile.conditions.map((c) => (<ConditionPill key={c} condition={c} />))}
-        </View>
+        <Card style={styles.emptyCard}><View style={styles.pillRow}>{profile.conditions.map((c) => (<ConditionPill key={c} condition={c} />))}</View></Card>
       ) : (
         <Card style={styles.emptyCard}>
           <Text style={{ color: theme.colors.textTertiary, fontSize: theme.fontSizes.body, textAlign: 'center' }}>No conditions set yet</Text>
@@ -132,54 +204,22 @@ export default function ProfileScreen() {
         </Card>
       )}
 
-      {/* ── Goals ──────────────────────── */}
       {profile.goals.length > 0 && (
         <>
           <SectionHeader title="My Goals" action="Edit" onAction={() => router.push('/(onboarding)/goals')} />
-          <Card>
-            {profile.goals.map((g) => (
-              <View key={g} style={styles.goalRow}>
-                <Text style={styles.goalEmoji}>{goalIcons[g as HealthGoal] ?? '\u{1F3AF}'}</Text>
-                <Text style={{ color: theme.colors.textPrimary, fontSize: theme.fontSizes.body, marginLeft: 8 }}>
-                  {goalLabels[g as HealthGoal] ?? g}
-                </Text>
-              </View>
-            ))}
-          </Card>
+          <Card><View style={styles.goalWrap}>{profile.goals.map((g) => (<View key={g} style={[styles.goalChip, { backgroundColor: theme.colors.surfaceSecondary, borderColor: theme.colors.borderLight, borderRadius: theme.radius.full }]}><Text style={styles.goalEmoji}>{goalIcons[g as HealthGoal] ?? '🎯'}</Text><Text style={{ color: theme.colors.textPrimary, fontSize: theme.fontSizes.sm, fontWeight: theme.fontWeights.medium }}>{goalLabels[g as HealthGoal] ?? g}</Text></View>))}</View></Card>
         </>
       )}
 
       {/* ── Quick Stats ────────────────── */}
       <SectionHeader title="My Stats" />
-      <View style={styles.statsGrid}>
-        {[
-          { icon: 'scan' as const, label: 'Total Scans', value: '19' },
-          { icon: 'checkmark-circle' as const, label: 'Safe This Week', value: '12' },
-          { icon: 'flame' as const, label: 'Day Streak', value: '5' },
-        ].map((stat) => (
-          <Card key={stat.label} style={styles.statCard}>
-            <Ionicons name={stat.icon} size={24} color={theme.colors.primary} />
-            <Text style={{ color: theme.colors.textPrimary, fontSize: theme.fontSizes.xl, fontWeight: theme.fontWeights.bold, marginTop: 8 }}>{stat.value}</Text>
-            <Text style={{ color: theme.colors.textSecondary, fontSize: theme.fontSizes.sm, marginTop: 2 }}>{stat.label}</Text>
-          </Card>
-        ))}
-      </View>
+      <View style={styles.statsGrid}>{[{ icon: 'scan' as const, label: 'Total Scans', value: stats.total.toString() }, { icon: 'checkmark-circle' as const, label: 'Safe Scans', value: stats.total > 0 ? `${stats.safePercent}%` : '—' }, { icon: 'flame' as const, label: 'Day Streak', value: stats.streak.toString() }].map((stat) => (<Card key={stat.label} style={styles.statCard}><View style={[styles.statIconWrap, { backgroundColor: theme.colors.primaryLight }]}><Ionicons name={stat.icon} size={20} color={theme.colors.primary} /></View><Text style={{ color: theme.colors.textSecondary, fontSize: theme.fontSizes.xs, fontWeight: theme.fontWeights.medium, marginTop: 12 }}>{stat.label}</Text><Text style={{ color: theme.colors.textPrimary, fontSize: theme.fontSizes['2xl'], fontWeight: theme.fontWeights.bold, marginTop: 4 }}>{stat.value}</Text></Card>))}</View>
 
       {/* ── Nutrient Monitoring ─────────── */}
       {profile.nutrientTargets.length > 0 && (
         <>
           <SectionHeader title="Nutrient Monitoring" action="Edit" onAction={handleEditProfile} />
-          <Card>
-            {profile.nutrientTargets.map((nt) => (
-              <View key={nt.nutrient} style={styles.nutrientRow}>
-                <View style={[styles.nutrientDot, { backgroundColor: theme.colors.primary }]} />
-                <Text style={{ color: theme.colors.textPrimary, fontSize: theme.fontSizes.body, flex: 1 }}>{nt.label}</Text>
-                <Text style={{ color: theme.colors.textSecondary, fontSize: theme.fontSizes.sm, fontWeight: theme.fontWeights.medium }}>
-                  {'\u2264'} {nt.dailyLimit} {nt.unit}/day
-                </Text>
-              </View>
-            ))}
-          </Card>
+          <Card>{profile.nutrientTargets.map((nt, index) => (<View key={nt.nutrient} style={[styles.nutrientRow, index < profile.nutrientTargets.length - 1 && { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: theme.colors.borderLight }]}><View style={[styles.nutrientDot, { backgroundColor: theme.colors.primary }]} /><View style={styles.nutrientCopy}><View style={styles.nutrientTopRow}><Text style={{ color: theme.colors.textPrimary, fontSize: theme.fontSizes.body, flex: 1 }}>{nt.label}</Text><Text style={{ color: theme.colors.textSecondary, fontSize: theme.fontSizes.sm, fontWeight: theme.fontWeights.medium }}>{'≤'} {nt.dailyLimit} {nt.unit}/day</Text></View><View style={[styles.nutrientTrack, { backgroundColor: theme.colors.surfaceSecondary }]}><View style={[styles.nutrientFill, { backgroundColor: theme.colors.primary }]} /></View></View></View>))}</Card>
         </>
       )}
 
@@ -215,10 +255,10 @@ export default function ProfileScreen() {
       </Card>
 
       {/* ── Account Actions ────────────── */}
-      <View style={{ marginTop: 24, gap: 12 }}>
+      <View style={styles.actionGroup}>
         <TouchableOpacity
           onPress={handleResetProfile}
-          style={[styles.actionBtn, { borderColor: theme.colors.caution.border, borderRadius: theme.radius.md }]}
+          style={[styles.actionBtn, { backgroundColor: theme.colors.caution.bg, borderColor: theme.colors.caution.border, borderRadius: theme.radius.lg }]}
           accessibilityRole="button"
         >
           <Ionicons name="refresh-outline" size={20} color={theme.colors.caution.icon} />
@@ -230,7 +270,7 @@ export default function ProfileScreen() {
         <TouchableOpacity
           onPress={handleLogout}
           disabled={isLoggingOut}
-          style={[styles.actionBtn, { borderColor: theme.colors.avoid.border, borderRadius: theme.radius.md, opacity: isLoggingOut ? 0.6 : 1 }]}
+          style={[styles.actionBtn, { backgroundColor: theme.colors.avoid.bg, borderColor: theme.colors.avoid.border, borderRadius: theme.radius.lg, opacity: isLoggingOut ? 0.6 : 1 }]}
           accessibilityRole="button"
         >
           <Ionicons name="log-out-outline" size={20} color={theme.colors.avoid.icon} />
@@ -256,19 +296,34 @@ export default function ProfileScreen() {
 }
 
 const styles = StyleSheet.create({
-  header: { alignItems: 'center', paddingTop: 24, marginBottom: 28 },
-  avatar: { width: 80, height: 80, borderRadius: 40, justifyContent: 'center', alignItems: 'center' },
-  pillRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 28 },
+  header: { alignItems: 'center', paddingHorizontal: 20, paddingTop: 20, paddingBottom: 22, marginBottom: 28, borderWidth: 1 },
+  avatarWrap: { position: 'relative' },
+  avatarRing: { width: 108, height: 108, borderRadius: 54, alignItems: 'center', justifyContent: 'center', borderWidth: 1 },
+  avatar: { width: 92, height: 92, borderRadius: 46, overflow: 'hidden', justifyContent: 'center', alignItems: 'center' },
+  avatarImage: { width: '100%', height: '100%' },
+  activeBadge: { position: 'absolute', right: -8, bottom: 4, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 20, borderWidth: 1 },
+  activeDot: { width: 7, height: 7, borderRadius: 4, backgroundColor: '#16a34a', marginRight: 5 },
+  activeText: { color: '#16a34a', fontSize: 11, fontWeight: '600' as const, letterSpacing: 0.3 },
+  editProfileBtn: { flexDirection: 'row', alignItems: 'center', marginTop: 16, paddingHorizontal: 16, paddingVertical: 10, borderWidth: 1 },
+  pillRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
   emptyCard: { marginBottom: 28, alignItems: 'center', paddingVertical: 20 },
-  goalRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 6 },
-  goalEmoji: { fontSize: 18, width: 28, textAlign: 'center' },
+  goalWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
+  goalChip: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 14, paddingVertical: 10, borderWidth: 1 },
+  goalEmoji: { fontSize: 18, marginRight: 8 },
   statsGrid: { flexDirection: 'row', gap: 12, marginBottom: 28 },
-  statCard: { flex: 1, alignItems: 'center' },
-  nutrientRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 8, gap: 8 },
-  nutrientDot: { width: 8, height: 8, borderRadius: 4 },
-  menuRow: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 14, borderBottomWidth: StyleSheet.hairlineWidth },
-  menuIcon: { width: 32, height: 32, borderRadius: 8, justifyContent: 'center', alignItems: 'center', marginRight: 12 },
-  actionBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: 16, borderWidth: 1.5 },
+  statCard: { flex: 1, alignItems: 'flex-start', paddingVertical: 18 },
+  statIconWrap: { width: 42, height: 42, borderRadius: 21, alignItems: 'center', justifyContent: 'center' },
+  nutrientRow: { flexDirection: 'row', alignItems: 'flex-start', paddingVertical: 14, gap: 10 },
+  nutrientDot: { width: 10, height: 10, borderRadius: 5, marginTop: 6 },
+  nutrientCopy: { flex: 1 },
+  nutrientTopRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12 },
+  nutrientTrack: { height: 6, borderRadius: 999, marginTop: 10, overflow: 'hidden' },
+  nutrientFill: { width: '100%', height: '100%', opacity: 0.22 },
+  menuRow: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 16, minHeight: 72, borderBottomWidth: StyleSheet.hairlineWidth },
+  menuCopy: { flex: 1 },
+  menuIcon: { width: 40, height: 40, borderRadius: 12, justifyContent: 'center', alignItems: 'center', marginRight: 12 },
+  actionGroup: { marginTop: 24, gap: 12 },
+  actionBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingHorizontal: 16, paddingVertical: 16, minHeight: 56, borderWidth: 1.5 },
   disclaimer: { marginTop: 16, opacity: 0.8 },
   disclaimerRow: { flexDirection: 'row', alignItems: 'flex-start' },
 });

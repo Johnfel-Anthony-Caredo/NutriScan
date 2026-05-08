@@ -1,4 +1,4 @@
-import "@supabase/functions-js/edge-runtime.d.ts"
+import "jsr:@supabase/functions-js/edge-runtime.d.ts"
 import { GoogleGenAI } from "npm:@google/genai"
 import { createClient } from "npm:@supabase/supabase-js@2.45.0"
 
@@ -6,6 +6,10 @@ const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
+
+// Pre-create the AI client during cold-start so it's ready for first request
+const apiKey = Deno.env.get('GEMINI_API_KEY')
+const ai = apiKey ? new GoogleGenAI({ apiKey }) : null
 
 Deno.serve(async (req) => {
   // Handle CORS preflight requests
@@ -16,7 +20,7 @@ Deno.serve(async (req) => {
   try {
     const authHeader = req.headers.get('Authorization')
     if (!authHeader) {
-      return new Response(JSON.stringify({ error: 'Missing Authorization header' }), { status: 401, headers: corsHeaders })
+      return new Response(JSON.stringify({ error: 'Missing Authorization header' }), { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
     }
 
     // Verify token using Supabase client
@@ -28,29 +32,26 @@ Deno.serve(async (req) => {
 
     const { data: { user }, error: authError } = await supabaseClient.auth.getUser()
     if (authError || !user) {
-      return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401, headers: corsHeaders })
+      return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
     }
 
     const body = await req.json()
     const { messages, profile } = body
 
     if (!messages || !Array.isArray(messages) || messages.length === 0) {
-      return new Response(JSON.stringify({ error: 'Missing or invalid messages array' }), { status: 400, headers: corsHeaders })
+      return new Response(JSON.stringify({ error: 'Missing or invalid messages array' }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
     }
 
-    const apiKey = Deno.env.get('GEMINI_API_KEY')
-    if (!apiKey) {
-      return new Response(JSON.stringify({ error: 'Server misconfiguration: missing API key' }), { status: 500, headers: corsHeaders })
+    if (!ai) {
+      return new Response(JSON.stringify({ error: 'Server misconfiguration: missing API key' }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
     }
-
-    const ai = new GoogleGenAI({ apiKey })
 
     // Build the system prompt with the user's profile
     const conditions = profile?.conditions?.join(', ') || 'None specified'
     const goals = profile?.goals?.join(', ') || 'None specified'
     const nutrientTargets = profile?.nutrientTargets?.map((t: any) => `${t.label} (<= ${t.dailyLimit} ${t.unit})`).join(', ') || 'None specified'
 
-    const systemInstruction = `You are NutriBot, a supportive and empathetic health and nutrition assistant built specifically for the NutriScan app. 
+    const systemInstruction = `You are NutriBot, a supportive and empathetic health and nutrition assistant built specifically for the NutriScan app.
 Your user has the following health profile:
 - Health Conditions: ${conditions}
 - Health Goals: ${goals}
@@ -71,18 +72,16 @@ If the user asks how to use the app or where to find something, guide them using
 - "History" tab: Where they can view past scan logs, weekly trends, and their full health summary report.
 - "Profile" tab: Where they can update their health conditions, goals, and account settings.`
 
-    // We are using Gemma 4 26B (Instruction Tuned)
-    const model = 'gemma-4-26b-a4b-it'
-    
+    // Gemini 2.5 Flash — fast, chat-optimized
+    const model = 'gemini-2.5-flash'
+
     // Format messages for @google/genai SDK
-    // SDK expects: { role: 'user' | 'model', parts: [{ text: '...' }] }
     const formattedMessages = messages.map((m: any) => ({
       role: m.role === 'assistant' || m.role === 'model' ? 'model' : 'user',
       parts: [{ text: m.content }]
     }))
 
-    // Call Gemini API with streaming
-    const responseStream = await ai.models.generateContentStream({
+    const response = await ai.models.generateContent({
       model: model,
       contents: formattedMessages,
       config: {
@@ -91,37 +90,17 @@ If the user asks how to use the app or where to find something, guide them using
       }
     })
 
-    const encoder = new TextEncoder()
-    const stream = new ReadableStream({
-      async start(controller) {
-        try {
-          for await (const chunk of responseStream) {
-            if (chunk.text) {
-              controller.enqueue(encoder.encode(chunk.text))
-            }
-          }
-        } catch (e) {
-          console.error('Streaming error from Gemini:', e)
-          controller.error(e)
-        } finally {
-          controller.close()
-        }
-      }
-    })
+    const reply = response.text || ''
 
-    return new Response(stream, { 
-      headers: { 
-        "Content-Type": "text/plain", 
-        "Cache-Control": "no-cache",
-        "Connection": "keep-alive",
-        ...corsHeaders 
-      } 
-    })
+    return new Response(
+      JSON.stringify({ reply }),
+      { headers: { 'Content-Type': 'application/json', ...corsHeaders } }
+    )
   } catch (error) {
     console.error('Error in NutriBot edge function:', error)
     return new Response(
       JSON.stringify({ error: error instanceof Error ? error.message : 'Unknown error' }),
-      { status: 500, headers: { "Content-Type": "application/json", ...corsHeaders } },
+      { status: 500, headers: { 'Content-Type': 'application/json', ...corsHeaders } }
     )
   }
 })

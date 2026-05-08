@@ -3,21 +3,33 @@
  *
  * Shows greeting, condition pills, today's safety donut summary,
  * scan CTA, today's food log, nutrient watchlist, and health tips carousel.
+ * Supports pull-to-refresh to reload all data on demand.
  */
 
-import { AppScreen, Card, ConditionPill, FoodLogItem, PrimaryButton, SectionHeader } from '@/components/ui';
+import type { Article } from '@/types/articles';
+import { ArticleCard } from '@/components/articles';
+import { AppScreen, Card, ConditionPill, FoodLogItem, PrimaryButton, SectionHeader, SkeletonLoader } from '@/components/ui';
 import { useAuth } from '@/context/AuthContext';
 import { useProfile } from '@/context/ProfileContext';
-import { MOCK_TIPS, MOCK_TODAY_LOG, MOCK_WEEKLY, type WeeklySummary } from '@/data/mockData';
+import { useRefresh } from '@/hooks/useRefresh';
 import { useTheme } from '@/hooks/useTheme';
+import { fetchArticlesForConditions } from '@/services/articleService';
 import { getTodaysScanLogs, getWeeklyScanLogs, type ScanLogRow } from '@/services/supabaseService';
 import type { FoodItem } from '@/types/health';
 import { Ionicons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
-import React, { useEffect, useState } from 'react';
+import { useFocusEffect, useRouter } from 'expo-router';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Dimensions, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 const { width: SCREEN_W } = Dimensions.get('window');
+const CARD_W = Math.min(SCREEN_W * 0.68, 280);
+
+interface WeeklySummaryData {
+  safe: number;
+  caution: number;
+  avoid: number;
+  daily: { day: string; safe: number; caution: number; avoid: number }[];
+}
 
 const mapScanLogToFoodItem = (row: ScanLogRow): FoodItem => ({
   id: row.id,
@@ -29,7 +41,7 @@ const mapScanLogToFoodItem = (row: ScanLogRow): FoodItem => ({
   mealType: row.meal_type ?? undefined,
 });
 
-const buildWeeklySummary = (rows: ScanLogRow[]): WeeklySummary => {
+const buildWeeklySummary = (rows: ScanLogRow[]): WeeklySummaryData => {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 
@@ -80,49 +92,118 @@ export default function HomeScreen() {
   const router = useRouter();
   const { profile } = useProfile();
   const { user } = useAuth();
-  const [todayLog, setTodayLog] = useState<FoodItem[]>(MOCK_TODAY_LOG);
-  const [weeklySummary, setWeeklySummary] = useState<WeeklySummary>(MOCK_WEEKLY);
+  const [todayLog, setTodayLog] = useState<FoodItem[]>([]);
+  const [weeklySummary, setWeeklySummary] = useState<WeeklySummaryData | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [articles, setArticles] = useState<Article[]>([]);
+  const [articlesLoading, setArticlesLoading] = useState(true);
+  const hasLoadedOnce = useRef(false);
 
+  // ── Data loading (shared between initial load and pull-to-refresh) ──
+
+  const loadScanData = useCallback(async () => {
+    if (!user) return;
+
+    const [todayRows, weeklyRows] = await Promise.all([
+      getTodaysScanLogs(user.id),
+      getWeeklyScanLogs(user.id),
+    ]);
+
+    setTodayLog(todayRows.map(mapScanLogToFoodItem));
+
+    if (weeklyRows.length > 0) {
+      setWeeklySummary(buildWeeklySummary(weeklyRows));
+    } else {
+      setWeeklySummary(null);
+    }
+  }, [user]);
+
+  const loadArticles = useCallback(async () => {
+    if (!user) return;
+    const fetched = await fetchArticlesForConditions(profile.conditions);
+    setArticles(fetched);
+  }, [user, profile.conditions]);
+
+  // Combined loader for pull-to-refresh
+  const refreshAll = useCallback(async () => {
+    await Promise.all([loadScanData(), loadArticles()]);
+  }, [loadScanData, loadArticles]);
+
+  const { isRefreshing, refreshError, handleRefresh, dismissError } = useRefresh({
+    onRefresh: refreshAll,
+  });
+
+  // ── Initial load on screen focus ──
+
+  useFocusEffect(
+    useCallback(() => {
+      let isActive = true;
+
+      const load = async () => {
+        setIsLoading(true);
+        setLoadError(null);
+
+        if (!user) {
+          if (isActive) setIsLoading(false);
+          return;
+        }
+
+        try {
+          await loadScanData();
+          if (!isActive) return;
+          hasLoadedOnce.current = true;
+        } catch (err) {
+          if (!isActive) return;
+          setLoadError('Could not load your scan data.');
+          console.error('Home load error:', err);
+        } finally {
+          if (isActive) setIsLoading(false);
+        }
+      };
+
+      load();
+
+      return () => { isActive = false; };
+      // Only re-run when user changes, not on every focus
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [user]),
+  );
+
+  // Articles load separately on mount / when conditions change
   useEffect(() => {
     let isActive = true;
 
     const load = async () => {
-      if (!user) return;
-
+      setArticlesLoading(true);
       try {
-        const [todayRows, weeklyRows] = await Promise.all([
-          getTodaysScanLogs(user.id),
-          getWeeklyScanLogs(user.id),
-        ]);
-
-        if (!isActive) return;
-
-        if (todayRows.length === 0 || weeklyRows.length === 0) {
-          setTodayLog(MOCK_TODAY_LOG);
-          setWeeklySummary(MOCK_WEEKLY);
-          return;
-        }
-
-        setTodayLog(todayRows.map(mapScanLogToFoodItem));
-        setWeeklySummary(buildWeeklySummary(weeklyRows));
-      } catch {
-        if (!isActive) return;
-        setTodayLog(MOCK_TODAY_LOG);
-        setWeeklySummary(MOCK_WEEKLY);
+        await loadArticles();
+      } catch (err) {
+        console.warn('Articles fetch failed:', err);
+      } finally {
+        if (isActive) setArticlesLoading(false);
       }
     };
 
-    load();
+    if (user) {
+      load();
+    } else {
+      setArticlesLoading(false);
+    }
 
-    return () => {
-      isActive = false;
-    };
-  }, [user]);
+    return () => { isActive = false; };
+  }, [user, profile.conditions, loadArticles]);
 
   const hasLogs = todayLog.length > 0;
 
   return (
-    <AppScreen scroll>
+    <AppScreen
+      scroll
+      refreshing={isRefreshing}
+      onRefresh={handleRefresh}
+      refreshError={refreshError}
+      onDismissError={dismissError}
+    >
       {/* ── Greeting ───────────────────── */}
       <View style={styles.greetingRow}>
         <View style={{ flex: 1 }}>
@@ -143,13 +224,25 @@ export default function HomeScreen() {
 
       {/* ── Today's Safety Summary ──────── */}
       <SectionHeader title="Today's Overview" />
+      {isLoading ? (
+        <Card><SkeletonLoader rows={2} /></Card>
+      ) : loadError ? (
+        <Card>
+          <View style={styles.emptyLog}>
+            <Ionicons name="cloud-offline-outline" size={28} color={theme.colors.caution.icon} />
+            <Text style={{ color: theme.colors.textSecondary, fontSize: theme.fontSizes.body, marginTop: 8, textAlign: 'center' }}>
+              {loadError}
+            </Text>
+          </View>
+        </Card>
+      ) : (
       <Card style={styles.summaryCard}>
         <View style={styles.donutRow}>
           {/* Simple donut-like ring */}
           <View style={styles.donutContainer}>
             <View style={[styles.donutOuter, { borderColor: theme.colors.safe.icon }]}>
               <Text style={{ color: theme.colors.textPrimary, fontSize: theme.fontSizes['2xl'], fontWeight: theme.fontWeights.bold }}>
-                {weeklySummary.safe + weeklySummary.caution + weeklySummary.avoid}
+                {weeklySummary ? weeklySummary.safe + weeklySummary.caution + weeklySummary.avoid : 0}
               </Text>
               <Text style={{ color: theme.colors.textTertiary, fontSize: theme.fontSizes.xs }}>scans</Text>
             </View>
@@ -169,6 +262,7 @@ export default function HomeScreen() {
           </View>
         </View>
       </Card>
+      )}
 
       {/* ── Scan CTA ───────────────────── */}
       <PrimaryButton label="Scan Your Food" onPress={() => router.push('/(tabs)/scan')} icon={<Ionicons name="scan" size={20} color="#FFFFFF" />} style={styles.scanBtn} />
@@ -212,22 +306,43 @@ export default function HomeScreen() {
 
       {/* ── Health Tips Carousel ────────── */}
       <SectionHeader title="Health Tips" action="Explore" onAction={() => {}} />
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.tipsScroll}>
-        {MOCK_TIPS.map((tip) => (
-          <TouchableOpacity
-            key={tip.id}
-            onPress={() => router.push(`/article/${tip.id}`)}
-            activeOpacity={0.7}
-            style={[styles.tipCard, { backgroundColor: theme.colors.surface, borderColor: theme.colors.borderLight, borderRadius: theme.radius.lg, ...theme.shadows.sm }]}
-          >
-            <View style={[styles.tipIconCircle, { backgroundColor: theme.colors[tip.iconBg].bg }]}>
-              <Ionicons name={tip.iconName as keyof typeof Ionicons.glyphMap} size={20} color={theme.colors[tip.iconBg].icon} />
-            </View>
-            <Text style={{ color: theme.colors.textPrimary, fontSize: theme.fontSizes.body, fontWeight: theme.fontWeights.medium, marginTop: 10 }} numberOfLines={2}>{tip.title}</Text>
-            <Text style={{ color: theme.colors.textSecondary, fontSize: theme.fontSizes.sm, marginTop: 4 }} numberOfLines={2}>{tip.subtitle}</Text>
-          </TouchableOpacity>
-        ))}
-      </ScrollView>
+      {articlesLoading ? (
+        <Card>
+          <View style={{ paddingVertical: 4, gap: 10 }}>
+            <View style={{ height: 16, borderRadius: 4, backgroundColor: theme.colors.surfaceSecondary, width: '60%' }} />
+            <View style={{ height: 100, borderRadius: theme.radius.md, backgroundColor: theme.colors.surfaceSecondary }} />
+          </View>
+        </Card>
+      ) : articles.length === 0 ? (
+        <Card>
+          <View style={styles.emptyLog}>
+            <Ionicons name="newspaper-outline" size={28} color={theme.colors.textTertiary} />
+            <Text style={{ color: theme.colors.textSecondary, fontSize: theme.fontSizes.body, marginTop: 8, textAlign: 'center' }}>
+              {user
+                ? 'No health tips available yet. Check back later!'
+                : 'Sign in to see personalized health tips.'}
+            </Text>
+          </View>
+        </Card>
+      ) : (
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.tipsScroll}
+          decelerationRate="fast"
+          snapToInterval={CARD_W + 12}
+          snapToAlignment="start"
+        >
+          {articles.slice(0, 9).map((article) => (
+            <ArticleCard
+              key={article.slug}
+              article={article}
+              width={CARD_W}
+              onPress={() => router.push(`/article/${article.slug}`)}
+            />
+          ))}
+        </ScrollView>
+      )}
 
       <View style={{ height: 100 }} />
     </AppScreen>
@@ -252,6 +367,4 @@ const styles = StyleSheet.create({
   nutrientRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 8, gap: 10 },
   nutrientDot: { width: 8, height: 8, borderRadius: 4 },
   tipsScroll: { paddingRight: 20, gap: 12, paddingBottom: 4 },
-  tipCard: { width: SCREEN_W * 0.6, padding: 16, borderWidth: StyleSheet.hairlineWidth },
-  tipIconCircle: { width: 40, height: 40, borderRadius: 12, justifyContent: 'center', alignItems: 'center' },
 });

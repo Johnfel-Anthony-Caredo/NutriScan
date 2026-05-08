@@ -1,4 +1,4 @@
-import "@supabase/functions-js/edge-runtime.d.ts"
+import "jsr:@supabase/functions-js/edge-runtime.d.ts"
 import { GoogleGenAI } from "npm:@google/genai"
 import { createClient } from "npm:@supabase/supabase-js@2.45.0"
 
@@ -6,6 +6,10 @@ const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
+
+// Pre-create the AI client during cold-start so it's ready for first request
+const apiKey = Deno.env.get('GEMINI_API_KEY')
+const ai = apiKey ? new GoogleGenAI({ apiKey }) : null
 
 Deno.serve(async (req) => {
   // Handle CORS preflight requests
@@ -38,12 +42,9 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify({ error: 'Missing userProfile' }), { status: 400, headers: corsHeaders })
     }
 
-    const apiKey = Deno.env.get('GEMINI_API_KEY')
-    if (!apiKey) {
+    if (!ai) {
       return new Response(JSON.stringify({ error: 'Server misconfiguration: missing API key' }), { status: 500, headers: corsHeaders })
     }
-
-    const ai = new GoogleGenAI({ apiKey })
 
     const conditions = userProfile?.conditions?.join(', ') || 'None specified'
     const goals = userProfile?.goals?.join(', ') || 'None specified'
@@ -82,7 +83,7 @@ Rules:
 2. Consider the user's specific conditions carefully. If the food is dangerous for their conditions, set verdict to "avoid" or "caution".
 3. Extract nutrients as accurately as possible from the image or barcode data.`
 
-    // We are using Gemma 4 31B (Instruction Tuned) as requested
+    
     const model = 'gemma-4-31b-it'
     
     // Prepare contents

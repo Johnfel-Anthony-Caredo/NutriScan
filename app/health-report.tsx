@@ -6,28 +6,129 @@
  * - Energy trend chart (daily calories vs goal line)
  * - Frequent risky foods with warning tags
  * - Nutrient focus weekly averages with limit comparison
- * - Share as Image button (placeholder)
  * - Export CSV button (grayed out, v1.1)
  */
 
-import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Alert } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
-import { useTheme } from '@/hooks/useTheme';
-import { AppScreen, TopBar, Card, SectionHeader, ConditionPill } from '@/components/ui';
+import { AppScreen, Card, ConditionPill, SectionHeader, SkeletonLoader, TopBar } from '@/components/ui';
+import { useAuth } from '@/context/AuthContext';
 import { useProfile } from '@/context/ProfileContext';
-import { MOCK_HEALTH_REPORT } from '@/data/mockData';
+import { useTheme } from '@/hooks/useTheme';
+import { getWeeklyScanLogs, type ScanLogRow } from '@/services/supabaseService';
+import { Ionicons } from '@expo/vector-icons';
+import React, { useEffect, useState } from 'react';
+import { Alert, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+
+interface ReportData {
+  period: string;
+  totalScans: number;
+  safe: number;
+  caution: number;
+  avoid: number;
+  riskyFoods: { name: string; count: number; tag: string }[];
+}
+
+function buildReportData(rows: ScanLogRow[]): ReportData {
+  let safe = 0, caution = 0, avoid = 0;
+  const foodCounts: Record<string, { count: number; tag: string }> = {};
+
+  rows.forEach((row) => {
+    if (row.verdict === 'safe') safe++;
+    else if (row.verdict === 'caution') caution++;
+    else if (row.verdict === 'avoid') avoid++;
+
+    if (row.verdict !== 'safe') {
+      if (!foodCounts[row.food_name]) {
+        foodCounts[row.food_name] = { count: 0, tag: row.verdict === 'avoid' ? 'HIGH RISK' : 'MODERATE' };
+      }
+      foodCounts[row.food_name].count++;
+    }
+  });
+
+  const riskyFoods = Object.entries(foodCounts)
+    .sort((a, b) => b[1].count - a[1].count)
+    .slice(0, 5)
+    .map(([name, data]) => ({ name, count: data.count, tag: data.tag }));
+
+  return {
+    period: 'Last 7 Days',
+    totalScans: safe + caution + avoid,
+    safe,
+    caution,
+    avoid,
+    riskyFoods,
+  };
+}
 
 export default function HealthReportScreen() {
   const theme = useTheme();
   const { profile } = useProfile();
-  const r = MOCK_HEALTH_REPORT;
-  const total = r.safe + r.caution + r.avoid;
-  const safePct = Math.round((r.safe / total) * 100);
-  const cautionPct = Math.round((r.caution / total) * 100);
-  const avoidPct = 100 - safePct - cautionPct;
+  const { user } = useAuth();
+  const [reportData, setReportData] = useState<ReportData | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
-  const maxCal = Math.max(...r.calories.map((c) => Math.max(c.consumed, c.goal)));
+  useEffect(() => {
+    let isActive = true;
+
+    const load = async () => {
+      if (!user) {
+        if (isActive) { setIsLoading(false); }
+        return;
+      }
+
+      try {
+        const weeklyRows = await getWeeklyScanLogs(user.id);
+        if (!isActive) return;
+
+        if (weeklyRows.length > 0) {
+          setReportData(buildReportData(weeklyRows));
+        } else {
+          setReportData(null);
+        }
+      } catch (err) {
+        if (!isActive) return;
+        setLoadError('Could not load report.');
+        console.error('Health report error:', err);
+      } finally {
+        if (isActive) setIsLoading(false);
+      }
+    };
+
+    load();
+    return () => { isActive = false; };
+  }, [user]);
+
+  if (isLoading) {
+    return (
+      <AppScreen noPadding>
+        <TopBar title="Health Summary" showBack />
+        <View style={{ padding: 20 }}><SkeletonLoader rows={6} /></View>
+      </AppScreen>
+    );
+  }
+
+  if (!reportData) {
+    return (
+      <AppScreen scroll noPadding>
+        <TopBar title="Health Summary" showBack />
+        <View style={{ paddingHorizontal: 20, paddingTop: 60, alignItems: 'center' }}>
+          <Ionicons name="stats-chart-outline" size={64} color={theme.colors.textTertiary} />
+          <Text style={{ color: theme.colors.textPrimary, fontSize: theme.fontSizes.lg, fontWeight: theme.fontWeights.bold, marginTop: 20, textAlign: 'center' }}>
+            No data yet
+          </Text>
+          <Text style={{ color: theme.colors.textSecondary, fontSize: theme.fontSizes.body, marginTop: 8, textAlign: 'center', maxWidth: 280 }}>
+            Start scanning food to see your weekly health summary and trends.
+          </Text>
+        </View>
+      </AppScreen>
+    );
+  }
+
+  const r = reportData;
+  const total = r.safe + r.caution + r.avoid;
+  const safePct = total > 0 ? Math.round((r.safe / total) * 100) : 0;
+  const cautionPct = total > 0 ? Math.round((r.caution / total) * 100) : 0;
+  const avoidPct = total > 0 ? 100 - safePct - cautionPct : 0;
 
   return (
     <AppScreen scroll noPadding>
@@ -77,42 +178,17 @@ export default function HealthReportScreen() {
         </Card>
 
         {/* ── Energy Trend ─────────────── */}
-        <SectionHeader title="Energy Trend" />
+        <SectionHeader title="Daily Scan Activity" />
         <Card>
           <View style={styles.calHeader}>
-            <Text style={{ color: theme.colors.textSecondary, fontSize: theme.fontSizes.sm }}>Daily calorie intake vs goal</Text>
+            <Text style={{ color: theme.colors.textSecondary, fontSize: theme.fontSizes.sm }}>
+              {r.totalScans} scan{r.totalScans !== 1 ? 's' : ''} this week
+            </Text>
           </View>
-          <View style={styles.calChart}>
-            {r.calories.map((day) => {
-              const barH = Math.max((day.consumed / maxCal) * 80, 4);
-              const goalH = (day.goal / maxCal) * 80;
-              const over = day.consumed > day.goal;
-              return (
-                <View key={day.day} style={styles.calCol}>
-                  <View style={styles.calBarWrap}>
-                    {/* Goal line */}
-                    <View style={[styles.goalLine, { bottom: goalH, backgroundColor: theme.colors.textTertiary }]} />
-                    {/* Bar */}
-                    <View style={[styles.calBar, { height: barH, backgroundColor: over ? theme.colors.caution.icon : theme.colors.safe.icon, borderRadius: 3 }]} />
-                  </View>
-                  <Text style={{ color: theme.colors.textTertiary, fontSize: 10, marginTop: 4 }}>{day.day}</Text>
-                </View>
-              );
-            })}
-          </View>
-          <View style={styles.calLegend}>
-            <View style={styles.legendItem}>
-              <View style={[styles.legendDot, { backgroundColor: theme.colors.safe.icon }]} />
-              <Text style={{ color: theme.colors.textTertiary, fontSize: theme.fontSizes.xs }}>Under goal</Text>
-            </View>
-            <View style={styles.legendItem}>
-              <View style={[styles.legendDot, { backgroundColor: theme.colors.caution.icon }]} />
-              <Text style={{ color: theme.colors.textTertiary, fontSize: theme.fontSizes.xs }}>Over goal</Text>
-            </View>
-            <View style={styles.legendItem}>
-              <View style={[styles.goalLineLegend, { backgroundColor: theme.colors.textTertiary }]} />
-              <Text style={{ color: theme.colors.textTertiary, fontSize: theme.fontSizes.xs }}>2,000 kcal goal</Text>
-            </View>
+          <View style={{ paddingVertical: 8 }}>
+            <Text style={{ color: theme.colors.textPrimary, fontSize: theme.fontSizes.body }}>
+              🟢 {r.safe} Safe · 🟡 {r.caution} Caution · 🔴 {r.avoid} Avoid
+            </Text>
           </View>
         </Card>
 
@@ -134,33 +210,26 @@ export default function HealthReportScreen() {
         </Card>
 
         {/* ── Nutrient Focus ──────────── */}
-        <SectionHeader title="Nutrient Focus (Weekly Average)" />
-        <Card>
-          {r.nutrientAverages.map((n, i) => {
-            const ratio = Math.min(n.avgValue / n.limit, 1.5);
-            const barW = Math.min(ratio * 100, 100);
-            const over = n.overLimit;
-            return (
-              <View key={n.label} style={[styles.nutrientItem, i < r.nutrientAverages.length - 1 && { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: theme.colors.borderLight }]}>
-                <View style={styles.nutrientHeader}>
-                  <Text style={{ color: theme.colors.textPrimary, fontSize: theme.fontSizes.body, fontWeight: theme.fontWeights.medium, flex: 1 }}>{n.label}</Text>
-                  <Text style={{ color: over ? theme.colors.avoid.text : theme.colors.textSecondary, fontSize: theme.fontSizes.sm, fontWeight: theme.fontWeights.semibold }}>
-                    {n.avgValue} {n.unit}
+        {profile.nutrientTargets.length > 0 && (
+          <>
+            <SectionHeader title="Nutrient Monitoring" />
+            <Card>
+              {profile.nutrientTargets.map((nt, i) => (
+                <View key={nt.nutrient} style={[styles.nutrientItem, i < profile.nutrientTargets.length - 1 && { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: theme.colors.borderLight }]}>
+                  <View style={styles.nutrientHeader}>
+                    <Text style={{ color: theme.colors.textPrimary, fontSize: theme.fontSizes.body, fontWeight: theme.fontWeights.medium, flex: 1 }}>{nt.label}</Text>
+                    <Text style={{ color: theme.colors.textSecondary, fontSize: theme.fontSizes.sm, fontWeight: theme.fontWeights.semibold }}>
+                      ≤ {nt.dailyLimit} {nt.unit}
+                    </Text>
+                  </View>
+                  <Text style={{ color: theme.colors.textTertiary, fontSize: theme.fontSizes.xs, marginTop: 4 }}>
+                    Daily limit based on your health profile
                   </Text>
-                  <Text style={{ color: theme.colors.textTertiary, fontSize: theme.fontSizes.sm, marginLeft: 4 }}>/ {n.limit} {n.unit}</Text>
                 </View>
-                <View style={[styles.barTrack, { backgroundColor: theme.colors.surfaceSecondary, borderRadius: theme.radius.full }]}>
-                  <View style={[styles.barFill, { width: `${barW}%`, backgroundColor: over ? theme.colors.avoid.icon : theme.colors.safe.icon, borderRadius: theme.radius.full }]} />
-                </View>
-                {over && (
-                  <Text style={{ color: theme.colors.avoid.text, fontSize: theme.fontSizes.xs, marginTop: 4 }}>
-                    {Math.round(((n.avgValue - n.limit) / n.limit) * 100)}% over your daily limit
-                  </Text>
-                )}
-              </View>
-            );
-          })}
-        </Card>
+              ))}
+            </Card>
+          </>
+        )}
 
         {/* ── Actions ─────────────────── */}
         <View style={{ marginTop: 24, gap: 10 }}>

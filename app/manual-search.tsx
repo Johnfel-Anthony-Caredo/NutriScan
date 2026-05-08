@@ -1,33 +1,130 @@
 /**
- * Manual Search Screen — search for food items by name.
+ * Manual Search Screen — search for food products by name.
  *
- * Shows recent searches, a search input, and searchable food results.
- * Presented as a modal from the Scan tab.
+ * Powered by Open Food Facts search API.
+ * Shows debounced results with product image, name, brand, quantity, nutriscore.
+ * Tapping a product navigates to scan-result with normalized data.
  */
 
-import { AppScreen, TopBar } from '@/components/ui';
-import { MOCK_RECENT_SEARCHES, MOCK_SEARCH_RESULTS, type SearchFoodItem } from '@/data/mockData';
+import { AppScreen, SkeletonLoader, TopBar } from '@/components/ui';
 import { useTheme } from '@/hooks/useTheme';
+import { buildScanResultFromSearchProduct, searchProducts } from '@/services/scanService';
+import type { SearchProduct } from '@/types/products';
 import { Ionicons } from '@expo/vector-icons';
+import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { FlatList, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+
+const NUTRISCORE_COLORS: Record<string, string> = {
+  a: '#2E7D32', b: '#4CAF50', c: '#FFA000', d: '#E65100', e: '#C62828',
+};
 
 export default function ManualSearchScreen() {
   const theme = useTheme();
   const router = useRouter();
   const [query, setQuery] = useState('');
+  const [debouncedQuery, setDebouncedQuery] = useState('');
+  const [results, setResults] = useState<SearchProduct[]>([]);
+  const [isSearching, setIsSearching] = useState(false);
+  const [hasSearched, setHasSearched] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const debounceRef = useRef<NodeJS.Timeout | null>(null);
 
-  const results = query.trim().length > 0
-    ? MOCK_SEARCH_RESULTS.filter((f) => f.name.toLowerCase().includes(query.toLowerCase()))
-    : [];
+  // Debounce input: wait 350ms after last keystroke
+  useEffect(() => {
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => {
+      setDebouncedQuery(query.trim());
+    }, 350);
+    return () => {
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+    };
+  }, [query]);
 
-  const handleSelect = (item: SearchFoodItem) => {
-    router.replace({
-      pathname: '/scan-preview',
-      params: { source: 'manual', foodName: item.name },
+  // Fetch results when debounced query changes
+  useEffect(() => {
+    if (!debouncedQuery) {
+      setResults([]);
+      setHasSearched(false);
+      setError(null);
+      return;
+    }
+
+    let isActive = true;
+
+    const fetchResults = async () => {
+      setIsSearching(true);
+      setError(null);
+      setHasSearched(true);
+
+      try {
+        const products = await searchProducts(debouncedQuery);
+        if (isActive) setResults(products);
+      } catch (err) {
+        if (isActive) setError('Search failed. Please try again.');
+        console.error('Search error:', err);
+      } finally {
+        if (isActive) setIsSearching(false);
+      }
+    };
+
+    fetchResults();
+    return () => { isActive = false; };
+  }, [debouncedQuery]);
+
+  const handleSelect = (product: SearchProduct) => {
+    const result = buildScanResultFromSearchProduct(product, 'lunch');
+    router.push({
+      pathname: '/scan-result',
+      params: {
+        foodName: result.foodName,
+        mealType: result.mealType,
+        source: 'manual',
+        resultData: encodeURIComponent(JSON.stringify(result)),
+      },
     });
   };
+
+  const renderItem = ({ item }: { item: SearchProduct }) => (
+    <TouchableOpacity
+      onPress={() => handleSelect(item)}
+      style={[styles.resultRow, { borderBottomColor: theme.colors.borderLight }]}
+      accessibilityRole="button"
+    >
+      {/* Thumbnail */}
+      <View style={[styles.thumb, { backgroundColor: theme.colors.surfaceSecondary, borderRadius: theme.radius.md }]}>
+        {item.imageUrl ? (
+          <Image source={{ uri: item.imageUrl }} style={styles.thumbImg} contentFit="cover" transition={200} />
+        ) : (
+          <Ionicons name="fast-food-outline" size={22} color={theme.colors.textTertiary} />
+        )}
+      </View>
+
+      {/* Info */}
+      <View style={{ flex: 1, marginLeft: 12 }}>
+        <Text style={{ color: theme.colors.textPrimary, fontSize: theme.fontSizes.body, fontWeight: theme.fontWeights.medium }} numberOfLines={1}>
+          {item.productName}
+        </Text>
+        {item.brand ? (
+          <Text style={{ color: theme.colors.textTertiary, fontSize: theme.fontSizes.sm, marginTop: 2 }} numberOfLines={1}>
+            {item.brand}{item.quantity ? ` · ${item.quantity}` : ''}
+          </Text>
+        ) : null}
+      </View>
+
+      {/* Nutri-Score */}
+      {item.nutriscoreGrade ? (
+        <View style={[styles.nutriscoreBadge, { backgroundColor: NUTRISCORE_COLORS[item.nutriscoreGrade] ?? theme.colors.surfaceSecondary, borderRadius: theme.radius.sm }]}>
+          <Text style={{ color: '#FFFFFF', fontSize: 11, fontWeight: theme.fontWeights.bold }}>
+            {item.nutriscoreGrade.toUpperCase()}
+          </Text>
+        </View>
+      ) : null}
+
+      <Ionicons name="chevron-forward" size={16} color={theme.colors.textTertiary} style={{ marginLeft: 8 }} />
+    </TouchableOpacity>
+  );
 
   return (
     <AppScreen noPadding>
@@ -43,6 +140,7 @@ export default function ManualSearchScreen() {
             placeholderTextColor={theme.colors.textTertiary}
             style={{ flex: 1, color: theme.colors.textPrimary, fontSize: theme.fontSizes.body, marginLeft: 10 }}
             autoFocus
+            returnKeyType="search"
             accessibilityLabel="Search food"
           />
           {query.length > 0 && (
@@ -52,69 +150,84 @@ export default function ManualSearchScreen() {
           )}
         </View>
 
-        {/* Recent Searches */}
-        {query.trim().length === 0 && (
-          <View style={styles.recents}>
-            <Text style={{ color: theme.colors.textSecondary, fontSize: theme.fontSizes.sm, fontWeight: theme.fontWeights.medium, marginBottom: 10 }}>
-              Recent Searches
+        {/* Loading skeleton */}
+        {isSearching && (
+          <View style={{ paddingTop: 8 }}>
+            <SkeletonLoader rows={4} />
+          </View>
+        )}
+
+        {/* Error state */}
+        {!isSearching && error && (
+          <View style={styles.stateContainer}>
+            <Ionicons name="cloud-offline-outline" size={40} color={theme.colors.caution.icon} />
+            <Text style={{ color: theme.colors.textSecondary, fontSize: theme.fontSizes.body, marginTop: 12, textAlign: 'center' }}>
+              {error}
             </Text>
-            {MOCK_RECENT_SEARCHES.map((s) => (
-              <TouchableOpacity key={s} onPress={() => setQuery(s)} style={styles.recentRow} accessibilityRole="button">
-                <Ionicons name="time-outline" size={18} color={theme.colors.textTertiary} />
-                <Text style={{ color: theme.colors.textPrimary, fontSize: theme.fontSizes.body, marginLeft: 10, flex: 1 }}>
-                  {s}
-                </Text>
-                <Ionicons name="arrow-forward" size={16} color={theme.colors.textTertiary} />
-              </TouchableOpacity>
-            ))}
+            <TouchableOpacity
+              onPress={() => setDebouncedQuery(query.trim())}
+              style={[styles.retryBtn, { borderColor: theme.colors.border, borderRadius: theme.radius.md }]}
+            >
+              <Ionicons name="refresh" size={18} color={theme.colors.primary} />
+              <Text style={{ color: theme.colors.primary, fontSize: theme.fontSizes.body, fontWeight: theme.fontWeights.medium, marginLeft: 6 }}>
+                Retry
+              </Text>
+            </TouchableOpacity>
+          </View>
+        )}
+
+        {/* Empty state (searched but no results) */}
+        {!isSearching && !error && hasSearched && results.length === 0 && (
+          <View style={styles.stateContainer}>
+            <Ionicons name="search-outline" size={40} color={theme.colors.textTertiary} />
+            <Text style={{ color: theme.colors.textSecondary, fontSize: theme.fontSizes.body, marginTop: 12, textAlign: 'center' }}>
+              No products found for "{debouncedQuery}"
+            </Text>
+            <Text style={{ color: theme.colors.textTertiary, fontSize: theme.fontSizes.sm, marginTop: 4, textAlign: 'center' }}>
+              Try a different search term
+            </Text>
           </View>
         )}
 
         {/* Results */}
-        {query.trim().length > 0 && (
+        {!isSearching && results.length > 0 && (
           <FlatList
             data={results}
             keyExtractor={(item) => item.id}
+            renderItem={renderItem}
             showsVerticalScrollIndicator={false}
-            ListEmptyComponent={
-              <View style={styles.emptySearch}>
-                <Ionicons name="search-outline" size={40} color={theme.colors.textTertiary} />
-                <Text style={{ color: theme.colors.textSecondary, fontSize: theme.fontSizes.body, marginTop: 12, textAlign: 'center' }}>
-                  No results for "{query}"
-                </Text>
-                <Text style={{ color: theme.colors.textTertiary, fontSize: theme.fontSizes.sm, marginTop: 4, textAlign: 'center' }}>
-                  Try a different search term
-                </Text>
-              </View>
-            }
-            renderItem={({ item }) => (
-              <TouchableOpacity onPress={() => handleSelect(item)} style={[styles.resultRow, { borderBottomColor: theme.colors.borderLight }]} accessibilityRole="button">
-                <View style={[styles.foodIcon, { backgroundColor: theme.colors.surfaceSecondary }]}>
-                  <Ionicons name="nutrition-outline" size={20} color={theme.colors.textSecondary} />
-                </View>
-                <View style={{ flex: 1, marginLeft: 12 }}>
-                  <Text style={{ color: theme.colors.textPrimary, fontSize: theme.fontSizes.body, fontWeight: theme.fontWeights.medium }}>
-                    {item.name}
-                  </Text>
-                  <Text style={{ color: theme.colors.textTertiary, fontSize: theme.fontSizes.sm, marginTop: 2 }}>
-                    {item.brand} · {item.calories} kcal
-                  </Text>
-                </View>
-                <Ionicons name="chevron-forward" size={18} color={theme.colors.textTertiary} />
-              </TouchableOpacity>
-            )}
+            keyboardShouldPersistTaps="handled"
           />
         )}
+
+        {/* Initial prompt */}
+        {!hasSearched && !query.trim() && (
+          <View style={styles.stateContainer}>
+            <Ionicons name="search-outline" size={48} color={theme.colors.textTertiary} />
+            <Text style={{ color: theme.colors.textSecondary, fontSize: theme.fontSizes.body, marginTop: 12, textAlign: 'center' }}>
+              Search for a food product from{'\n'}Open Food Facts database
+            </Text>
+          </View>
+        )}
+
+        {/* Attribution */}
+        <View style={styles.attribution}>
+          <Text style={{ color: theme.colors.textTertiary, fontSize: theme.fontSizes.xs, textAlign: 'center', lineHeight: 14 }}>
+            Product data from Open Food Facts ({results.length > 0 ? `${results.length} results` : ''})
+          </Text>
+        </View>
       </View>
     </AppScreen>
   );
 }
 
 const styles = StyleSheet.create({
-  searchBar: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 14, paddingVertical: 12, borderWidth: 1, marginBottom: 16 },
-  recents: { marginTop: 8 },
-  recentRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 14, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: 'rgba(0,0,0,0.06)' },
-  resultRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 14, borderBottomWidth: StyleSheet.hairlineWidth },
-  foodIcon: { width: 40, height: 40, borderRadius: 20, justifyContent: 'center', alignItems: 'center' },
-  emptySearch: { alignItems: 'center', paddingTop: 60 },
+  searchBar: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 14, paddingVertical: 12, borderWidth: 1, marginTop: 8, marginBottom: 12 },
+  resultRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 12, borderBottomWidth: StyleSheet.hairlineWidth },
+  thumb: { width: 48, height: 48, justifyContent: 'center', alignItems: 'center', overflow: 'hidden' },
+  thumbImg: { width: '100%', height: '100%' },
+  nutriscoreBadge: { width: 26, height: 26, justifyContent: 'center', alignItems: 'center' },
+  stateContainer: { alignItems: 'center', paddingTop: 40, paddingHorizontal: 20 },
+  retryBtn: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20, paddingVertical: 10, borderWidth: 1, marginTop: 16 },
+  attribution: { paddingVertical: 12 },
 });

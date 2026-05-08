@@ -30,9 +30,14 @@ export async function updateUserProfile(userId: string, updates: {
   age?: number;
   blood_type?: string;
   avatar_url?: string;
+  height_cm?: number;
+  weight_kg?: number;
   goals?: HealthGoal[];
   nutribot_note?: string;
   onboarding_completed?: boolean;
+  custom_condition?: string;
+  condition_source?: 'listed' | 'other' | 'unsure_ai';
+  ai_suggested_condition?: HealthCondition;
 }) {
   const { error } = await supabase
     .from('user_profiles')
@@ -125,6 +130,18 @@ export async function getWeeklyScanLogs(userId: string) {
   return (data ?? []) as ScanLogRow[];
 }
 
+export async function getAllUserScans(userId: string) {
+  const { data, error } = await supabase
+    .from('scan_logs')
+    .select('scanned_at, verdict')
+    .eq('user_id', userId)
+    .order('scanned_at', { ascending: false });
+
+  if (error) throw error;
+  return data ?? [];
+}
+
+
 export interface ChatConversation {
   id: string;
   user_id: string;
@@ -186,4 +203,53 @@ export async function insertMessage(conversationId: string, role: 'user' | 'assi
     .from('chat_conversations')
     .update({ updated_at: new Date().toISOString() })
     .eq('id', conversationId);
+}
+
+// ── Article Cache ──────────────────────────────────────────────────
+
+export async function getCachedArticles(condition?: string): Promise<ArticleCacheRow[]> {
+  let query = supabase
+    .from('article_cache')
+    .select('*')
+    .order('fetched_at', { ascending: false });
+
+  if (condition) {
+    query = query.eq('category', condition);
+  }
+
+  const { data, error } = await query;
+  if (error) throw error;
+  return (data ?? []) as ArticleCacheRow[];
+}
+
+export async function getArticleBySlug(slug: string): Promise<ArticleCacheRow | null> {
+  const { data, error } = await supabase
+    .from('article_cache')
+    .select('*')
+    .eq('slug', slug)
+    .single();
+
+  if (error) {
+    if (error.code === 'PGRST116') return null;
+    throw error;
+  }
+  return data as ArticleCacheRow;
+}
+
+export async function upsertArticleCache(articles: {
+  slug: string;
+  title: string;
+  category: string;
+  summary: string;
+  content: string;
+  image_url: string | null;
+  source_url: string;
+  key_takeaways: string[];
+  related_slugs: string[];
+}[]) {
+  const { error } = await supabase
+    .from('article_cache')
+    .upsert(articles, { onConflict: 'slug' });
+
+  if (error) throw error;
 }

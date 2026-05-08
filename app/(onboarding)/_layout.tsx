@@ -5,10 +5,10 @@
  * a ProgressBar at the top of every onboarding screen.
  */
 
-import { Stack, useSegments } from 'expo-router';
-import { View, StyleSheet, useColorScheme } from 'react-native';
 import { ProgressBar } from '@/components/ui';
-import { lightColors, darkColors } from '@/constants/theme';
+import { darkColors, lightColors } from '@/constants/theme';
+import { Stack, useSegments } from 'expo-router';
+import { StyleSheet, useColorScheme, View } from 'react-native';
 
 const STEP_ORDER = ['welcome', 'conditions', 'goals', 'nutribot-assist', 'confirmation'];
 const TOTAL_STEPS = STEP_ORDER.length;
@@ -28,7 +28,7 @@ export default function OnboardingLayout() {
       {/* Progress bar — visible on all steps except welcome */}
       {currentScreen !== 'welcome' && (
         <View style={styles.progressWrap}>
-          <ProgressBar currentStep={currentStep} totalSteps={TOTAL_STEPS} />
+          <ProgressBar currentStep={currentStep} totalSteps={TOTAL_STEPS} showLabel={false} />
         </View>
       )}
       <Stack

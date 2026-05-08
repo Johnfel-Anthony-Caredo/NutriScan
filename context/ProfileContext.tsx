@@ -58,8 +58,10 @@ type ProfileAction =
   | { type: 'HYDRATE'; payload: UserHealthProfile }
   | { type: 'HYDRATION_ERROR'; payload: string }
   | { type: 'SET_CONDITIONS'; payload: HealthCondition[] }
+  | { type: 'SET_PRIMARY_CONDITION'; payload: { condition: HealthCondition; source: 'listed' | 'other' | 'unsure_ai'; customCondition?: string; aiSuggestedCondition?: HealthCondition } }
   | { type: 'SET_GOALS'; payload: HealthGoal[] }
   | { type: 'SET_NUTRIBOT_NOTE'; payload: string }
+  | { type: 'SET_AI_SUGGESTED_CONDITION'; payload: HealthCondition }
   | { type: 'COMPLETE_ONBOARDING' }
   | { type: 'UPDATE_PROFILE'; payload: Partial<UserHealthProfile> }
   | { type: 'RESET' };
@@ -92,6 +94,30 @@ function profileReducer(state: ProfileState, action: ProfileAction): ProfileStat
           ...state.profile,
           conditions: action.payload,
           nutrientTargets,
+        },
+      };
+    }
+    case 'SET_PRIMARY_CONDITION': {
+      const conditions = [action.payload.condition];
+      const nutrientTargets = buildNutrientTargets(conditions);
+      return {
+        ...state,
+        profile: {
+          ...state.profile,
+          conditions,
+          nutrientTargets,
+          customCondition: action.payload.customCondition,
+          conditionSource: action.payload.source,
+          aiSuggestedCondition: action.payload.aiSuggestedCondition,
+        },
+      };
+    }
+    case 'SET_AI_SUGGESTED_CONDITION': {
+      return {
+        ...state,
+        profile: {
+          ...state.profile,
+          aiSuggestedCondition: action.payload,
         },
       };
     }
@@ -130,6 +156,8 @@ interface ProfileContextValue {
   isHydrated: boolean;
   hydrationError: string | null;
   setConditions: (conditions: HealthCondition[]) => void;
+  setPrimaryCondition: (params: { condition: HealthCondition; source: 'listed' | 'other' | 'unsure_ai'; customCondition?: string; aiSuggestedCondition?: HealthCondition }) => void;
+  setAiSuggestedCondition: (condition: HealthCondition) => void;
   setGoals: (goals: HealthGoal[]) => void;
   setNutriBotNote: (note: string) => void;
   completeOnboarding: () => Promise<void>;
@@ -160,6 +188,14 @@ function mapSupabaseProfile(data: any): UserHealthProfile {
     nutrientTargets,
     nutriBotNote: data?.nutribot_note ?? undefined,
     onboardingCompleted: Boolean(data?.onboarding_completed),
+    customCondition: data?.custom_condition ?? undefined,
+    conditionSource: data?.condition_source ?? undefined,
+    aiSuggestedCondition: data?.ai_suggested_condition ?? undefined,
+    name: data?.name ?? undefined,
+    age: data?.age ?? undefined,
+    heightCm: data?.height_cm ?? undefined,
+    weightKg: data?.weight_kg ?? undefined,
+    bloodType: data?.blood_type ?? undefined,
   };
 }
 
@@ -227,6 +263,32 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
     }
   }, [state.profile, state.isHydrated]);
 
+  const setPrimaryCondition = useCallback((params: { condition: HealthCondition; source: 'listed' | 'other' | 'unsure_ai'; customCondition?: string; aiSuggestedCondition?: HealthCondition }) => {
+    dispatch({ type: 'SET_PRIMARY_CONDITION', payload: params });
+
+    if (user) {
+      const conditions = [params.condition];
+      const nutrientTargets = buildNutrientTargets(conditions);
+      upsertUserConditions(user.id, conditions).catch((error) => {
+        console.warn('Supabase conditions sync failed:', error);
+      });
+      upsertNutrientTargets(user.id, nutrientTargets).catch((error) => {
+        console.warn('Supabase nutrient targets sync failed:', error);
+      });
+      updateUserProfile(user.id, {
+        custom_condition: params.customCondition,
+        condition_source: params.source,
+        ai_suggested_condition: params.aiSuggestedCondition,
+      }).catch((error) => {
+        console.warn('Supabase profile sync failed:', error);
+      });
+    }
+  }, [user]);
+
+  const setAiSuggestedCondition = useCallback((condition: HealthCondition) => {
+    dispatch({ type: 'SET_AI_SUGGESTED_CONDITION', payload: condition });
+  }, []);
+
   const setConditions = useCallback((conditions: HealthCondition[]) => {
     const nutrientTargets = buildNutrientTargets(conditions);
     dispatch({ type: 'SET_CONDITIONS', payload: conditions });
@@ -272,13 +334,16 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
           goals: state.profile.goals,
           nutribot_note: state.profile.nutriBotNote,
           onboarding_completed: true,
+          custom_condition: state.profile.customCondition,
+          condition_source: state.profile.conditionSource,
+          ai_suggested_condition: state.profile.aiSuggestedCondition,
         });
       } catch (error) {
         console.warn('Supabase onboarding sync failed, local state is saved:', error);
         // Don't block — local state + AsyncStorage is already persisted
       }
     }
-  }, [state.profile.conditions, state.profile.goals, state.profile.nutrientTargets, state.profile.nutriBotNote, user]);
+  }, [state.profile, user]);
 
   const updateProfile = useCallback((partial: Partial<UserHealthProfile>) => {
     dispatch({ type: 'UPDATE_PROFILE', payload: partial });
@@ -286,11 +351,21 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
     if (!user) return;
 
     const updates: {
+      name?: string;
+      age?: number;
+      height_cm?: number;
+      weight_kg?: number;
+      blood_type?: string;
       goals?: HealthGoal[];
       nutribot_note?: string;
       onboarding_completed?: boolean;
     } = {};
 
+    if (partial.name !== undefined) updates.name = partial.name;
+    if (partial.age !== undefined) updates.age = partial.age;
+    if (partial.heightCm !== undefined) updates.height_cm = partial.heightCm;
+    if (partial.weightKg !== undefined) updates.weight_kg = partial.weightKg;
+    if (partial.bloodType !== undefined) updates.blood_type = partial.bloodType;
     if (partial.goals) updates.goals = partial.goals;
     if (partial.nutriBotNote !== undefined) updates.nutribot_note = partial.nutriBotNote;
     if (partial.onboardingCompleted !== undefined) updates.onboarding_completed = partial.onboardingCompleted;
@@ -336,6 +411,8 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
         isHydrated: state.isHydrated,
         hydrationError: state.hydrationError,
         setConditions,
+        setPrimaryCondition,
+        setAiSuggestedCondition,
         setGoals,
         setNutriBotNote,
         completeOnboarding,

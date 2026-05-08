@@ -11,17 +11,17 @@
  * - Conversation Persistence
  */
 
-import React, { useState, useRef, useCallback, useEffect } from 'react';
-import { View, Text, TextInput, TouchableOpacity, FlatList, KeyboardAvoidingView, Platform, StyleSheet, ActivityIndicator, ScrollView } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
-import { useRouter, useLocalSearchParams } from 'expo-router';
-import { useTheme } from '@/hooks/useTheme';
-import { AppScreen, TopBar, ConditionPill, ChatBubble, NutriBotShimmer } from '@/components/ui';
-import { useProfile } from '@/context/ProfileContext';
-import { useAuth } from '@/context/AuthContext';
-import { supabase } from '@/lib/supabase';
-import { getMessages, createConversation, insertMessage } from '@/services/supabaseService';
+import { AppScreen, ChatBubble, ConditionPill, NutriBotShimmer, TopBar } from '@/components/ui';
 import type { ChatMessage } from '@/components/ui/ChatBubble';
+import { useAuth } from '@/context/AuthContext';
+import { useProfile } from '@/context/ProfileContext';
+import { useTheme } from '@/hooks/useTheme';
+import { supabase } from '@/lib/supabase';
+import { createConversation, getMessages, insertMessage } from '@/services/supabaseService';
+import { Ionicons } from '@expo/vector-icons';
+import { useLocalSearchParams, useRouter } from 'expo-router';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { ActivityIndicator, FlatList, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 
 const SUGGESTIONS = [
   'Is this food safe for me?',
@@ -49,8 +49,6 @@ export default function NutriBotScreen() {
   const [messages, setMessages] = useState<ChatMessage[]>([WELCOME]);
   const [input, setInput] = useState('');
   const [isTyping, setIsTyping] = useState(false);
-  const [isStreaming, setIsStreaming] = useState(false);
-  const [streamingText, setStreamingText] = useState('');
   const [isLoadingHistory, setIsLoadingHistory] = useState(!!params.conversationId);
   const flatListRef = useRef<FlatList>(null);
 
@@ -96,11 +94,11 @@ export default function NutriBotScreen() {
       timestamp: new Date(),
     };
 
+    // Snapshot messages BEFORE this one so the API call uses stable state
+    const messagesBefore = messages;
     setMessages((prev) => [...prev, userMsg]);
     setInput('');
     setIsTyping(true);
-    setIsStreaming(false);
-    setStreamingText('');
     scrollToEnd();
 
     let currentConvId = activeConversationId;
@@ -116,13 +114,13 @@ export default function NutriBotScreen() {
       // 2. Save the user message to the database
       await insertMessage(currentConvId, 'user', text.trim());
 
-      // 3. Prepare messages for AI
-      const currentMessages = [...messages, userMsg].map((m) => ({
+      // 3. Prepare messages for AI (use snapshot to avoid including stale streaming bubbles)
+      const currentMessages = [...messagesBefore, userMsg].map((m) => ({
         role: m.sender === 'bot' ? 'assistant' : 'user',
         content: m.text,
       }));
 
-      // 4. Call Edge Function with streaming fetch
+      // 4. Call Edge Function
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) throw new Error('No active session');
 
@@ -133,8 +131,6 @@ export default function NutriBotScreen() {
           'Authorization': `Bearer ${session.access_token}`,
         },
         body: JSON.stringify({ messages: currentMessages, profile }),
-        // @ts-ignore
-        reactNative: { textStreaming: true },
       });
 
       if (!response.ok) {
@@ -146,32 +142,9 @@ export default function NutriBotScreen() {
         throw new Error(errText);
       }
 
-      const reader = response.body?.getReader();
-      if (!reader) throw new Error('Streaming not supported on this device');
+      const data = await response.json();
+      const replyText: string = data.reply || 'I am sorry, I received an empty response.';
 
-      const decoder = new TextDecoder();
-      let replyText = '';
-
-      setIsTyping(false);
-      setIsStreaming(true);
-
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-
-        const chunk = decoder.decode(value, { stream: true });
-        replyText += chunk;
-        setStreamingText(replyText);
-        scrollToEnd();
-      }
-
-      setIsStreaming(false);
-      setStreamingText('');
-
-      if (!replyText) {
-        replyText = 'I am sorry, I received an empty response.';
-      }
-      
       // 5. Save the AI response to the database
       await insertMessage(currentConvId, 'assistant', replyText);
 
@@ -195,7 +168,6 @@ export default function NutriBotScreen() {
       setMessages((prev) => [...prev, errorMsg]);
     } finally {
       setIsTyping(false);
-      setIsStreaming(false);
       scrollToEnd();
     }
   }, [messages, profile, user, activeConversationId, scrollToEnd]);
@@ -245,22 +217,7 @@ export default function NutriBotScreen() {
             showsVerticalScrollIndicator={false}
             onContentSizeChange={scrollToEnd}
             renderItem={({ item }) => <ChatBubble message={item} />}
-            ListFooterComponent={
-              <>
-                {isTyping && !isStreaming && <NutriBotShimmer />}
-                {isStreaming && (
-                  <ChatBubble 
-                    message={{
-                      id: 'streaming-bubble',
-                      text: streamingText,
-                      sender: 'bot',
-                      timestamp: new Date(),
-                      disclaimer: false,
-                    }}
-                  />
-                )}
-              </>
-            }
+            ListFooterComponent={isTyping ? <NutriBotShimmer /> : null}
           />
 
           {/* Quick suggestions — fixed above input bar when few messages */}

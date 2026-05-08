@@ -5,13 +5,13 @@
  * Selections flow into the profile context.
  */
 
-import React, { useState } from 'react';
-import { View, Text, StyleSheet } from 'react-native';
-import { useRouter } from 'expo-router';
-import { useTheme } from '@/hooks/useTheme';
 import { AppScreen, PrimaryButton, SecondaryButton, SelectableChip } from '@/components/ui';
 import { useProfile } from '@/context/ProfileContext';
-import { goalLabels, goalIcons, type HealthGoal } from '@/types/health';
+import { useTheme } from '@/hooks/useTheme';
+import { goalIcons, goalLabels, type HealthGoal } from '@/types/health';
+import { useRouter } from 'expo-router';
+import React, { useState } from 'react';
+import { StyleSheet, Text, View } from 'react-native';
 
 const ALL_GOALS: HealthGoal[] = [
   'lower_sugar',
@@ -43,12 +43,12 @@ export default function GoalsScreen() {
 
   const handleContinue = () => {
     setGoals(Array.from(selected));
-    router.push('/(onboarding)/nutribot-assist');
+    router.push('/(onboarding)/confirmation');
   };
 
   const handleSkip = () => {
     setGoals([]);
-    router.push('/(onboarding)/nutribot-assist');
+    router.push('/(onboarding)/confirmation');
   };
 
   return (

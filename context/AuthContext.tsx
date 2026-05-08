@@ -1,6 +1,6 @@
 import { supabase } from '@/lib/supabase';
 import { type Session, type User } from '@supabase/supabase-js';
-import React, { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from 'react';
+import React, { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from 'react';
 
 interface AuthContextValue {
   session: Session | null;
@@ -19,17 +19,30 @@ const AuthContext = createContext<AuthContextValue>({
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const mountedRef = useRef(true);
 
   useEffect(() => {
-    // onAuthStateChange fires synchronously with the current session on registration,
-    // so calling getSession() is redundant and creates a race condition.
-    const { data } = supabase.auth.onAuthStateChange((_event, nextSession) => {
-      setSession(nextSession ?? null);
-      setIsLoading(false);
+    mountedRef.current = true;
+
+    // 1. Load persisted session from storage (reliable across all Supabase JS versions)
+    supabase.auth.getSession().then(({ data: { session: initialSession } }) => {
+      if (mountedRef.current) {
+        setSession(initialSession);
+        setIsLoading(false);
+      }
+    });
+
+    // 2. Listen for subsequent auth changes (login, logout, token refresh)
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, nextSession) => {
+      if (mountedRef.current) {
+        setSession(nextSession ?? null);
+        setIsLoading(false);
+      }
     });
 
     return () => {
-      data.subscription.unsubscribe();
+      mountedRef.current = false;
+      subscription.unsubscribe();
     };
   }, []);
 

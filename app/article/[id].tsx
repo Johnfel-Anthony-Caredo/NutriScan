@@ -1,42 +1,133 @@
 /**
- * Article Detail (C3) — full health tip article.
+ * Article Detail Screen — full health article with hero image,
+ * body content, key takeaways, and related articles.
  *
- * Features:
- * - Full-width hero image placeholder
- * - Category pill + read time + date
- * - Source credit (Wikipedia)
- * - Full article body paragraphs
- * - Key Takeaways box (teal tinted)
- * - Related Tips section (horizontal scroll)
- * - Bookmark toggle + Share button
+ * Backed by Wikipedia API via cache-first article service.
+ * Editorial typography, generous spacing, premium feel.
  */
 
-import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, StyleSheet, Alert } from 'react-native';
+import { ArticleHero, TakeawaysCard } from '@/components/articles';
+import { AppScreen, SkeletonLoader, TopBar } from '@/components/ui';
+import { useTheme } from '@/hooks/useTheme';
+import { fetchArticleBySlug, fetchArticlesForConditions } from '@/services/articleService';
+import { getCachedArticles } from '@/services/supabaseService';
+import type { Article } from '@/types/articles';
 import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { useTheme } from '@/hooks/useTheme';
-import { AppScreen, Card } from '@/components/ui';
-import { MOCK_ARTICLES, MOCK_TIPS } from '@/data/mockData';
+import React, { useEffect, useState } from 'react';
+import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+
+const CATEGORY_LABELS: Record<string, string> = {
+  diabetes: 'Diabetes',
+  hypertension: 'Hypertension',
+  heart_disease: 'Heart Health',
+  kidney_disease: 'Kidney Health',
+  liver_disease: 'Liver Health',
+  cancer: 'Cancer',
+  other: 'Nutrition',
+};
 
 export default function ArticleDetailScreen() {
   const theme = useTheme();
   const router = useRouter();
   const { id } = useLocalSearchParams<{ id: string }>();
-  const [bookmarked, setBookmarked] = useState(false);
+  const slug = Array.isArray(id) ? id[0] : id;
 
-  const article = MOCK_ARTICLES[id ?? '1'];
-  if (!article) {
+  const [article, setArticle] = useState<Article | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [related, setRelated] = useState<Article[]>([]);
+
+  useEffect(() => {
+    let isActive = true;
+
+    const load = async () => {
+      if (!slug) {
+        if (isActive) { setError('No article specified'); setIsLoading(false); }
+        return;
+      }
+
+      try {
+        const result = await fetchArticleBySlug(slug);
+        if (!isActive) return;
+
+        if (result) {
+          setArticle(result);
+
+          // Fetch related articles from the same category (async, non-blocking)
+          if (result.category) {
+            getCachedArticles(result.category).then((rows) => {
+              if (!isActive) return;
+              const others = rows
+                .map((r): Article => ({
+                  slug: r.slug,
+                  title: r.title,
+                  category: r.category,
+                  summary: r.summary,
+                  content: r.content,
+                  imageUrl: r.image_url,
+                  sourceUrl: r.source_url,
+                  keyTakeaways: r.key_takeaways ?? [],
+                  relatedSlugs: r.related_slugs ?? [],
+                }))
+                .filter((a) => a.slug !== slug)
+                .slice(0, 3);
+              setRelated(others);
+            }).catch(() => {
+              // Silently fail — related articles are non-essential
+            });
+          }
+        } else {
+          setError('Article not found.');
+        }
+      } catch (err) {
+        if (!isActive) return;
+        setError('Could not load article.');
+        console.error('Article load error:', err);
+      } finally {
+        if (isActive) setIsLoading(false);
+      }
+    };
+
+    load();
+    return () => { isActive = false; };
+  }, [slug]);
+
+  // ── Loading state ──────────────────────────────────────────
+  if (isLoading) {
     return (
-      <AppScreen>
-        <Text style={{ color: theme.colors.textPrimary, textAlign: 'center', marginTop: 100 }}>Article not found</Text>
+      <AppScreen noPadding>
+        <TopBar title="Health Article" showBack />
+        <View style={{ padding: 20 }}>
+          <View style={{ gap: 16 }}>
+            <SkeletonLoader rows={1} />
+            <View style={{ height: 200, borderRadius: 12, backgroundColor: theme.colors.surfaceSecondary }} />
+            <SkeletonLoader rows={4} />
+          </View>
+        </View>
       </AppScreen>
     );
   }
 
-  const relatedArticles = article.relatedIds
-    .map((rid) => MOCK_ARTICLES[rid])
-    .filter(Boolean);
+  // ── Error state ────────────────────────────────────────────
+  if (error || !article) {
+    return (
+      <AppScreen noPadding>
+        <TopBar title="Health Article" showBack onBack={() => router.back()} />
+        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 20 }}>
+          <Ionicons name="cloud-offline-outline" size={56} color={theme.colors.caution.icon} />
+          <Text style={{ color: theme.colors.textPrimary, fontSize: theme.fontSizes.lg, fontWeight: theme.fontWeights.bold, textAlign: 'center', marginTop: 16 }}>
+            {error || 'Article not available'}
+          </Text>
+          <Text style={{ color: theme.colors.textSecondary, fontSize: theme.fontSizes.body, textAlign: 'center', marginTop: 8, lineHeight: theme.lineHeights.body, maxWidth: 280 }}>
+            We could not load this article. It may not exist yet or there was a connection issue.
+          </Text>
+        </View>
+      </AppScreen>
+    );
+  }
+
+  const categoryLabel = CATEGORY_LABELS[article.category] ?? article.category;
 
   return (
     <AppScreen scroll noPadding>
@@ -45,44 +136,58 @@ export default function ArticleDetailScreen() {
         <TouchableOpacity onPress={() => router.back()} accessibilityRole="button" style={styles.backBtn}>
           <Ionicons name="arrow-back" size={24} color={theme.colors.textPrimary} />
         </TouchableOpacity>
-        <Text style={{ color: theme.colors.textPrimary, fontSize: theme.fontSizes.body, fontWeight: theme.fontWeights.medium, flex: 1 }} numberOfLines={1}>
+        <Text style={{ color: theme.colors.textPrimary, fontSize: theme.fontSizes.sm, fontWeight: theme.fontWeights.medium, flex: 1 }} numberOfLines={1}>
           {article.title}
         </Text>
-        <TouchableOpacity onPress={() => setBookmarked(!bookmarked)} accessibilityRole="button" style={styles.iconBtn}>
-          <Ionicons name={bookmarked ? 'bookmark' : 'bookmark-outline'} size={22} color={bookmarked ? theme.colors.primary : theme.colors.textSecondary} />
-        </TouchableOpacity>
       </View>
 
       {/* ── Hero Image ───────────────── */}
-      <View style={[styles.hero, { backgroundColor: theme.colors.primaryLight }]}>
-        <Ionicons name="newspaper-outline" size={56} color={theme.colors.primary} />
-      </View>
+      <ArticleHero imageUrl={article.imageUrl} categoryLabel={categoryLabel} height={220} />
 
-      <View style={{ paddingHorizontal: 20, paddingTop: 16, paddingBottom: 40 }}>
-        {/* ── Meta Row ───────────────── */}
-        <View style={styles.metaRow}>
-          <View style={[styles.catPill, { backgroundColor: theme.colors.primaryLight, borderRadius: theme.radius.full }]}>
-            <Text style={{ color: theme.colors.primary, fontSize: theme.fontSizes.xs, fontWeight: theme.fontWeights.semibold }}>{article.category}</Text>
-          </View>
-          <Text style={{ color: theme.colors.textTertiary, fontSize: theme.fontSizes.sm }}>{article.readTime}</Text>
-          <View style={[styles.metaDot, { backgroundColor: theme.colors.textTertiary }]} />
-          <Text style={{ color: theme.colors.textTertiary, fontSize: theme.fontSizes.sm }}>{article.date}</Text>
-        </View>
+      {/* ── Content ──────────────────── */}
+      <View style={{ paddingHorizontal: 20, paddingBottom: 48 }}>
 
-        {/* ── Title ──────────────────── */}
-        <Text style={{ color: theme.colors.textPrimary, fontSize: theme.fontSizes['2xl'], fontWeight: theme.fontWeights.bold, lineHeight: 32, marginTop: 12 }}>
+        {/* Title */}
+        <Text
+          style={{
+            color: theme.colors.textPrimary,
+            fontSize: theme.fontSizes['2xl'],
+            fontWeight: theme.fontWeights.bold,
+            lineHeight: theme.lineHeights['2xl'],
+            marginTop: 20,
+          }}
+        >
           {article.title}
         </Text>
 
-        {/* ── Source Credit ──────────── */}
-        <Text style={{ color: theme.colors.textTertiary, fontSize: theme.fontSizes.sm, marginTop: 8, marginBottom: 20 }}>
-          Source: {article.source} &middot; {article.sourceSlug.replace(/_/g, ' ')}
-        </Text>
+        {/* Source credit */}
+        <View style={styles.sourceRow}>
+          <Ionicons name="globe-outline" size={14} color={theme.colors.textTertiary} />
+          <Text style={{ color: theme.colors.textTertiary, fontSize: theme.fontSizes.sm, marginLeft: 5 }}>
+            Wikipedia &middot; Open access
+          </Text>
+        </View>
 
-        {/* ── Body ───────────────────── */}
-        {article.body.map((paragraph, i) => (
+        {/* Summary — editorial lead paragraph */}
+        {article.summary ? (
           <Text
-            key={i}
+            style={{
+              color: theme.colors.textPrimary,
+              fontSize: theme.fontSizes.body,
+              lineHeight: theme.lineHeights.body,
+              marginTop: 20,
+            }}
+          >
+            {article.summary}
+          </Text>
+        ) : null}
+
+        {/* Divider */}
+        <View style={[styles.divider, { backgroundColor: theme.colors.borderLight }]} />
+
+        {/* Body content */}
+        {article.content && article.content !== article.summary ? (
+          <Text
             style={{
               color: theme.colors.textPrimary,
               fontSize: theme.fontSizes.body,
@@ -90,71 +195,67 @@ export default function ArticleDetailScreen() {
               marginBottom: 16,
             }}
           >
-            {paragraph}
+            {article.content}
           </Text>
-        ))}
+        ) : null}
 
         {/* ── Key Takeaways ──────────── */}
-        <View style={[styles.takeawaysBox, { backgroundColor: theme.colors.primaryLight, borderRadius: theme.radius.lg, borderColor: theme.colors.primary }]}>
-          <View style={styles.takeawaysHeader}>
-            <Ionicons name="pin" size={16} color={theme.colors.primary} />
-            <Text style={{ color: theme.colors.primary, fontSize: theme.fontSizes.body, fontWeight: theme.fontWeights.bold, marginLeft: 6 }}>
-              Key Takeaways
-            </Text>
-          </View>
-          {article.keyTakeaways.map((point, i) => (
-            <View key={i} style={styles.takeawayRow}>
-              <Ionicons name="checkmark-circle" size={16} color={theme.colors.safe.icon} style={{ marginTop: 2 }} />
-              <Text style={{ color: theme.colors.textPrimary, fontSize: theme.fontSizes.body, lineHeight: theme.lineHeights.body, marginLeft: 8, flex: 1 }}>
-                {point}
-              </Text>
-            </View>
-          ))}
-        </View>
+        <TakeawaysCard takeaways={article.keyTakeaways} />
 
-        {/* ── Related Tips ───────────── */}
-        {relatedArticles.length > 0 && (
-          <>
-            <Text style={{ color: theme.colors.textPrimary, fontSize: theme.fontSizes.lg, fontWeight: theme.fontWeights.bold, marginTop: 28, marginBottom: 12 }}>
-              Related Tips
+        {/* ── Read on Wikipedia ──────── */}
+        {article.sourceUrl ? (
+          <TouchableOpacity
+            onPress={() => {} /* Could open in-app browser */}
+            style={[styles.sourceBtn, { borderColor: theme.colors.border, borderRadius: theme.radius.md }]}
+            accessibilityRole="button"
+          >
+            <Ionicons name="globe-outline" size={18} color={theme.colors.primary} />
+            <Text style={{ color: theme.colors.primary, fontSize: theme.fontSizes.sm, fontWeight: theme.fontWeights.medium, marginLeft: 8, flex: 1 }} numberOfLines={1}>
+              Read full article on Wikipedia
             </Text>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 12, paddingRight: 20 }}>
-              {relatedArticles.map((related) => (
-                <TouchableOpacity
-                  key={related.id}
-                  onPress={() => router.push(`/article/${related.id}`)}
-                  activeOpacity={0.7}
-                  style={[styles.relatedCard, { backgroundColor: theme.colors.surface, borderColor: theme.colors.borderLight, borderRadius: theme.radius.lg, ...theme.shadows.sm }]}
+            <Ionicons name="open-outline" size={16} color={theme.colors.primary} />
+          </TouchableOpacity>
+        ) : null}
+
+        {/* ── Related Articles ───────── */}
+        {related.length > 0 && (
+          <View style={{ marginTop: 36 }}>
+            <Text
+              style={{
+                color: theme.colors.textPrimary,
+                fontSize: theme.fontSizes.lg,
+                fontWeight: theme.fontWeights.semibold,
+                marginBottom: 14,
+              }}
+            >
+              Related Articles
+            </Text>
+            {related.map((rel) => (
+              <TouchableOpacity
+                key={rel.slug}
+                onPress={() => router.replace(`/article/${rel.slug}`)}
+                activeOpacity={0.7}
+                style={[styles.relatedCard, { backgroundColor: theme.colors.surface, borderColor: theme.colors.borderLight, borderRadius: theme.radius.md, ...theme.shadows.sm }]}
+                accessibilityRole="button"
+              >
+                <Text
+                  style={{ color: theme.colors.textPrimary, fontSize: theme.fontSizes.sm, fontWeight: theme.fontWeights.semibold }}
+                  numberOfLines={2}
                 >
-                  <View style={[styles.relatedIcon, { backgroundColor: theme.colors.primaryLight }]}>
-                    <Ionicons name="document-text-outline" size={20} color={theme.colors.primary} />
-                  </View>
-                  <View style={[styles.relatedCat, { backgroundColor: theme.colors.primaryLight, borderRadius: theme.radius.full }]}>
-                    <Text style={{ color: theme.colors.primary, fontSize: 10, fontWeight: theme.fontWeights.semibold }}>{related.category}</Text>
-                  </View>
-                  <Text style={{ color: theme.colors.textPrimary, fontSize: theme.fontSizes.sm, fontWeight: theme.fontWeights.medium, marginTop: 8 }} numberOfLines={2}>
-                    {related.title}
+                  {rel.title}
+                </Text>
+                {rel.summary ? (
+                  <Text
+                    style={{ color: theme.colors.textSecondary, fontSize: theme.fontSizes.xs, marginTop: 4, lineHeight: theme.lineHeights.xs }}
+                    numberOfLines={2}
+                  >
+                    {rel.summary}
                   </Text>
-                  <Text style={{ color: theme.colors.textTertiary, fontSize: theme.fontSizes.xs, marginTop: 4 }}>
-                    {related.readTime}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </ScrollView>
-          </>
+                ) : null}
+              </TouchableOpacity>
+            ))}
+          </View>
         )}
-
-        {/* ── Share Button ───────────── */}
-        <TouchableOpacity
-          onPress={() => Alert.alert('Share', `Share article: ${article.title}`)}
-          style={[styles.shareBtn, { borderColor: theme.colors.border, borderRadius: theme.radius.md }]}
-          accessibilityRole="button"
-        >
-          <Ionicons name="share-social-outline" size={20} color={theme.colors.primary} />
-          <Text style={{ color: theme.colors.primary, fontSize: theme.fontSizes.body, fontWeight: theme.fontWeights.medium, marginLeft: 8 }}>
-            Share Article
-          </Text>
-        </TouchableOpacity>
       </View>
     </AppScreen>
   );
@@ -163,16 +264,8 @@ export default function ArticleDetailScreen() {
 const styles = StyleSheet.create({
   topBar: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 8, paddingVertical: 10, borderBottomWidth: StyleSheet.hairlineWidth, gap: 4 },
   backBtn: { padding: 8 },
-  iconBtn: { padding: 8 },
-  hero: { height: 200, justifyContent: 'center', alignItems: 'center' },
-  metaRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  catPill: { paddingHorizontal: 10, paddingVertical: 4 },
-  metaDot: { width: 3, height: 3, borderRadius: 1.5 },
-  takeawaysBox: { padding: 16, marginTop: 8, marginBottom: 8, borderLeftWidth: 3 },
-  takeawaysHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 12 },
-  takeawayRow: { flexDirection: 'row', alignItems: 'flex-start', marginBottom: 8 },
-  relatedCard: { width: 180, padding: 14, borderWidth: StyleSheet.hairlineWidth },
-  relatedIcon: { width: 36, height: 36, borderRadius: 10, justifyContent: 'center', alignItems: 'center' },
-  relatedCat: { paddingHorizontal: 8, paddingVertical: 2, alignSelf: 'flex-start', marginTop: 8 },
-  shareBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: 16, borderWidth: 1.5, marginTop: 28 },
+  sourceRow: { flexDirection: 'row', alignItems: 'center', marginTop: 10 },
+  divider: { height: 1, marginVertical: 20 },
+  sourceBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: 14, borderWidth: 1.5, marginTop: 20, paddingHorizontal: 16 },
+  relatedCard: { padding: 14, marginBottom: 10, borderWidth: StyleSheet.hairlineWidth },
 });

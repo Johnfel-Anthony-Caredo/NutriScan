@@ -8,6 +8,7 @@
 import { AppScreen, PrimaryButton, ProfileSummaryCard, SecondaryButton } from '@/components/ui';
 import { useProfile } from '@/context/ProfileContext';
 import { useTheme } from '@/hooks/useTheme';
+import { conditionLabels } from '@/types/health';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import React from 'react';
@@ -22,6 +23,13 @@ export default function ConfirmationScreen() {
     await completeOnboarding();
     router.replace('/(tabs)');
   };
+
+  const primaryCondition = profile.conditions[0];
+  const conditionLabel = primaryCondition
+    ? profile.customCondition
+      ? profile.customCondition
+      : conditionLabels[primaryCondition] ?? primaryCondition
+    : 'General health';
 
   return (
     <AppScreen scroll noPadding>

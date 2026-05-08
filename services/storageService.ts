@@ -1,11 +1,11 @@
 import { supabase } from '@/lib/supabase';
 import { decode } from 'base64-arraybuffer';
-import * as FileSystem from 'expo-file-system';
+import { EncodingType, readAsStringAsync } from 'expo-file-system/legacy';
 
 export async function uploadScanImage(userId: string, localUri: string): Promise<string> {
   const filePath = `${userId}/${Date.now()}.jpg`;
-  const base64 = await FileSystem.readAsStringAsync(localUri, {
-    encoding: FileSystem.EncodingType.Base64,
+  const base64 = await readAsStringAsync(localUri, {
+    encoding: EncodingType.Base64,
   });
 
   const { error } = await supabase.storage
@@ -27,8 +27,8 @@ export async function getScanImageUrl(filePath: string): Promise<string> {
 
 export async function uploadAvatar(userId: string, localUri: string): Promise<string> {
   const filePath = `${userId}/avatar.jpg`;
-  const base64 = await FileSystem.readAsStringAsync(localUri, {
-    encoding: FileSystem.EncodingType.Base64,
+  const base64 = await readAsStringAsync(localUri, {
+    encoding: EncodingType.Base64,
   });
 
   const { error } = await supabase.storage

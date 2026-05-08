@@ -11,8 +11,10 @@ import { AppScreen, PrimaryButton, SecondaryButton, SkeletonLoader, TopBar } fro
 import { useProfile } from '@/context/ProfileContext';
 import type { ScanResultData } from '@/data/mockData';
 import { useTheme } from '@/hooks/useTheme';
-import { analyzeBarcodeWithAi, analyzeFoodPhoto, buildScanResultFromAiResponse, buildScanResultFromBarcode, lookupBarcode, type BarcodeProductData } from '@/services/scanService';
+import { analyzeBarcodeWithAi, analyzeFoodPhoto, analyzeTextFood, buildScanResultFromAiResponse, buildScanResultFromBarcode, lookupBarcode, type BarcodeProductData } from '@/services/scanService';
+import { optimizeImageForUpload } from '@/utils/optimizeImage';
 import { Ionicons } from '@expo/vector-icons';
+import { Image } from 'expo-image';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import { StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
@@ -114,7 +116,6 @@ export default function ScanPreviewScreen() {
         }
       } else if (source === 'manual') {
         // Manual search — send food name to AI for text-only analysis
-        const { analyzeTextFood } = await import('@/services/scanService');
         const aiResponse = await analyzeTextFood(foodName, {
           conditions: profile.conditions,
           goals: profile.goals,
@@ -122,15 +123,15 @@ export default function ScanPreviewScreen() {
         });
         result = buildScanResultFromAiResponse(aiResponse, mealType, 'manual');
       } else {
-        // Photo flow — call scan-ai Edge Function
-        const fileSystem = await import('expo-file-system');
-        const base64 = await fileSystem.default.readAsStringAsync(uriParam!, {
-          encoding: fileSystem.EncodingType.Base64,
+        // Photo flow — optimize image (resize + compress), then call scan-ai
+        const { base64, mimeType } = await optimizeImageForUpload(uriParam!, {
+          maxWidth: 1200,
+          compress: 0.6,
         });
 
         const aiResponse = await analyzeFoodPhoto(
           base64,
-          'image/jpeg',
+          mimeType,
           {
             conditions: profile.conditions,
             goals: profile.goals,
@@ -187,14 +188,10 @@ export default function ScanPreviewScreen() {
     <AppScreen scroll noPadding>
       <TopBar title="Confirm Food" showBack />
       <View style={{ paddingHorizontal: 20, paddingTop: 12, paddingBottom: 40 }}>
-        {/* Image placeholder — show actual camera image for photos */}
-        <View style={[styles.imagePlaceholder, { backgroundColor: theme.colors.surfaceSecondary, borderRadius: theme.radius.lg }]}>
+        {/* Captured image — show the actual photo for camera captures */}
+        <View style={[styles.imagePlaceholder, { backgroundColor: theme.colors.surfaceSecondary, borderRadius: theme.radius.lg, overflow: 'hidden' }]}>
           {source === 'photo' && uriParam ? (
-            <View style={{ flex: 1, width: '100%', borderRadius: theme.radius.lg, overflow: 'hidden' }}>
-              <Text style={{ color: theme.colors.textTertiary, textAlign: 'center', paddingTop: 80 }}>
-                Image captured ✓
-              </Text>
-            </View>
+            <Image source={{ uri: uriParam }} style={styles.capturedImage} contentFit="cover" />
           ) : source === 'barcode' ? (
             <>
               <Ionicons name="barcode-outline" size={56} color={theme.colors.textTertiary} />
@@ -274,6 +271,7 @@ export default function ScanPreviewScreen() {
 
 const styles = StyleSheet.create({
   imagePlaceholder: { height: 220, justifyContent: 'center', alignItems: 'center', overflow: 'hidden' },
+  capturedImage: { width: '100%', height: '100%' },
   nameInput: { borderWidth: 1, paddingHorizontal: 16, paddingVertical: 14 },
   mealRow: { flexDirection: 'row', gap: 8, flexWrap: 'wrap' },
   mealChip: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 14, paddingVertical: 10, borderWidth: 1 },

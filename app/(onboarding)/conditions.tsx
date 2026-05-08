@@ -1,51 +1,87 @@
 /**
- * Conditions Screen — Step 2: Select health conditions.
+ * Conditions Screen — Step 2: Select your primary health condition.
  *
- * Multi-select cards with clear visual feedback.
- * Uses the profile context to persist selections.
+ * Single-select only. Three paths:
+ * 1. Listed condition → saves it, goes to Goals
+ * 2. "My condition isn't listed" → reveals text input, saves custom, goes to Goals
+ * 3. "I'm not sure" → goes to AI-assisted classification step
  */
 
-import React, { useState } from 'react';
-import { View, Text, StyleSheet } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
-import { useTheme } from '@/hooks/useTheme';
 import { AppScreen, PrimaryButton, SelectableCard } from '@/components/ui';
 import { useProfile } from '@/context/ProfileContext';
+import { useTheme } from '@/hooks/useTheme';
 import type { HealthCondition } from '@/types/health';
+import { Ionicons } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
+import React, { useState } from 'react';
+import { StyleSheet, Text, TextInput, View } from 'react-native';
 
-const CONDITIONS: { key: HealthCondition; label: string; icon: keyof typeof Ionicons.glyphMap }[] = [
+const LISTED_CONDITIONS: { key: HealthCondition; label: string; icon: keyof typeof Ionicons.glyphMap }[] = [
   { key: 'diabetes', label: 'Diabetes / Prediabetes', icon: 'water' },
   { key: 'hypertension', label: 'High Blood Pressure', icon: 'pulse' },
   { key: 'heart_disease', label: 'Heart Disease / High Cholesterol', icon: 'heart' },
   { key: 'kidney_disease', label: 'Kidney Disease / Renal Diet', icon: 'fitness' },
   { key: 'liver_disease', label: 'Liver Disease / Hepatitis', icon: 'medkit' },
   { key: 'cancer', label: 'Cancer (on treatment)', icon: 'ribbon' },
-  { key: 'other', label: "My condition isn't listed", icon: 'help-circle' },
-  { key: 'unsure', label: "I'm not sure", icon: 'help' },
 ];
 
 export default function ConditionsScreen() {
   const theme = useTheme();
   const router = useRouter();
-  const { profile, setConditions } = useProfile();
-  const [selected, setSelected] = useState<Set<HealthCondition>>(
-    new Set(profile.conditions),
-  );
+  const { setPrimaryCondition } = useProfile();
+  const [selectedCondition, setSelectedCondition] = useState<HealthCondition | null>(null);
+  const [customText, setCustomText] = useState('');
+  const [showCustomInput, setShowCustomInput] = useState(false);
 
-  const toggle = (key: HealthCondition) => {
-    setSelected((prev) => {
-      const next = new Set(prev);
-      if (next.has(key)) next.delete(key);
-      else next.add(key);
-      return next;
-    });
+  const isOtherSelected = selectedCondition === 'other';
+  const isUnsureSelected = selectedCondition === 'unsure';
+  const isListedSelected = selectedCondition && !isOtherSelected && !isUnsureSelected;
+
+  const handleSelect = (key: HealthCondition) => {
+    setSelectedCondition(key);
+    if (key === 'other') {
+      setShowCustomInput(true);
+      setCustomText('');
+    } else {
+      setShowCustomInput(false);
+      setCustomText('');
+    }
   };
 
   const handleContinue = () => {
-    setConditions(Array.from(selected));
+    if (!selectedCondition) return;
+
+    if (selectedCondition === 'unsure') {
+      // Go to AI-assisted classification
+      router.push('/(onboarding)/nutribot-assist');
+      return;
+    }
+
+    if (selectedCondition === 'other') {
+      if (!customText.trim()) return; // require text
+      setPrimaryCondition({
+        condition: selectedCondition,
+        source: 'other',
+        customCondition: customText.trim(),
+      });
+      router.push('/(onboarding)/goals');
+      return;
+    }
+
+    // Listed condition
+    setPrimaryCondition({
+      condition: selectedCondition,
+      source: 'listed',
+    });
     router.push('/(onboarding)/goals');
   };
+
+  const canContinue = (() => {
+    if (!selectedCondition) return false;
+    if (selectedCondition === 'unsure') return true;
+    if (selectedCondition === 'other') return customText.trim().length > 0;
+    return true;
+  })();
 
   return (
     <AppScreen scroll noPadding>
@@ -68,39 +104,89 @@ export default function ConditionsScreen() {
             marginBottom: 24,
           }}
         >
-          Select all that apply. We'll personalize your food guidance based on this.
+          Pick the one that best describes your situation. You can always update this later.
         </Text>
 
         <View style={styles.grid}>
-          {CONDITIONS.map((c) => (
+          {LISTED_CONDITIONS.map((c) => (
             <SelectableCard
               key={c.key}
               label={c.label}
               icon={c.icon}
-              selected={selected.has(c.key)}
-              onPress={() => toggle(c.key)}
+              selected={selectedCondition === c.key}
+              onPress={() => handleSelect(c.key)}
             />
           ))}
         </View>
 
-        {/* Gentle validation hint */}
-        {selected.size === 0 && (
+        {/* Custom condition text input — shown when "other" is selected */}
+        {showCustomInput && (
+          <View style={[styles.customInputWrap, { backgroundColor: theme.colors.surfaceSecondary, borderColor: theme.colors.border, borderRadius: theme.radius.md }]}>
+            <TextInput
+              value={customText}
+              onChangeText={setCustomText}
+              placeholder="Describe your condition, e.g. Thyroid disorder, Asthma..."
+              placeholderTextColor={theme.colors.textTertiary}
+              style={{ flex: 1, color: theme.colors.textPrimary, fontSize: theme.fontSizes.body, padding: 16, minHeight: 60 }}
+              multiline
+              autoFocus
+              accessibilityLabel="Describe your condition"
+            />
+          </View>
+        )}
+
+        {/* Divider for bottom options */}
+        <View style={styles.dividerRow}>
+          <View style={[styles.dividerLine, { backgroundColor: theme.colors.border }]} />
+          <Text style={{ color: theme.colors.textTertiary, fontSize: theme.fontSizes.sm, marginHorizontal: 12 }}>or</Text>
+          <View style={[styles.dividerLine, { backgroundColor: theme.colors.border }]} />
+        </View>
+
+        {/* "My condition isn't listed" and "I'm not sure" */}
+        <View style={styles.bottomOptions}>
+          <SelectableCard
+            key="other"
+            label="My condition isn't listed"
+            icon="help-circle"
+            selected={selectedCondition === 'other'}
+            onPress={() => handleSelect('other')}
+          />
+          <View style={{ marginTop: 10 }}>
+            <SelectableCard
+              key="unsure"
+              label="I'm not sure"
+              icon="help"
+              selected={selectedCondition === 'unsure'}
+              onPress={() => handleSelect('unsure')}
+            />
+          </View>
+        </View>
+
+        {isOtherSelected && !customText.trim() && (
           <Text
             style={{
               color: theme.colors.textTertiary,
               fontSize: theme.fontSizes.sm,
               textAlign: 'center',
-              marginTop: 16,
+              marginTop: 12,
             }}
           >
-            Please select at least one option to continue.
+            Please describe your condition to continue.
           </Text>
         )}
 
         <PrimaryButton
-          label="Continue"
+          label={
+            selectedCondition === 'unsure'
+              ? "Let's figure it out"
+              : isOtherSelected
+                ? 'Continue with my condition'
+                : selectedCondition
+                  ? 'Continue'
+                  : 'Select an option to continue'
+          }
           onPress={handleContinue}
-          disabled={selected.size === 0}
+          disabled={!canContinue}
           style={{ marginTop: 24 }}
         />
       </View>
@@ -113,5 +199,22 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: 12,
+  },
+  dividerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginVertical: 20,
+  },
+  dividerLine: {
+    flex: 1,
+    height: 1,
+  },
+  bottomOptions: {
+    gap: 4,
+  },
+  customInputWrap: {
+    borderWidth: 1,
+    marginTop: 12,
+    marginBottom: 4,
   },
 });

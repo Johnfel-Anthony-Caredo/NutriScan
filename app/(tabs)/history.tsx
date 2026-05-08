@@ -2,21 +2,26 @@
  * History Screen — food log, weekly chart, and daily summary.
  *
  * Shows weekly trend chart, daily summary card, today's food log,
- * and frequent risky foods section.
+ * and frequent risky foods section. Supports pull-to-refresh.
  */
 
-import { AppScreen, Card, EmptyState, FoodLogItem, SectionHeader, VerdictBadge, WeeklyChart } from '@/components/ui';
+import { AppScreen, Card, EmptyState, FoodLogItem, SectionHeader, SkeletonLoader, VerdictBadge, WeeklyChart } from '@/components/ui';
 import { useAuth } from '@/context/AuthContext';
-import { MOCK_TODAY_LOG, MOCK_WEEKLY, type WeeklySummary } from '@/data/mockData';
+import { useRefresh } from '@/hooks/useRefresh';
 import { useTheme } from '@/hooks/useTheme';
 import { getTodaysScanLogs, getWeeklyScanLogs, type ScanLogRow } from '@/services/supabaseService';
 import type { FoodItem } from '@/types/health';
 import { Ionicons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
-import React, { useEffect, useState } from 'react';
+import { useFocusEffect, useRouter } from 'expo-router';
+import React, { useCallback, useState } from 'react';
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
-const DAYS = ['Today', 'Yesterday', 'Mon', 'Tue', 'Wed'];
+interface WeeklySummaryData {
+  safe: number;
+  caution: number;
+  avoid: number;
+  daily: { day: string; safe: number; caution: number; avoid: number }[];
+}
 
 const mapScanLogToFoodItem = (row: ScanLogRow): FoodItem => ({
   id: row.id,
@@ -28,7 +33,7 @@ const mapScanLogToFoodItem = (row: ScanLogRow): FoodItem => ({
   mealType: row.meal_type ?? undefined,
 });
 
-const buildWeeklySummary = (rows: ScanLogRow[]): WeeklySummary => {
+const buildWeeklySummary = (rows: ScanLogRow[]): WeeklySummaryData => {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 
@@ -79,51 +84,80 @@ export default function HistoryScreen() {
   const router = useRouter();
   const [selectedDay, setSelectedDay] = useState(0);
   const { user } = useAuth();
-  const [todayLog, setTodayLog] = useState<FoodItem[]>(MOCK_TODAY_LOG);
-  const [weeklySummary, setWeeklySummary] = useState<WeeklySummary>(MOCK_WEEKLY);
+  const [todayLog, setTodayLog] = useState<FoodItem[]>([]);
+  const [weeklySummary, setWeeklySummary] = useState<WeeklySummaryData | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
-  useEffect(() => {
-    let isActive = true;
+  // ── Data loading function (shared between focus load and pull-to-refresh) ──
 
-    const load = async () => {
-      if (!user) return;
+  const loadHistoryData = useCallback(async () => {
+    if (!user) return;
 
-      try {
-        const [todayRows, weeklyRows] = await Promise.all([
-          getTodaysScanLogs(user.id),
-          getWeeklyScanLogs(user.id),
-        ]);
+    const [todayRows, weeklyRows] = await Promise.all([
+      getTodaysScanLogs(user.id),
+      getWeeklyScanLogs(user.id),
+    ]);
 
-        if (!isActive) return;
+    setTodayLog(todayRows.map(mapScanLogToFoodItem));
 
-        if (todayRows.length === 0 || weeklyRows.length === 0) {
-          setTodayLog(MOCK_TODAY_LOG);
-          setWeeklySummary(MOCK_WEEKLY);
+    if (weeklyRows.length > 0) {
+      setWeeklySummary(buildWeeklySummary(weeklyRows));
+    } else {
+      setWeeklySummary(null);
+    }
+  }, [user]);
+
+  const { isRefreshing, refreshError, handleRefresh, dismissError } = useRefresh({
+    onRefresh: loadHistoryData,
+  });
+
+  // ── Initial load on screen focus ──
+
+  useFocusEffect(
+    useCallback(() => {
+      let isActive = true;
+
+      const load = async () => {
+        setIsLoading(true);
+        setLoadError(null);
+
+        if (!user) {
+          if (isActive) setIsLoading(false);
           return;
         }
 
-        setTodayLog(todayRows.map(mapScanLogToFoodItem));
-        setWeeklySummary(buildWeeklySummary(weeklyRows));
-      } catch {
-        if (!isActive) return;
-        setTodayLog(MOCK_TODAY_LOG);
-        setWeeklySummary(MOCK_WEEKLY);
-      }
-    };
+        try {
+          await loadHistoryData();
+        } catch (err) {
+          if (!isActive) return;
+          setLoadError('Could not load history data.');
+          console.error('History load error:', err);
+        } finally {
+          if (isActive) setIsLoading(false);
+        }
+      };
 
-    load();
+      load();
 
-    return () => {
-      isActive = false;
-    };
-  }, [user]);
+      return () => { isActive = false; };
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [user]),
+  );
 
   const hasLogs = todayLog.length > 0;
+  const total = weeklySummary ? weeklySummary.safe + weeklySummary.caution + weeklySummary.avoid : 0;
 
-  const total = weeklySummary.safe + weeklySummary.caution + weeklySummary.avoid;
+  const dayChips = ['Today', 'Yesterday', ...(weeklySummary?.daily.slice(2, 7).map(d => d.day) || ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'])];
 
   return (
-    <AppScreen scroll>
+    <AppScreen
+      scroll
+      refreshing={isRefreshing}
+      onRefresh={handleRefresh}
+      refreshError={refreshError}
+      onDismissError={dismissError}
+    >
       {/* ── Header ─────────────────────── */}
       <View style={styles.header}>
         <Text style={{ color: theme.colors.textPrimary, fontSize: theme.fontSizes['2xl'], fontWeight: theme.fontWeights.bold }}>
@@ -136,6 +170,25 @@ export default function HistoryScreen() {
 
       {/* ── Weekly Summary Card ────────── */}
       <SectionHeader title="This Week" />
+      {isLoading ? (
+        <Card><SkeletonLoader rows={3} /></Card>
+      ) : loadError ? (
+        <Card>
+          <View style={styles.emptyState}>
+            <Ionicons name="cloud-offline-outline" size={28} color={theme.colors.caution.icon} />
+            <Text style={{ color: theme.colors.textSecondary, fontSize: theme.fontSizes.body, marginTop: 8, textAlign: 'center' }}>{loadError}</Text>
+          </View>
+        </Card>
+      ) : !weeklySummary ? (
+        <Card>
+          <View style={styles.emptyState}>
+            <Ionicons name="bar-chart-outline" size={28} color={theme.colors.textTertiary} />
+            <Text style={{ color: theme.colors.textSecondary, fontSize: theme.fontSizes.body, marginTop: 8, textAlign: 'center' }}>
+              No scans this week yet.{'\n'}Start scanning to see your weekly trends.
+            </Text>
+          </View>
+        </Card>
+      ) : (
       <Card style={styles.weekCard}>
         <View style={styles.weekStats}>
           <View style={styles.weekStatItem}>
@@ -154,15 +207,16 @@ export default function HistoryScreen() {
             </View>
           ))}
         </View>
-        <WeeklyChart data={weeklySummary} />
+        {weeklySummary.daily.length > 0 && <WeeklyChart data={weeklySummary} />}
       </Card>
+      )}
 
       {/* ── Day Selector ───────────────── */}
       <SectionHeader title="Daily Log" />
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.dayScroll}>
-        {DAYS.map((day, i) => (
+        {dayChips.map((day, i) => (
           <TouchableOpacity
-            key={day}
+            key={`${day}-${i}`}
             onPress={() => setSelectedDay(i)}
             style={[styles.dayChip, {
               backgroundColor: selectedDay === i ? theme.colors.primary : theme.colors.surface,
@@ -214,22 +268,30 @@ export default function HistoryScreen() {
       )}
 
       {/* ── Frequent Risky Foods ────────── */}
-      <SectionHeader title="Foods to Watch" />
-      <Card>
-        {[
-          { name: 'Instant Ramen', count: 3, verdict: 'avoid' as const },
-          { name: 'White Bread', count: 5, verdict: 'caution' as const },
-        ].map((food) => (
-          <View key={food.name} style={[styles.riskyRow, { borderBottomColor: theme.colors.borderLight }]}>
-            <Ionicons name="alert-circle" size={18} color={theme.colors[food.verdict].icon} style={{ marginRight: 10 }} />
-            <View style={{ flex: 1 }}>
-              <Text style={{ color: theme.colors.textPrimary, fontSize: theme.fontSizes.body, fontWeight: theme.fontWeights.medium }}>{food.name}</Text>
-              <Text style={{ color: theme.colors.textTertiary, fontSize: theme.fontSizes.sm }}>Scanned {food.count} times this week</Text>
-            </View>
-            <VerdictBadge verdict={food.verdict} />
-          </View>
-        ))}
-      </Card>
+      {hasLogs && (
+        <>
+          <SectionHeader title="Foods to Watch" />
+          <Card>
+            {todayLog.filter((l) => l.verdict === 'avoid' || l.verdict === 'caution').slice(0, 3).map((food) => (
+              <View key={food.id} style={[styles.riskyRow, { borderBottomColor: theme.colors.borderLight }]}>
+                <Ionicons name="alert-circle" size={18} color={theme.colors[food.verdict].icon} style={{ marginRight: 10 }} />
+                <View style={{ flex: 1 }}>
+                  <Text style={{ color: theme.colors.textPrimary, fontSize: theme.fontSizes.body, fontWeight: theme.fontWeights.medium }}>{food.name}</Text>
+                  <Text style={{ color: theme.colors.textTertiary, fontSize: theme.fontSizes.sm }}>{food.mealType}</Text>
+                </View>
+                <VerdictBadge verdict={food.verdict} />
+              </View>
+            ))}
+            {todayLog.filter((l) => l.verdict === 'avoid' || l.verdict === 'caution').length === 0 && (
+              <View style={styles.emptyState}>
+                <Text style={{ color: theme.colors.textTertiary, fontSize: theme.fontSizes.sm, textAlign: 'center' }}>
+                  No risky foods today — great choices!
+                </Text>
+              </View>
+            )}
+          </Card>
+        </>
+      )}
 
       {/* ── View Full Report ───────────── */}
       <TouchableOpacity
@@ -261,5 +323,6 @@ const styles = StyleSheet.create({
   dailySummary: { marginBottom: 12 },
   dailySummaryRow: { flexDirection: 'row', alignItems: 'center' },
   riskyRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 12, borderBottomWidth: StyleSheet.hairlineWidth },
+  emptyState: { alignItems: 'center', paddingVertical: 20 },
   reportBtn: { flexDirection: 'row', alignItems: 'center', paddingVertical: 16, paddingHorizontal: 16, marginTop: 20 },
 });

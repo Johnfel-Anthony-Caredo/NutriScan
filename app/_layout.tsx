@@ -1,6 +1,6 @@
 import { AuthProvider, useAuth } from '@/context/AuthContext';
 import { ProfileProvider, useProfile } from '@/context/ProfileContext';
-import { Stack, useRouter, useSegments } from 'expo-router';
+import { Stack, usePathname, useRouter, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import React, { useEffect } from 'react';
 import { useColorScheme } from 'react-native';
@@ -11,6 +11,7 @@ function RootLayoutNav() {
   const { session, isLoading: authLoading } = useAuth();
   const { profile, isHydrated: profileHydrated } = useProfile();
   const segments = useSegments();
+  const pathname = usePathname();
   const router = useRouter();
 
   useEffect(() => {
@@ -18,7 +19,7 @@ function RootLayoutNav() {
 
     const inAuthGroup = segments[0] === '(auth)';
     const inOnboardingGroup = segments[0] === '(onboarding)';
-    const isSplash = segments.length === 0 || (segments.length === 1 && segments[0] === 'index');
+    const isSplash = pathname === '/' || pathname === '/index';
 
     if (!session && !inAuthGroup && !isSplash) {
       // Redirect to login if unauthenticated and not on splash or auth pages
@@ -35,7 +36,7 @@ function RootLayoutNav() {
         router.replace('/(onboarding)/welcome');
       }
     }
-  }, [session, authLoading, profile.onboardingCompleted, profileHydrated, segments, router]);
+  }, [session, authLoading, profile.onboardingCompleted, profileHydrated, segments, pathname, router]);
 
   return (
     <>

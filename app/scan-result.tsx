@@ -8,13 +8,13 @@
 
 import { AppScreen, Card, NutrientRow, PrimaryButton, SecondaryButton, SectionHeader, TopBar, VerdictBadge } from '@/components/ui';
 import { useAuth } from '@/context/AuthContext';
-import { MOCK_RESULT_AVOID } from '@/data/mockData';
+import type { ScanResultData } from '@/data/mockData';
 import { useTheme } from '@/hooks/useTheme';
 import { uploadScanImage } from '@/services/storageService';
 import { insertScanLog } from '@/services/supabaseService';
 import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import React from 'react';
+import React, { useMemo, useState } from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 type MealType = 'breakfast' | 'lunch' | 'dinner' | 'snack';
@@ -32,9 +32,9 @@ export default function ScanResultScreen() {
     imageUri?: string;
     resultData?: string;
   }>();
-  const [isSaving, setIsSaving] = React.useState(false);
-  const [logError, setLogError] = React.useState('');
-  const [logged, setLogged] = React.useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [logError, setLogError] = useState('');
+  const [logged, setLogged] = useState(false);
 
   const foodNameParam = Array.isArray(params.foodName) ? params.foodName[0] : params.foodName;
   const mealTypeParam = Array.isArray(params.mealType) ? params.mealType[0] : params.mealType;
@@ -42,36 +42,47 @@ export default function ScanResultScreen() {
   const imageUriParam = Array.isArray(params.imageUri) ? params.imageUri[0] : params.imageUri;
   const resultDataParam = Array.isArray(params.resultData) ? params.resultData[0] : params.resultData;
 
-  const mealTypes: MealType[] = ['breakfast', 'lunch', 'dinner', 'snack'];
   const mealType = mealTypes.includes(mealTypeParam as MealType)
     ? (mealTypeParam as MealType)
-    : (MOCK_RESULT_AVOID.mealType as MealType);
+    : 'lunch';
 
   const source = sourceParam === 'barcode' || sourceParam === 'manual' ? sourceParam : 'photo';
 
-  // Parse the real scan result data from params, or fall back to mock data
-  const result: ScanResultData = useMemo(() => {
+  // Parse the real scan result data from params
+  const result: ScanResultData | null = useMemo(() => {
     if (resultDataParam) {
       try {
         const parsed = JSON.parse(decodeURIComponent(resultDataParam));
-        // Ensure mealType is set (from user selection)
         parsed.mealType = mealType;
         parsed.scannedAt = new Date().toISOString();
         return parsed as ScanResultData;
       } catch (e) {
-        console.warn('Failed to parse resultData, falling back to mock:', e);
+        console.warn('Failed to parse resultData:', e);
       }
     }
-    // Fallback: use mock data with the foodName from params
-    return {
-      ...MOCK_RESULT_AVOID,
-      foodName: foodNameParam ?? MOCK_RESULT_AVOID.foodName,
-      mealType,
-      scannedAt: new Date().toISOString(),
-    };
-  }, [resultDataParam, foodNameParam, mealType]);
+    return null;
+  }, [resultDataParam, mealType]);
 
-  const [showAllNutrients, setShowAllNutrients] = React.useState(false);
+  // If no result data, show an error state
+  if (!result) {
+    return (
+      <AppScreen>
+        <TopBar title="Scan Result" showBack onBack={() => router.replace('/(tabs)')} />
+        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 20 }}>
+          <Ionicons name="cloud-offline-outline" size={56} color={theme.colors.caution.icon} />
+          <Text style={{ color: theme.colors.textPrimary, fontSize: theme.fontSizes.lg, fontWeight: theme.fontWeights.bold, textAlign: 'center', marginTop: 16 }}>
+            No scan data available
+          </Text>
+          <Text style={{ color: theme.colors.textSecondary, fontSize: theme.fontSizes.body, textAlign: 'center', marginTop: 8 }}>
+            The scan analysis result was not received. Please try scanning again.
+          </Text>
+          <PrimaryButton label="Go to Scan" onPress={() => router.replace('/(tabs)/scan')} style={{ marginTop: 24 }} />
+        </View>
+      </AppScreen>
+    );
+  }
+
+  const [showAllNutrients, setShowAllNutrients] = useState(false);
 
   const relevantNutrients = result.nutrients.filter((n) => n.overLimit || n.warning);
   const otherNutrients = result.nutrients.filter((n) => !n.overLimit && !n.warning);

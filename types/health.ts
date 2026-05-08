@@ -195,6 +195,18 @@ export interface UserHealthProfile {
   nutrientTargets: NutrientTarget[];
   nutriBotNote?: string;
   onboardingCompleted: boolean;
+  /** Custom condition text when user selected "My condition isn't listed" */
+  customCondition?: string;
+  /** How the condition was selected during onboarding */
+  conditionSource?: 'listed' | 'other' | 'unsure_ai';
+  /** The condition suggested by AI when user was unsure */
+  aiSuggestedCondition?: HealthCondition;
+  /** Personal information */
+  name?: string;
+  age?: number;
+  heightCm?: number;
+  weightKg?: number;
+  bloodType?: string;
 }
 
 /** Default empty profile */
@@ -204,6 +216,14 @@ export const DEFAULT_PROFILE: UserHealthProfile = {
   nutrientTargets: [],
   nutriBotNote: undefined,
   onboardingCompleted: false,
+  customCondition: undefined,
+  conditionSource: undefined,
+  aiSuggestedCondition: undefined,
+  name: undefined,
+  age: undefined,
+  heightCm: undefined,
+  weightKg: undefined,
+  bloodType: undefined,
 };
 
 /** A scanned food item */
