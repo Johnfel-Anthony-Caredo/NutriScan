@@ -1,56 +1,64 @@
 /**
- * NutriScan Color System
+ * NutriScan Neo-Brutalist Color System
  *
- * Medical teal primary palette with warm white surfaces.
- * Verdict colors follow a traffic-light metaphor:
- *   Safe = green, Caution = amber, Avoid = red
- *
- * Every screen surface, text color, and accent is derived from these tokens.
+ * Medical Teal (#00897B) primary with Deep Black (#0A0A0A) borders/shadows/text.
+ * Mint Tint (#E0F2F1) for card and screen backgrounds.
+ * Light mode only — high contrast, no dark theme.
  */
 
 // ── Primary: Medical Teal ──────────────────────────────────────────
 export const teal = {
-  50: '#E6F7F7',
-  100: '#B3EAEA',
-  200: '#80DCDC',
-  300: '#4DCECE',
-  400: '#26C3C3',
-  500: '#0D9B8A', // ← primary
-  600: '#0B8577',
-  700: '#096E63',
-  800: '#075750',
-  900: '#05403C',
+  50: '#E0F2F1',
+  100: '#B2DFDB',
+  200: '#80CBC4',
+  300: '#4DB6AC',
+  400: '#26A69A',
+  500: '#00897B', // Medical Teal — primary brand color
+  600: '#00695C',
+  700: '#004D40',
+  800: '#00352C',
+  900: '#002019',
 } as const;
 
-// ── Verdict: Safe ──────────────────────────────────────────────────
+export const medicalTeal = teal[500];   // #00897B
+export const medicalTealDark = teal[600];  // #00695C
+export const medicalTealLight = teal[400]; // #26A69A
+
+// ── Neo-Brutalist Core ─────────────────────────────────────────────
+export const deepBlack = '#0A0A0A';
+export const mintTint = '#E0F2F1';
+
+// ── Semantic / Verdict Colors ──────────────────────────────────────
+export const warningCoral = '#FF6B57';
+export const cautionYellow = '#FFD54F';
+export const successGreen = '#2E7D32';
+
 export const safe = {
   bg: '#E8F8EE',
   text: '#1B7A3D',
-  border: '#A8E6BF',
-  icon: '#27AE60',
+  border: '#2E7D32',
+  icon: '#2E7D32',
 } as const;
 
-// ── Verdict: Caution ───────────────────────────────────────────────
 export const caution = {
   bg: '#FFF7E6',
   text: '#946200',
-  border: '#FFD580',
-  icon: '#F2994A',
+  border: '#FFD54F',
+  icon: '#FFD54F',
 } as const;
 
-// ── Verdict: Avoid ─────────────────────────────────────────────────
 export const avoid = {
-  bg: '#FDECEC',
-  text: '#A63D40',
-  border: '#F5A3A5',
-  icon: '#EB5757',
+  bg: '#FFF0EE',
+  text: '#C0392B',
+  border: '#FF6B57',
+  icon: '#FF6B57',
 } as const;
 
-// ── Neutral: Warm-tinted grays ─────────────────────────────────────
+// ── Neutral Scale ──────────────────────────────────────────────────
 export const neutral = {
   0: '#FFFFFF',
-  50: '#FAFAF8',   // warm white
-  100: '#F5F5F0',  // cream
+  50: '#FAFAF8',
+  100: '#F5F5F0',
   200: '#EDECE7',
   300: '#DDDCD6',
   400: '#B8B7B1',
@@ -61,35 +69,35 @@ export const neutral = {
   900: '#1A1918',
 } as const;
 
-// ── Light Theme ────────────────────────────────────────────────────
-export const lightColors = {
+// ── Light Theme (only) ─────────────────────────────────────────────
+export const colors = {
   // Surfaces
-  background: neutral[50],
+  background: mintTint,
   surface: neutral[0],
-  surfaceSecondary: neutral[100],
+  surfaceSecondary: teal[50],
   surfaceElevated: neutral[0],
 
   // Text
-  textPrimary: neutral[900],
+  textPrimary: deepBlack,
   textSecondary: neutral[600],
   textTertiary: neutral[500],
   textInverse: neutral[0],
 
   // Primary
-  primary: teal[500],
+  primary: medicalTeal,
   primaryLight: teal[50],
-  primaryDark: teal[700],
+  primaryDark: medicalTealDark,
 
-  // Borders & Dividers
-  border: neutral[200],
-  borderLight: neutral[100],
-  divider: neutral[200],
+  // Borders (all deep black for brutalist feel)
+  border: deepBlack,
+  borderLight: deepBlack,
+  divider: deepBlack,
 
   // Tab bar
   tabBar: neutral[0],
-  tabBarBorder: neutral[200],
+  tabBarBorder: deepBlack,
   tabIconDefault: neutral[400],
-  tabIconActive: teal[500],
+  tabIconActive: medicalTeal,
 
   // Verdicts
   safe,
@@ -97,63 +105,8 @@ export const lightColors = {
   avoid,
 
   // Misc
-  overlay: 'rgba(26, 25, 24, 0.45)',
-  shadow: 'rgba(26, 25, 24, 0.08)',
+  overlay: 'rgba(10, 10, 10, 0.45)',
+  shadow: deepBlack,
 } as const;
 
-// ── Dark Theme ─────────────────────────────────────────────────────
-export const darkColors = {
-  // Surfaces
-  background: '#111110',
-  surface: '#1C1C1A',
-  surfaceSecondary: '#242422',
-  surfaceElevated: '#2A2A28',
-
-  // Text
-  textPrimary: '#F0EFEB',
-  textSecondary: '#A5A49E',
-  textTertiary: '#7A7974',
-  textInverse: neutral[900],
-
-  // Primary
-  primary: teal[400],
-  primaryLight: 'rgba(13, 155, 138, 0.15)',
-  primaryDark: teal[300],
-
-  // Borders & Dividers
-  border: '#333330',
-  borderLight: '#2A2A28',
-  divider: '#333330',
-
-  // Tab bar
-  tabBar: '#1C1C1A',
-  tabBarBorder: '#333330',
-  tabIconDefault: '#7A7974',
-  tabIconActive: teal[400],
-
-  // Verdicts
-  safe: {
-    bg: 'rgba(39, 174, 96, 0.12)',
-    text: '#5ECB8B',
-    border: 'rgba(39, 174, 96, 0.25)',
-    icon: '#5ECB8B',
-  },
-  caution: {
-    bg: 'rgba(242, 153, 74, 0.12)',
-    text: '#F2C574',
-    border: 'rgba(242, 153, 74, 0.25)',
-    icon: '#F2C574',
-  },
-  avoid: {
-    bg: 'rgba(235, 87, 87, 0.12)',
-    text: '#F08080',
-    border: 'rgba(235, 87, 87, 0.25)',
-    icon: '#F08080',
-  },
-
-  // Misc
-  overlay: 'rgba(0, 0, 0, 0.6)',
-  shadow: 'rgba(0, 0, 0, 0.3)',
-} as const;
-
-export type ThemeColors = typeof lightColors;
+export type ThemeColors = typeof colors;

@@ -2,24 +2,26 @@
  * NutriScan Theme — Barrel Export
  *
  * Import this file to access every design token:
- *   import { lightTheme, darkTheme } from '@/constants/theme';
+ *   import { theme } from '@/constants/theme';
  */
 
-export { lightColors, darkColors, teal, safe, caution, avoid, neutral } from './colors';
+export { colors, teal, medicalTeal, medicalTealDark, medicalTealLight, deepBlack, mintTint, safe, caution, avoid, warningCoral, cautionYellow, successGreen, neutral } from './colors';
 export type { ThemeColors } from './colors';
 export { fontSizes, fontWeights, lineHeights, textStyles } from './typography';
 export { spacing, SCREEN_PADDING_H } from './spacing';
 export { radius } from './radius';
 export { shadows } from './shadows';
+export { animations } from './animations';
 
-import { lightColors, darkColors, type ThemeColors } from './colors';
+import { colors, type ThemeColors } from './colors';
 import { fontSizes, fontWeights, lineHeights, textStyles } from './typography';
 import { spacing, SCREEN_PADDING_H } from './spacing';
 import { radius } from './radius';
 import { shadows } from './shadows';
+import { animations } from './animations';
 
 export interface AppTheme {
-  dark: boolean;
+  dark: false;
   colors: ThemeColors;
   fontSizes: typeof fontSizes;
   fontWeights: typeof fontWeights;
@@ -29,11 +31,12 @@ export interface AppTheme {
   screenPaddingH: number;
   radius: typeof radius;
   shadows: typeof shadows;
+  animations: typeof animations;
 }
 
-export const lightTheme: AppTheme = {
+export const theme: AppTheme = {
   dark: false,
-  colors: lightColors,
+  colors,
   fontSizes,
   fontWeights,
   lineHeights,
@@ -42,17 +45,5 @@ export const lightTheme: AppTheme = {
   screenPaddingH: SCREEN_PADDING_H,
   radius,
   shadows,
-};
-
-export const darkTheme: AppTheme = {
-  dark: true,
-  colors: darkColors as unknown as ThemeColors,
-  fontSizes,
-  fontWeights,
-  lineHeights,
-  textStyles,
-  spacing,
-  screenPaddingH: SCREEN_PADDING_H,
-  radius,
-  shadows,
+  animations,
 };
