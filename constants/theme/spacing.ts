@@ -1,30 +1,18 @@
 /**
- * NutriScan Spacing Scale
+ * NutriScan Neo-Brutalist Spacing
  *
- * Generous spacing for clarity and accessibility.
- * Used for padding, margins, and gaps across all components.
+ * Design1.md values (rem → px at 16px base):
+ * xs: 4px  | sm: 8px  | md: 16px | lg: 24px | xl: 32px | 2xl: 48px
  */
 
 export const spacing = {
-  /** 4px — tight inline spacing */
   xs: 4,
-  /** 8px — compact element gaps */
   sm: 8,
-  /** 12px — standard inner padding */
-  md: 12,
-  /** 16px — default component padding */
-  lg: 16,
-  /** 20px — section inner padding */
-  xl: 20,
-  /** 24px — generous component gaps */
-  '2xl': 24,
-  /** 32px — section spacing */
-  '3xl': 32,
-  /** 40px — major section breaks */
-  '4xl': 40,
-  /** 48px — screen-level padding */
-  '5xl': 48,
+  md: 16,
+  lg: 24,
+  xl: 32,
+  '2xl': 48,
 } as const;
 
-/** Screen horizontal padding — used on every screen wrapper */
-export const SCREEN_PADDING_H = spacing.xl;
+/** Screen horizontal padding — 16px on every screen */
+export const SCREEN_PADDING_H = spacing.md;

@@ -1,21 +1,14 @@
 /**
- * NutriScan Border Radius Tokens
+ * NutriScan Neo-Brutalist Border Radius
  *
- * Slightly rounded corners keep the UI feeling friendly
- * without being overly playful.
+ * Mix rounded pills with hard-edged cards.
+ * sm: 8px  | md: 12px  | lg: 20px  | full: 999px
  */
 
 export const radius = {
-  /** 4px — very subtle rounding */
-  xs: 4,
-  /** 8px — inputs and small cards */
+  none: 0,
   sm: 8,
-  /** 12px — standard cards */
   md: 12,
-  /** 16px — prominent cards and sheets */
-  lg: 16,
-  /** 20px — modals and large surfaces */
-  xl: 20,
-  /** 9999px — pills and circular elements */
+  lg: 20,
   full: 9999,
 } as const;
