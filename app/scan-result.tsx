@@ -126,11 +126,15 @@ export default function ScanResultScreen() {
             {result.foodName}
           </Text>
           {/* Confidence badge */}
-          {result.confidence !== undefined && (
+          {typeof result.confidence === 'number' && (
             <View style={{
               flexDirection: 'row',
               alignItems: 'center',
-              backgroundColor: result.confidence >= 0.8 ? '#E8F5E9' : result.confidence >= 0.5 ? '#FFF8E1' : '#FFEBEE',
+              backgroundColor: result.confidence >= 0.8
+                ? theme.colors.safe.bg
+                : result.confidence >= 0.5
+                  ? theme.colors.caution.bg
+                  : theme.colors.avoid.bg,
               borderRadius: 12,
               paddingHorizontal: 8,
               paddingVertical: 3,
@@ -139,10 +143,18 @@ export default function ScanResultScreen() {
               <Ionicons
                 name={result.confidence >= 0.8 ? 'checkmark-circle' : result.confidence >= 0.5 ? 'help-circle' : 'alert-circle'}
                 size={14}
-                color={result.confidence >= 0.8 ? '#2E7D32' : result.confidence >= 0.5 ? '#F57F17' : '#C62828'}
+                color={result.confidence >= 0.8
+                  ? theme.colors.safe.icon
+                  : result.confidence >= 0.5
+                    ? theme.colors.caution.icon
+                    : theme.colors.avoid.icon}
               />
               <Text style={{
-                color: result.confidence >= 0.8 ? '#2E7D32' : result.confidence >= 0.5 ? '#F57F17' : '#C62828',
+                color: result.confidence >= 0.8
+                  ? theme.colors.safe.icon
+                  : result.confidence >= 0.5
+                    ? theme.colors.caution.icon
+                    : theme.colors.avoid.icon,
                 fontSize: 11,
                 fontWeight: '600',
                 fontFamily: theme.fontFamilies.body,
