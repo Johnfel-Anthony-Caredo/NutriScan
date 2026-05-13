@@ -34,6 +34,10 @@ export interface ScanResultData {
   nutrients: NutrientInfo[];
   /** Better alternatives shown for caution/avoid items */
   alternatives?: { name: string; verdict: Verdict }[];
+  /** 0-1, AI confidence in food identification */
+  confidence?: number;
+  /** Portion recommendation hint */
+  portionGuidance?: string;
 }
 
 // ── Mock Scan Results ───────────────────────────────────────────────
