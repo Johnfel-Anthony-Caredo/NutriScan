@@ -1,192 +1,381 @@
 /**
- * Splash Screen — app entry point.
+ * Landing Screen — welcoming first-open screen before auth.
  *
- * Animated NutriScan logo fade-in, followed by tagline fade-in 300ms later.
- * After 2 seconds, auto-navigates based on profile state:
- *   - First launch (no onboarding) → Auth login screen
- *   - Onboarding not completed → Onboarding welcome
- *   - Returning user → Main tabs
+ * Layout:
+ *   - Full-bleed hero image (Salad.jpg) covering the top ~55%
+ *   - Bold tagline overlaid on hero with text shadows
+ *   - Clean white bottom sheet with logo, welcome text, and CTAs at bottom
  *
- * No buttons, no input — purely animated and auto-advancing.
- * Uses theme tokens for all colors and typography.
+ * Authenticated users are redirected by _layout.tsx route guard.
  */
 
-import { useAuth } from '@/context/AuthContext';
-import { useProfile } from '@/context/ProfileContext';
 import { useTheme } from '@/hooks/useTheme';
-import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import React, { useEffect, useRef } from 'react';
-import { Animated, StyleSheet, Text, View } from 'react-native';
+import {
+  Animated,
+  Dimensions,
+  Image,
+  Platform,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-export default function SplashScreen() {
+const { height: SCREEN_HEIGHT, width: SCREEN_WIDTH } = Dimensions.get('window');
+const HERO_HEIGHT = SCREEN_HEIGHT * 0.52;
+
+export default function LandingScreen() {
   const theme = useTheme();
   const router = useRouter();
-  const { profile, isLoading: profileLoading, isHydrated } = useProfile();
-  const { session, isLoading: authLoading } = useAuth();
+  const insets = useSafeAreaInsets();
 
-  // Animation values
-  const logoOpacity = useRef(new Animated.Value(0)).current;
-  const logoScale = useRef(new Animated.Value(0.8)).current;
+  // Entrance animations
+  const heroScale = useRef(new Animated.Value(1.08)).current;
   const taglineOpacity = useRef(new Animated.Value(0)).current;
-  const taglineTranslateY = useRef(new Animated.Value(10)).current;
+  const taglineTranslateY = useRef(new Animated.Value(16)).current;
+  const contentOpacity = useRef(new Animated.Value(0)).current;
+  const contentTranslateY = useRef(new Animated.Value(30)).current;
 
-  // Start animations on mount
   useEffect(() => {
-    // Logo: fade in + scale up
-    Animated.parallel([
-      Animated.timing(logoOpacity, {
-        toValue: 1,
-        duration: 600,
-        useNativeDriver: true,
-      }),
-      Animated.spring(logoScale, {
-        toValue: 1,
-        friction: 6,
-        tension: 40,
-        useNativeDriver: true,
-      }),
-    ]).start();
+    Animated.timing(heroScale, {
+      toValue: 1,
+      duration: 1000,
+      useNativeDriver: true,
+    }).start();
 
-    // Tagline: fade in 300ms after logo
     setTimeout(() => {
       Animated.parallel([
         Animated.timing(taglineOpacity, {
           toValue: 1,
-          duration: 500,
+          duration: 600,
           useNativeDriver: true,
         }),
         Animated.timing(taglineTranslateY, {
           toValue: 0,
-          duration: 500,
+          duration: 600,
           useNativeDriver: true,
         }),
       ]).start();
-    }, 300);
+    }, 250);
+
+    setTimeout(() => {
+      Animated.parallel([
+        Animated.timing(contentOpacity, {
+          toValue: 1,
+          duration: 500,
+          useNativeDriver: true,
+        }),
+        Animated.spring(contentTranslateY, {
+          toValue: 0,
+          friction: 8,
+          tension: 50,
+          useNativeDriver: true,
+        }),
+      ]).start();
+    }, 350);
   }, []);
 
-  // Navigate after animation once auth state is resolved
-  useEffect(() => {
-    if (authLoading || !isHydrated) return;
-
-    const navigate = () => {
-      if (!session) {
-        router.replace('/(auth)/login');
-        return;
-      }
-
-      if (!profile.onboardingCompleted) {
-        router.replace('/(onboarding)/welcome');
-        return;
-      }
-
-      router.replace('/(tabs)');
-    };
-
-    // Wait for splash animation on initial load, navigate immediately otherwise
-    const timer = setTimeout(navigate, 2000);
-
-    return () => clearTimeout(timer);
-  }, [authLoading, isHydrated, session, profile.onboardingCompleted, router]);
-
   return (
-    <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
-      {/* Logo */}
+    <View style={styles.root}>
+      {/* ── Hero Image ─────────────────────────────── */}
+      <Animated.View style={[styles.heroWrap, { transform: [{ scale: heroScale }] }]}>
+        <Image
+          source={require('../assets/images/Salad.jpg')}
+          style={styles.heroImage}
+          resizeMode="cover"
+        />
+        <View style={styles.heroFade} />
+
+        {/* Tagline */}
+        <Animated.View
+          style={[
+            styles.heroTaglineWrap,
+            {
+              opacity: taglineOpacity,
+              transform: [{ translateY: taglineTranslateY }],
+            },
+          ]}
+        >
+          <Text style={[styles.heroTagline, { fontFamily: theme.fontFamilies.heading }]}>
+            Eat smart.
+          </Text>
+          <Text style={[styles.heroTagline, { fontFamily: theme.fontFamilies.heading }]}>
+            Live better.
+          </Text>
+        </Animated.View>
+      </Animated.View>
+
+      {/* ── Bottom Sheet ──────────────────────────────── */}
       <Animated.View
         style={[
-          styles.logoWrap,
+          styles.contentCard,
           {
-            opacity: logoOpacity,
-            transform: [{ scale: logoScale }],
+            backgroundColor: theme.colors.background,
+            opacity: contentOpacity,
+            transform: [{ translateY: contentTranslateY }],
+            paddingBottom: Math.max(insets.bottom, 16) + 8,
           },
         ]}
       >
-        <View style={[styles.logoCircle, { backgroundColor: theme.colors.primaryLight, borderColor: theme.colors.border, borderWidth: 3 }]}>
-          <Ionicons name="leaf" size={56} color={theme.colors.primary} />
+        {/* Handle */}
+        <View style={[styles.handle, { backgroundColor: theme.colors.border }]} />
+
+        {/* Logo + welcome */}
+        <View style={styles.welcomeRow}>
+          <Image
+            source={require('../assets/images/Logo.png')}
+            style={styles.logoSmall}
+            resizeMode="contain"
+          />
+          <Text
+            style={[
+              styles.welcomeText,
+              { color: theme.colors.textPrimary, fontFamily: theme.fontFamilies.heading },
+            ]}
+          >
+            Welcome to NutriScan
+          </Text>
         </View>
-        <Text
-          style={{
-            color: theme.colors.textPrimary,
-            fontSize: theme.fontSizes['3xl'],
-            fontFamily: theme.textStyles.displayMd.fontFamily,
-            fontWeight: theme.fontWeights.bold,
-            marginTop: 20,
-            letterSpacing: 0.5,
-          }}
+
+        {/* Spacer */}
+        <View style={{ flex: 1 }} />
+
+        {/* Primary CTA */}
+        <CTAButton
+          label="Create an account"
+          onPress={() => router.push('/(auth)/register')}
+          primary
+          theme={theme}
+        />
+
+        {/* Secondary */}
+        <TouchableOpacity
+          onPress={() => router.push('/(auth)/login')}
+          style={styles.loginRow}
+          activeOpacity={0.7}
+          accessibilityRole="button"
+          accessibilityLabel="Already have an account? Sign in"
         >
-          NutriScan
-        </Text>
+          <Text
+            style={[
+              styles.loginText,
+              { color: theme.colors.textSecondary, fontFamily: theme.fontFamilies.body },
+            ]}
+          >
+            Already have an account?{' '}
+          </Text>
+          <Text
+            style={[
+              styles.loginLink,
+              { color: theme.colors.primary, fontFamily: theme.fontFamilies.heading },
+            ]}
+          >
+            Sign in
+          </Text>
+        </TouchableOpacity>
       </Animated.View>
-
-      {/* Tagline */}
-      <Animated.View
-        style={{
-          opacity: taglineOpacity,
-          transform: [{ translateY: taglineTranslateY }],
-          marginTop: 12,
-        }}
-      >
-        <Text
-          style={{
-            color: theme.colors.textSecondary,
-            fontSize: theme.fontSizes.lg,
-            fontFamily: theme.textStyles.body.fontFamily,
-            lineHeight: theme.lineHeights.lg,
-            textAlign: 'center',
-          }}
-        >
-          Scan your food.{'\n'}Protect your health.
-        </Text>
-      </Animated.View>
-
-      {/* Subtle loading indicator */}
-      {(profileLoading || authLoading) && (
-        <View style={styles.loadingDots}>
-          <View style={[styles.dot, { backgroundColor: theme.colors.primary, opacity: 0.3 }]} />
-          <View style={[styles.dot, { backgroundColor: theme.colors.primary, opacity: 0.6 }]} />
-          <View style={[styles.dot, { backgroundColor: theme.colors.primary, opacity: 1 }]} />
-        </View>
-      )}
-
-      {/* Version */}
-      <Text
-        style={{
-          color: theme.colors.textTertiary,
-          fontSize: theme.fontSizes.xs,
-          position: 'absolute',
-          bottom: 40,
-        }}
-      >
-        v1.0.0
-      </Text>
     </View>
   );
 }
 
+// ─── CTA button ──────────────────────────────────────────────────────────────
+function CTAButton({
+  label,
+  onPress,
+  primary,
+  theme,
+}: {
+  label: string;
+  onPress: () => void;
+  primary?: boolean;
+  theme: any;
+}) {
+  const scale = useRef(new Animated.Value(1)).current;
+
+  const onPressIn = () =>
+    Animated.spring(scale, {
+      toValue: 0.96,
+      tension: 150,
+      friction: 6,
+      useNativeDriver: true,
+    }).start();
+
+  const onPressOut = () =>
+    Animated.spring(scale, {
+      toValue: 1,
+      tension: 100,
+      friction: 7,
+      useNativeDriver: true,
+    }).start();
+
+  return (
+    <Animated.View style={{ transform: [{ scale }] }}>
+      {Platform.OS === 'android' && primary && (
+        <View
+          style={[
+            styles.shadowBlock,
+            { backgroundColor: theme.colors.shadow, borderRadius: theme.radius.full },
+          ]}
+          pointerEvents="none"
+        />
+      )}
+      <TouchableOpacity
+        onPress={onPress}
+        onPressIn={onPressIn}
+        onPressOut={onPressOut}
+        activeOpacity={1}
+        accessibilityRole="button"
+        accessibilityLabel={label}
+        style={[
+          styles.ctaBtn,
+          {
+            backgroundColor: primary ? theme.colors.primary : 'transparent',
+            borderColor: primary ? theme.colors.border : theme.colors.border,
+            borderRadius: theme.radius.full,
+          },
+        ]}
+      >
+        <Text
+          style={[
+            styles.ctaLabel,
+            {
+              color: primary ? theme.colors.textInverse : theme.colors.textPrimary,
+              fontFamily: theme.fontFamilies.heading,
+            },
+          ]}
+        >
+          {label}
+        </Text>
+      </TouchableOpacity>
+    </Animated.View>
+  );
+}
+
+// ─── Styles ──────────────────────────────────────────────────────────────────
 const styles = StyleSheet.create({
-  container: {
+  root: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+    backgroundColor: '#fff',
   },
-  logoWrap: {
-    alignItems: 'center',
+
+  // ── Hero
+  heroWrap: {
+    width: SCREEN_WIDTH,
+    height: HERO_HEIGHT,
+    overflow: 'hidden',
   },
-  logoCircle: {
-    width: 120,
-    height: 120,
-    borderRadius: 60,
-    justifyContent: 'center',
-    alignItems: 'center',
+  heroImage: {
+    width: '100%',
+    height: '100%',
   },
-  loadingDots: {
+  heroFade: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    height: 160,
+    backgroundColor: 'rgba(0,0,0,0.18)',
+  },
+  heroTaglineWrap: {
+    position: 'absolute',
+    bottom: 32,
+    left: 28,
+    right: 28,
+  },
+  heroTagline: {
+    color: '#fff',
+    fontSize: 38,
+    fontWeight: '700',
+    letterSpacing: -0.5,
+    lineHeight: 46,
+    textShadowColor: 'rgba(0,0,0,0.45)',
+    textShadowOffset: { width: 0, height: 2 },
+    textShadowRadius: 10,
+  },
+
+  // ── Bottom sheet
+  contentCard: {
+    flex: 1,
+    paddingHorizontal: 28,
+    paddingTop: 16,
+    marginTop: -24,
+    borderTopLeftRadius: 32,
+    borderTopRightRadius: 32,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: -6 },
+        shadowOpacity: 0.08,
+        shadowRadius: 16,
+      },
+      android: {
+        elevation: 12,
+      },
+    }),
+  },
+  handle: {
+    width: 36,
+    height: 4,
+    borderRadius: 2,
+    alignSelf: 'center',
+    marginBottom: 20,
+  },
+
+  // ── Welcome
+  welcomeRow: {
     flexDirection: 'row',
-    gap: 6,
-    marginTop: 40,
+    alignItems: 'center',
+    gap: 14,
   },
-  dot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
+  logoSmall: {
+    width: 44,
+    height: 44,
+  },
+  welcomeText: {
+    fontSize: 22,
+    fontWeight: '700',
+    letterSpacing: -0.2,
+  },
+
+  // ── CTA
+  shadowBlock: {
+    position: 'absolute',
+    top: 5,
+    left: 5,
+    right: 0,
+    bottom: 0,
+  },
+  ctaBtn: {
+    height: 56,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 3,
+  },
+  ctaLabel: {
+    fontSize: 16,
+    fontWeight: '700',
+    letterSpacing: 0.3,
+  },
+
+  // ── Login row
+  loginRow: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 18,
+    marginTop: 4,
+  },
+  loginText: {
+    fontSize: 15,
+    lineHeight: 20,
+  },
+  loginLink: {
+    fontSize: 15,
+    fontWeight: '700',
+    lineHeight: 20,
+    textDecorationLine: 'underline',
   },
 });

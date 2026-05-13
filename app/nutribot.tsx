@@ -172,6 +172,12 @@ export default function NutriBotScreen() {
     }
   }, [messages, profile, user, activeConversationId, scrollToEnd]);
 
+  const renderBubble = useCallback(
+    ({ item }: { item: ChatMessage }) => <ChatBubble message={item} />,
+    [],
+  );
+  const keyExtractor = useCallback((m: ChatMessage) => m.id, []);
+
   const handleSend = () => sendMessage(input);
   const handleChip = (text: string) => sendMessage(text);
 
@@ -212,12 +218,15 @@ export default function NutriBotScreen() {
           <FlatList
             ref={flatListRef}
             data={messages}
-            keyExtractor={(m) => m.id}
+            keyExtractor={keyExtractor}
             contentContainerStyle={styles.messageList}
             showsVerticalScrollIndicator={false}
             onContentSizeChange={scrollToEnd}
-            renderItem={({ item }) => <ChatBubble message={item} />}
+            renderItem={renderBubble}
             ListFooterComponent={isTyping ? <NutriBotShimmer /> : null}
+            windowSize={5}
+            maxToRenderPerBatch={10}
+            removeClippedSubviews
           />
 
           {/* Quick suggestions — fixed above input bar when few messages */}

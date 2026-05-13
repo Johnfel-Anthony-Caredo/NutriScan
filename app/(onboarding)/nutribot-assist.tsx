@@ -173,19 +173,12 @@ export default function NutriBotAssistScreen() {
   const progress = ((currentQuestion + 1) / QUESTIONS.length) * 100;
 
   return (
-    <AppScreen>
+    <AppScreen scroll>
       <View style={styles.container}>
-        {/* Progress */}
-        <View style={[styles.progressTrack, { backgroundColor: theme.colors.surfaceSecondary, borderColor: theme.colors.border, borderRadius: theme.radius.full }]}>
-          <View style={[styles.progressFill, { width: `${progress}%`, backgroundColor: theme.colors.primary, borderRadius: theme.radius.full }]} />
-        </View>
-        <Text style={{ color: theme.colors.textTertiary, fontSize: theme.fontSizes.xs, fontFamily: theme.fontFamilies.body, textAlign: 'right', marginTop: 4 }}>
-          Question {currentQuestion + 1} of {QUESTIONS.length}
-        </Text>
 
         {/* Question card */}
         <View style={{ marginTop: 24, flex: 1 }}>
-          <Text style={{ color: theme.colors.textPrimary, fontSize: theme.fontSizes.xl, fontWeight: theme.fontWeights.bold, fontFamily: theme.fontFamilies.heading, marginBottom: 20 }}>
+          <Text style={[theme.textStyles.h2, { color: theme.colors.textPrimary, marginBottom: 20 }]}>
             {q.text}
           </Text>
           <View style={styles.optionsList}>
@@ -196,7 +189,7 @@ export default function NutriBotAssistScreen() {
                 style={[styles.optionCard, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border, borderRadius: theme.radius.md }]}
                 accessibilityRole="button"
               >
-                <Text style={{ color: theme.colors.textPrimary, fontSize: theme.fontSizes.body, fontWeight: theme.fontWeights.medium, fontFamily: theme.fontFamilies.body, flex: 1 }}>
+                <Text style={[theme.textStyles.body, { color: theme.colors.textPrimary, fontWeight: theme.fontWeights.medium, flex: 1 }]}>
                   {opt.label}
                 </Text>
                 <Ionicons name="chevron-forward" size={18} color={theme.colors.textTertiary} style={{ marginLeft: 8 }} />
@@ -206,7 +199,7 @@ export default function NutriBotAssistScreen() {
         </View>
 
         {/* Disclaimer */}
-        <Text style={{ color: theme.colors.textTertiary, fontSize: theme.fontSizes.xs, textAlign: 'center', marginTop: 16, lineHeight: theme.lineHeights.xs, fontFamily: theme.fontFamilies.body }}>
+        <Text style={[theme.textStyles.small, { color: theme.colors.textTertiary, textAlign: 'center', marginTop: 16 }]}>
           These questions help us match you with the right guidance category.{"\n"}NutriScan does not diagnose — always consult your doctor.
         </Text>
       </View>
@@ -217,17 +210,8 @@ export default function NutriBotAssistScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    paddingHorizontal: 20,
     paddingTop: 16,
     paddingBottom: 40,
-  },
-  progressTrack: {
-    height: 6,
-    overflow: 'hidden',
-    borderWidth: 2,
-  },
-  progressFill: {
-    height: '100%',
   },
   optionsList: {
     gap: 10,

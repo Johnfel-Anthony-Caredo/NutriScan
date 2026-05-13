@@ -80,6 +80,53 @@ export default function ChatHistoryScreen() {
     }, [fetchHistory])
   );
 
+  const keyExtractor = useCallback((item: any) => item.id, []);
+
+  const renderSectionHeader = useCallback(
+    ({ section: { title } }: { section: { title: string } }) => (
+      <Text style={{ color: theme.colors.textTertiary, fontSize: theme.fontSizes.sm, fontWeight: theme.fontWeights.medium, fontFamily: theme.fontFamilies.body, marginTop: 20, marginBottom: 8 }}>
+        {title}
+      </Text>
+    ),
+    [theme.colors.textTertiary, theme.fontSizes.sm, theme.fontWeights.medium, theme.fontFamilies.body],
+  );
+
+  const renderConversation = useCallback(
+    ({ item }: { item: any }) => {
+      const time = new Date(item.updated_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      const messageCount = item.chat_messages && item.chat_messages[0] ? item.chat_messages[0].count : 0;
+
+      return (
+        <TouchableOpacity
+          onPress={() => router.push({ pathname: '/nutribot', params: { conversationId: item.id } })}
+          activeOpacity={0.7}
+          style={[styles.row, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border, borderRadius: theme.radius.md }]}
+          accessibilityRole="button"
+        >
+          <View style={[styles.chatIcon, { backgroundColor: theme.colors.primaryLight, borderColor: theme.colors.border }]}>
+            <Ionicons name="chatbubble-ellipses" size={18} color={theme.colors.primary} />
+          </View>
+          <View style={styles.rowContent}>
+            <Text style={{ color: theme.colors.textPrimary, fontSize: theme.fontSizes.body, fontWeight: theme.fontWeights.medium, fontFamily: theme.fontFamilies.body }} numberOfLines={1}>
+              {item.title || 'New Conversation'}
+            </Text>
+            <View style={styles.rowMeta}>
+              <Text style={{ color: theme.colors.textTertiary, fontSize: theme.fontSizes.sm, fontFamily: theme.fontFamilies.body }}>
+                {messageCount} messages
+              </Text>
+              <View style={[styles.metaDot, { backgroundColor: theme.colors.border }]} />
+              <Text style={{ color: theme.colors.textTertiary, fontSize: theme.fontSizes.sm, fontFamily: theme.fontFamilies.body }}>
+                {time}
+              </Text>
+            </View>
+          </View>
+          <Ionicons name="chevron-forward" size={18} color={theme.colors.textTertiary} />
+        </TouchableOpacity>
+      );
+    },
+    [router, theme.colors.surface, theme.colors.border, theme.colors.primaryLight, theme.colors.primary, theme.colors.textPrimary, theme.colors.textTertiary, theme.fontSizes.body, theme.fontSizes.sm, theme.fontWeights.medium, theme.fontFamilies.body, theme.radius.md],
+  );
+
   const hasHistory = sections.length > 0;
 
   return (
@@ -107,48 +154,15 @@ export default function ChatHistoryScreen() {
       ) : hasHistory ? (
         <SectionList
           sections={sections}
-          keyExtractor={(item) => item.id}
+          keyExtractor={keyExtractor}
           contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 40 }}
           showsVerticalScrollIndicator={false}
           stickySectionHeadersEnabled={false}
-          renderSectionHeader={({ section: { title } }) => (
-            <Text style={{ color: theme.colors.textTertiary, fontSize: theme.fontSizes.sm, fontWeight: theme.fontWeights.medium, fontFamily: theme.fontFamilies.body, marginTop: 20, marginBottom: 8 }}>
-              {title}
-            </Text>
-          )}
-          renderItem={({ item }) => {
-            const time = new Date(item.updated_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-            const messageCount = item.chat_messages && item.chat_messages[0] ? item.chat_messages[0].count : 0;
-            
-            return (
-              <TouchableOpacity
-                onPress={() => router.push({ pathname: '/nutribot', params: { conversationId: item.id } })}
-                activeOpacity={0.7}
-                style={[styles.row, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border, borderRadius: theme.radius.md }]}
-                accessibilityRole="button"
-              >
-                <View style={[styles.chatIcon, { backgroundColor: theme.colors.primaryLight, borderColor: theme.colors.border }]}>
-                  <Ionicons name="chatbubble-ellipses" size={18} color={theme.colors.primary} />
-                </View>
-                <View style={styles.rowContent}>
-                  <Text style={{ color: theme.colors.textPrimary, fontSize: theme.fontSizes.body, fontWeight: theme.fontWeights.medium, fontFamily: theme.fontFamilies.body }} numberOfLines={1}>
-                    {item.title || 'New Conversation'}
-                  </Text>
-                  <View style={styles.rowMeta}>
-                    <Text style={{ color: theme.colors.textTertiary, fontSize: theme.fontSizes.sm, fontFamily: theme.fontFamilies.body }}>
-                      {messageCount} messages
-                    </Text>
-                    <View style={[styles.metaDot, { backgroundColor: theme.colors.border }]} />
-                    <Text style={{ color: theme.colors.textTertiary, fontSize: theme.fontSizes.sm, fontFamily: theme.fontFamilies.body }}>
-                      {time}
-                    </Text>
-                  </View>
-                </View>
-                <Ionicons name="chevron-forward" size={18} color={theme.colors.textTertiary} />
-              </TouchableOpacity>
-            );
-          }}
-        />
+          windowSize={5}
+          maxToRenderPerBatch={10}
+          removeClippedSubviews
+          renderSectionHeader={renderSectionHeader}
+          renderItem={renderConversation}
       ) : (
         <View style={styles.emptyWrap}>
           <EmptyState

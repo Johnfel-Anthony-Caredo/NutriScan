@@ -73,7 +73,7 @@ export default function ManualSearchScreen() {
     return () => { isActive = false; };
   }, [debouncedQuery]);
 
-  const handleSelect = (product: SearchProduct) => {
+  const handleSelect = useCallback((product: SearchProduct) => {
     const result = buildScanResultFromSearchProduct(product, 'lunch');
     router.push({
       pathname: '/scan-result',
@@ -84,9 +84,9 @@ export default function ManualSearchScreen() {
         resultData: encodeURIComponent(JSON.stringify(result)),
       },
     });
-  };
+  }, [router]);
 
-  const renderItem = ({ item }: { item: SearchProduct }) => (
+  const renderItem = useCallback(({ item }: { item: SearchProduct }) => (
     <TouchableOpacity
       onPress={() => handleSelect(item)}
       style={[styles.resultRow, { borderBottomColor: theme.colors.border }]}
@@ -124,7 +124,7 @@ export default function ManualSearchScreen() {
 
       <Ionicons name="chevron-forward" size={16} color={theme.colors.textTertiary} style={{ marginLeft: 8 }} />
     </TouchableOpacity>
-  );
+  ), [handleSelect]);
 
   return (
     <AppScreen noPadding>
@@ -197,6 +197,9 @@ export default function ManualSearchScreen() {
             renderItem={renderItem}
             showsVerticalScrollIndicator={false}
             keyboardShouldPersistTaps="handled"
+            windowSize={5}
+            maxToRenderPerBatch={10}
+            removeClippedSubviews
           />
         )}
 

@@ -8,7 +8,7 @@
 
 import type { Article } from '@/types/articles';
 import { ArticleCard } from '@/components/articles';
-import { AppScreen, Card, ConditionPill, FoodLogItem, PrimaryButton, SectionHeader, SkeletonLoader } from '@/components/ui';
+import { AppScreen, Card, ConditionPill, FoodLogItem, NutritionDashboard, PrimaryButton, SectionHeader, SkeletonLoader } from '@/components/ui';
 import { useAuth } from '@/context/AuthContext';
 import { useProfile } from '@/context/ProfileContext';
 import { useRefresh } from '@/hooks/useRefresh';
@@ -19,7 +19,7 @@ import type { FoodItem } from '@/types/health';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect, useRouter } from 'expo-router';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { Dimensions, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Dimensions, Image, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 const { width: SCREEN_W } = Dimensions.get('window');
 const CARD_W = Math.min(SCREEN_W * 0.68, 280);
@@ -211,7 +211,7 @@ export default function HomeScreen() {
           <Text style={{ color: theme.colors.textPrimary, fontSize: theme.fontSizes['2xl'], fontWeight: theme.fontWeights.bold, fontFamily: theme.fontFamilies.heading }}>Welcome back</Text>
         </View>
         <View style={[styles.avatarCircle, { backgroundColor: theme.colors.primaryLight, borderColor: theme.colors.border }]}>
-          <Ionicons name="person" size={24} color={theme.colors.primary} />
+          <Image source={require('../../assets/images/avatar.png')} style={styles.avatarImage} />
         </View>
       </View>
 
@@ -222,10 +222,9 @@ export default function HomeScreen() {
         </View>
       )}
 
-      {/* ── Today's Safety Summary ──────── */}
-      <SectionHeader title="Today's Overview" />
+      {/* ── Nutrition Dashboard (top priority) ── */}
       {isLoading ? (
-        <Card><SkeletonLoader rows={2} /></Card>
+        <Card><SkeletonLoader rows={3} /></Card>
       ) : loadError ? (
         <Card>
           <View style={styles.emptyLog}>
@@ -236,36 +235,44 @@ export default function HomeScreen() {
           </View>
         </Card>
       ) : (
-      <Card style={styles.summaryCard}>
-        <View style={styles.donutRow}>
-          {/* Simple donut-like ring */}
-          <View style={styles.donutContainer}>
-            <View style={[styles.donutOuter, { borderColor: theme.colors.safe.icon }]}>
-              <Text style={{ color: theme.colors.textPrimary, fontSize: theme.fontSizes['2xl'], fontWeight: theme.fontWeights.bold, fontFamily: theme.fontFamilies.heading }}>
-                {weeklySummary ? weeklySummary.safe + weeklySummary.caution + weeklySummary.avoid : 0}
-              </Text>
-              <Text style={{ color: theme.colors.textTertiary, fontSize: theme.fontSizes.xs, fontFamily: theme.fontFamilies.body }}>scans</Text>
-            </View>
-          </View>
-          <View style={styles.summaryStats}>
-            {[
-              { label: 'Safe', count: hasLogs ? todayLog.filter((l) => l.verdict === 'safe').length : 0, color: theme.colors.safe.icon },
-              { label: 'Caution', count: hasLogs ? todayLog.filter((l) => l.verdict === 'caution').length : 0, color: theme.colors.caution.icon },
-              { label: 'Avoid', count: hasLogs ? todayLog.filter((l) => l.verdict === 'avoid').length : 0, color: theme.colors.avoid.icon },
-            ].map((s) => (
-              <View key={s.label} style={styles.statItem}>
-                <View style={[styles.statDot, { backgroundColor: s.color, borderColor: theme.colors.border }]} />
-                <Text style={{ color: theme.colors.textPrimary, fontSize: theme.fontSizes.body, fontWeight: theme.fontWeights.semibold, fontFamily: theme.fontFamilies.body, marginLeft: 6 }}>{s.count}</Text>
-                <Text style={{ color: theme.colors.textTertiary, fontSize: theme.fontSizes.sm, fontFamily: theme.fontFamilies.body, marginLeft: 4 }}>{s.label}</Text>
-              </View>
-            ))}
-          </View>
-        </View>
-      </Card>
+        <NutritionDashboard
+          todayScans={todayLog.length}
+          nutrientTargets={profile.nutrientTargets}
+        />
       )}
 
       {/* ── Scan CTA ───────────────────── */}
       <PrimaryButton label="Scan Your Food" onPress={() => router.push('/(tabs)/scan')} icon={<Ionicons name="scan" size={20} color="#FFFFFF" />} style={styles.scanBtn} />
+
+      {/* ── Today's Overview ────────────── */}
+      <SectionHeader title="Today's Overview" />
+      {!isLoading && !loadError && (
+        <Card style={styles.summaryCard}>
+          <View style={styles.donutRow}>
+            <View style={styles.donutContainer}>
+              <View style={[styles.donutOuter, { borderColor: theme.colors.safe.icon }]}>
+                <Text style={{ color: theme.colors.textPrimary, fontSize: theme.fontSizes['2xl'], fontWeight: theme.fontWeights.bold, fontFamily: theme.fontFamilies.heading }}>
+                  {weeklySummary ? weeklySummary.safe + weeklySummary.caution + weeklySummary.avoid : 0}
+                </Text>
+                <Text style={{ color: theme.colors.textTertiary, fontSize: theme.fontSizes.xs, fontFamily: theme.fontFamilies.body }}>scans</Text>
+              </View>
+            </View>
+            <View style={styles.summaryStats}>
+              {[
+                { label: 'Safe', count: hasLogs ? todayLog.filter((l) => l.verdict === 'safe').length : 0, color: theme.colors.safe.icon },
+                { label: 'Caution', count: hasLogs ? todayLog.filter((l) => l.verdict === 'caution').length : 0, color: theme.colors.caution.icon },
+                { label: 'Avoid', count: hasLogs ? todayLog.filter((l) => l.verdict === 'avoid').length : 0, color: theme.colors.avoid.icon },
+              ].map((s) => (
+                <View key={s.label} style={styles.statItem}>
+                  <View style={[styles.statDot, { backgroundColor: s.color, borderColor: theme.colors.border }]} />
+                  <Text style={{ color: theme.colors.textPrimary, fontSize: theme.fontSizes.body, fontWeight: theme.fontWeights.semibold, fontFamily: theme.fontFamilies.body, marginLeft: 6 }}>{s.count}</Text>
+                  <Text style={{ color: theme.colors.textTertiary, fontSize: theme.fontSizes.sm, fontFamily: theme.fontFamilies.body, marginLeft: 4 }}>{s.label}</Text>
+                </View>
+              ))}
+            </View>
+          </View>
+        </Card>
+      )}
 
       {/* ── Today's Log ────────────────── */}
       <SectionHeader title="Today's Log" action="See all" onAction={() => router.push('/(tabs)/history')} />
@@ -352,6 +359,7 @@ export default function HomeScreen() {
 const styles = StyleSheet.create({
   greetingRow: { flexDirection: 'row', alignItems: 'center', paddingTop: 16, marginBottom: 16 },
   avatarCircle: { width: 48, height: 48, borderRadius: 24, justifyContent: 'center', alignItems: 'center', borderWidth: 3 },
+  avatarImage: { width: 48, height: 48, borderRadius: 24 },
   pillRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 24 },
   summaryCard: { marginBottom: 20 },
   donutRow: { flexDirection: 'row', alignItems: 'center' },

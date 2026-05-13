@@ -5,7 +5,7 @@
  * Selections flow into the profile context.
  */
 
-import { AppScreen, PrimaryButton, SecondaryButton, SelectableChip } from '@/components/ui';
+import { AppScreen, PrimaryButton, SelectableChip } from '@/components/ui';
 import { useProfile } from '@/context/ProfileContext';
 import { useTheme } from '@/hooks/useTheme';
 import { goalIcons, goalLabels, type HealthGoal } from '@/types/health';
@@ -46,34 +46,13 @@ export default function GoalsScreen() {
     router.push('/(onboarding)/confirmation');
   };
 
-  const handleSkip = () => {
-    setGoals([]);
-    router.push('/(onboarding)/confirmation');
-  };
-
   return (
     <AppScreen scroll noPadding>
       <View style={{ paddingHorizontal: 20, paddingTop: 16, paddingBottom: 40 }}>
-        <Text
-          style={{
-            color: theme.colors.textPrimary,
-            fontSize: theme.fontSizes.xl,
-            fontWeight: theme.fontWeights.bold,
-            marginBottom: 6,
-            fontFamily: theme.fontFamilies.heading,
-          }}
-        >
+        <Text style={[theme.textStyles.h2, { color: theme.colors.textPrimary, marginBottom: 6 }]}>
           What matters most to you?
         </Text>
-        <Text
-          style={{
-            color: theme.colors.textSecondary,
-            fontSize: theme.fontSizes.body,
-            lineHeight: theme.lineHeights.body,
-            marginBottom: 24,
-            fontFamily: theme.fontFamilies.body,
-          }}
-        >
+        <Text style={[theme.textStyles.body, { color: theme.colors.textSecondary, marginBottom: 24 }]}>
           Pick the goals that feel important right now. You can always change these later.
         </Text>
 
@@ -91,28 +70,12 @@ export default function GoalsScreen() {
 
         <View style={styles.actions}>
           <PrimaryButton
-            label={selected.size > 0 ? `Continue with ${selected.size} goal${selected.size > 1 ? 's' : ''}` : 'Continue'}
+            label="Continue"
             onPress={handleContinue}
           />
-          {selected.size === 0 && (
-            <SecondaryButton
-              label="Skip this step"
-              onPress={handleSkip}
-              style={{ marginTop: 12 }}
-            />
-          )}
         </View>
 
-        <Text
-          style={{
-            color: theme.colors.textTertiary,
-            fontSize: theme.fontSizes.sm,
-            textAlign: 'center',
-            marginTop: 16,
-            lineHeight: theme.lineHeights.sm,
-            fontFamily: theme.fontFamilies.body,
-          }}
-        >
+        <Text style={[theme.textStyles.caption, { color: theme.colors.textTertiary, textAlign: 'center', marginTop: 16 }]}>
           Don't worry — we won't judge your choices.{'\n'}These goals help us focus on what matters to you.
         </Text>
       </View>

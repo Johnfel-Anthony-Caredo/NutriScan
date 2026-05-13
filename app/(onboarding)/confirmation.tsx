@@ -35,34 +35,34 @@ export default function ConfirmationScreen() {
     <AppScreen scroll noPadding>
       <View style={{ paddingHorizontal: 20, paddingTop: 16, paddingBottom: 40 }}>
         {/* ── Success Header ──────────────── */}
-        <View style={styles.successHeader}>
+        <View style={[styles.successHeader, { marginBottom: theme.spacing.lg }]}>
           <View
             style={[styles.successCircle, { backgroundColor: theme.colors.safe.bg, borderColor: theme.colors.border }]}
           >
             <Ionicons name="checkmark-circle" size={48} color={theme.colors.safe.icon} />
           </View>
           <Text
-            style={{
-              color: theme.colors.textPrimary,
-              fontSize: theme.fontSizes['2xl'],
-              fontWeight: theme.fontWeights.bold,
-              textAlign: 'center',
-              marginTop: 16,
-              fontFamily: theme.fontFamilies.heading,
-            }}
+            style={[
+              theme.textStyles.h1,
+              {
+                color: theme.colors.textPrimary,
+                textAlign: 'center',
+                marginTop: 16,
+              },
+            ]}
           >
             You're all set!
           </Text>
           <Text
-            style={{
-              color: theme.colors.textSecondary,
-              fontSize: theme.fontSizes.body,
-              lineHeight: theme.lineHeights.body,
-              textAlign: 'center',
-              marginTop: 6,
-              maxWidth: 300,
-              fontFamily: theme.fontFamilies.body,
-            }}
+            style={[
+              theme.textStyles.body,
+              {
+                color: theme.colors.textSecondary,
+                textAlign: 'center',
+                marginTop: theme.spacing.xs,
+                maxWidth: 300,
+              },
+            ]}
           >
             We've personalized NutriScan based on your health profile. Here's what we'll watch for you:
           </Text>
@@ -80,32 +80,33 @@ export default function ConfirmationScreen() {
                 backgroundColor: theme.colors.primaryLight,
                 borderRadius: theme.radius.md,
                 borderColor: theme.colors.border,
+                marginTop: theme.spacing.md,
               },
             ]}
           >
             <View style={styles.noteHeader}>
               <Ionicons name="chatbubble-ellipses" size={16} color={theme.colors.primary} />
               <Text
-                style={{
-                  color: theme.colors.primary,
-                  fontSize: theme.fontSizes.sm,
-                  fontWeight: theme.fontWeights.semibold,
-                  marginLeft: 6,
-                  fontFamily: theme.fontFamilies.heading,
-                }}
+                style={[
+                  theme.textStyles.label,
+                  {
+                    color: theme.colors.primary,
+                    marginLeft: 6,
+                  },
+                ]}
               >
                 Your note to NutriBot
               </Text>
             </View>
             <Text
-              style={{
-                color: theme.colors.textPrimary,
-                fontSize: theme.fontSizes.sm,
-                lineHeight: theme.lineHeights.sm,
-                marginTop: 6,
-                fontStyle: 'italic',
-                fontFamily: theme.fontFamilies.body,
-              }}
+              style={[
+                theme.textStyles.caption,
+                {
+                  color: theme.colors.textPrimary,
+                  marginTop: 6,
+                  fontStyle: 'italic',
+                },
+              ]}
             >
               "{profile.nutriBotNote}"
             </Text>
@@ -113,7 +114,7 @@ export default function ConfirmationScreen() {
         ) : null}
 
         {/* ── Actions ─────────────────────── */}
-        <View style={styles.actions}>
+        <View style={[styles.actions, { marginTop: theme.spacing.xl }]}>
           <PrimaryButton
             label="Start Scanning"
             onPress={handleStart}
@@ -127,14 +128,14 @@ export default function ConfirmationScreen() {
         </View>
 
         <Text
-          style={{
-            color: theme.colors.textTertiary,
-            fontSize: theme.fontSizes.sm,
-            textAlign: 'center',
-            marginTop: 16,
-            lineHeight: theme.lineHeights.sm,
-            fontFamily: theme.fontFamilies.body,
-          }}
+          style={[
+            theme.textStyles.caption,
+            {
+              color: theme.colors.textTertiary,
+              textAlign: 'center',
+              marginTop: 16,
+            },
+          ]}
         >
           You can update your health profile anytime{'\n'}from the Profile tab.
         </Text>
@@ -146,7 +147,6 @@ export default function ConfirmationScreen() {
 const styles = StyleSheet.create({
   successHeader: {
     alignItems: 'center',
-    marginBottom: 28,
   },
   successCircle: {
     width: 88,
@@ -158,14 +158,11 @@ const styles = StyleSheet.create({
   },
   noteCard: {
     padding: 16,
-    marginTop: 16,
     borderWidth: 3,
   },
   noteHeader: {
     flexDirection: 'row',
     alignItems: 'center',
   },
-  actions: {
-    marginTop: 32,
-  },
+  actions: {},
 });

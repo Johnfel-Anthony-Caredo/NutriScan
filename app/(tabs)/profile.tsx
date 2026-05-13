@@ -115,9 +115,9 @@ export default function ProfileScreen() {
           onPress: async () => {
             setIsLoggingOut(true);
             try {
-              await resetProfile();
               await signOut();
-              // Let the global route guard in _layout.tsx handle the redirect.
+              // Session is now null — the route guard in _layout.tsx
+              // will redirect to the landing screen automatically.
             } catch (error) {
               console.error('Logout failed:', error);
               Alert.alert('Error', 'Failed to log out. Please try again.');
@@ -165,7 +165,7 @@ export default function ProfileScreen() {
         <View style={styles.avatarWrap}>
           <View style={[styles.avatarRing, { backgroundColor: theme.colors.primaryLight, borderColor: theme.colors.border }]}>
             <View style={[styles.avatar, { backgroundColor: theme.colors.surfaceSecondary }]}>
-          {avatarUri ? <Image source={{ uri: avatarUri }} style={styles.avatarImage} /> : <Ionicons name="person" size={36} color={theme.colors.primary} />}
+          {avatarUri ? <Image source={{ uri: avatarUri }} style={styles.avatarImage} /> : <Image source={require('../../assets/images/avatar.png')} style={styles.avatarImage} />}
             </View>
             {user ? <View style={[styles.activeBadge, { backgroundColor: '#E0F2F1', borderColor: theme.colors.border }]}><View style={styles.activeDot} /><Text style={styles.activeText}>Active</Text></View> : null}
           </View>

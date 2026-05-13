@@ -1,281 +1,650 @@
 /**
- * Scan Preview — confirm captured image before analysis.
+ * Scan Preview — analyzing screen with hero image + bottom sheet result panel.
  *
- * Handles both photo and barcode sources:
- * - Photo: captures image, calls scan-ai Edge Function for verdict
- * - Barcode: calls Open Food Facts API, optionally enriches via scan-ai
- * Navigates to scan-result with the real data.
+ * Shows captured image at top with a bottom panel. While AI analysis runs,
+ * the panel shows rotating status text + shimmer skeleton. On completion,
+ * the panel transitions in-place to show the full scan result (no navigation).
  */
 
-import { AppScreen, PrimaryButton, SecondaryButton, SkeletonLoader, TopBar } from '@/components/ui';
+import { AppScreen, PrimaryButton, SecondaryButton, VerdictBadge } from '@/components/ui';
+import { useAuth } from '@/context/AuthContext';
 import { useProfile } from '@/context/ProfileContext';
 import type { ScanResultData } from '@/data/mockData';
 import { useTheme } from '@/hooks/useTheme';
 import { analyzeBarcodeWithAi, analyzeFoodPhoto, analyzeTextFood, buildScanResultFromAiResponse, buildScanResultFromBarcode, lookupBarcode, type BarcodeProductData } from '@/services/scanService';
+import { uploadScanImage } from '@/services/storageService';
+import { insertScanLog } from '@/services/supabaseService';
 import { optimizeImageForUpload } from '@/utils/optimizeImage';
 import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import React, { useEffect, useState } from 'react';
-import { StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import React, { useEffect, useRef, useState } from 'react';
+import { Animated, Dimensions, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+
+const SCREEN_HEIGHT = Dimensions.get('window').height;
+const HERO_HEIGHT = SCREEN_HEIGHT * 0.42;
+const BOTTOM_RADIUS = 28;
+
+const STATUS_PHRASES = [
+  'Analyzing',
+  'Scanning',
+  'Reading nutrients',
+  'Checking ingredients',
+  'Preparing result',
+];
 
 type MealType = 'breakfast' | 'lunch' | 'dinner' | 'snack';
-
-const MEAL_OPTIONS: { key: MealType; label: string; icon: keyof typeof Ionicons.glyphMap }[] = [
-  { key: 'breakfast', label: 'Breakfast', icon: 'sunny-outline' },
-  { key: 'lunch', label: 'Lunch', icon: 'restaurant-outline' },
-  { key: 'dinner', label: 'Dinner', icon: 'moon-outline' },
-  { key: 'snack', label: 'Snack', icon: 'cafe-outline' },
-];
 
 export default function ScanPreviewScreen() {
   const theme = useTheme();
   const router = useRouter();
+  const { user } = useAuth();
   const { profile } = useProfile();
   const params = useLocalSearchParams<{ source?: string; uri?: string; data?: string; foodName?: string }>();
   const sourceParam = Array.isArray(params.source) ? params.source[0] : params.source;
   const uriParam = Array.isArray(params.uri) ? params.uri[0] : params.uri;
   const dataParam = Array.isArray(params.data) ? params.data[0] : params.data;
   const foodNameParam = Array.isArray(params.foodName) ? params.foodName[0] : params.foodName;
-  
+
   const source = sourceParam === 'barcode' ? 'barcode' : sourceParam === 'manual' ? 'manual' : 'photo';
-  
-  const [foodName, setFoodName] = useState(
+
+  const [statusIndex, setStatusIndex] = useState(0);
+  const [error, setError] = useState<string | null>(null);
+  const fadeAnim = useRef(new Animated.Value(1)).current;
+
+  // Result state — filled after analysis completes
+  const [result, setResult] = useState<ScanResultData | null>(null);
+
+  // Logging state
+  const [isSaving, setIsSaving] = useState(false);
+  const [logError, setLogError] = useState('');
+  const [logged, setLogged] = useState(false);
+
+  // Hardcoded meal type — no visible selector
+  const mealType: MealType = 'lunch';
+
+  // Internal food name for API calls
+  const [foodName] = useState(
     source === 'barcode' && dataParam ? `Barcode: ${dataParam}`
     : source === 'manual' && foodNameParam ? foodNameParam
     : 'Detected Food Item',
   );
-  const [mealType, setMealType] = useState<MealType>('lunch');
-  const [analyzing, setAnalyzing] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [barcodeData, setBarcodeData] = useState<BarcodeProductData | null>(null);
-  const [barcodeLoading, setBarcodeLoading] = useState(false);
 
-  // For barcode source: auto-lookup Open Food Facts on mount
+  // ── Rotating status text ──
   useEffect(() => {
-    if (source === 'barcode' && dataParam) {
-      setBarcodeLoading(true);
-      setFoodName(`Looking up barcode ${dataParam}...`);
-      lookupBarcode(dataParam).then((data) => {
-        if (data) {
-          setBarcodeData(data);
-          setFoodName(data.productName);
-        } else {
-          setFoodName(`Product ${dataParam}`);
-          setError('Barcode not found in public database. AI will analyze based on barcode ID.');
+    if (result) return; // Stop rotating once result is ready
+
+    const interval = setInterval(() => {
+      Animated.sequence([
+        Animated.timing(fadeAnim, { toValue: 0, duration: 150, useNativeDriver: true }),
+        Animated.timing(fadeAnim, { toValue: 1, duration: 150, useNativeDriver: true }),
+      ]).start();
+      setStatusIndex((prev) => (prev + 1) % STATUS_PHRASES.length);
+    }, 2000);
+    return () => clearInterval(interval);
+  }, [fadeAnim, result]);
+
+  // ── Auto-start analysis on mount ──
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    let isActive = true;
+
+    const runAnalysis = async () => {
+      // For barcode source: lookup Open Food Facts first
+      let barcodeData: BarcodeProductData | null = null;
+
+      if (source === 'barcode' && dataParam) {
+        try {
+          barcodeData = await lookupBarcode(dataParam);
+        } catch {
+          // Continue with limited data
         }
-      }).catch(() => {
-        setError('Failed to look up barcode. Analysis may be limited.');
-      }).finally(() => {
-        setBarcodeLoading(false);
-      });
-    }
-  }, [source, dataParam]);
+      }
 
-  const handleAnalyze = async () => {
-    setAnalyzing(true);
-    setError(null);
+      if (!isActive) return;
 
-    try {
-      let result: ScanResultData;
+      try {
+        let scanResult: ScanResultData;
 
-      if (source === 'barcode') {
-        // Barcode flow
-        if (barcodeData && Object.keys(barcodeData.nutrients).length > 2) {
-          // Open Food Facts has good data — use it directly with a basic verdict
-          result = buildScanResultFromBarcode(barcodeData, mealType);
-          
-          // If the result has limited nutrients, enrich via AI
-          if (result.nutrients.length < 3) {
-            try {
-              const aiResponse = await analyzeBarcodeWithAi(barcodeData, {
+        if (source === 'barcode') {
+          if (barcodeData && Object.keys(barcodeData.nutrients).length > 2) {
+            scanResult = buildScanResultFromBarcode(barcodeData, mealType);
+            if (scanResult.nutrients.length < 3) {
+              try {
+                const aiResponse = await analyzeBarcodeWithAi(barcodeData, {
+                  conditions: profile.conditions,
+                  goals: profile.goals,
+                  nutrientTargets: profile.nutrientTargets,
+                });
+                scanResult = buildScanResultFromAiResponse(aiResponse, mealType, source);
+              } catch {
+                // Use direct barcode data as fallback
+              }
+            }
+          } else {
+            const aiResponse = await analyzeBarcodeWithAi(
+              barcodeData || {
+                productName: `Product ${dataParam || ''}`,
+                barcode: dataParam || '',
+                nutrients: {},
+              },
+              {
                 conditions: profile.conditions,
                 goals: profile.goals,
                 nutrientTargets: profile.nutrientTargets,
-              });
-              result = buildScanResultFromAiResponse(aiResponse, mealType, source);
-            } catch (aiErr) {
-              console.warn('AI enrichment failed, using direct barcode data:', aiErr);
-            }
+              },
+            );
+            scanResult = buildScanResultFromAiResponse(aiResponse, mealType, source);
           }
-        } else {
-          // Barcode found but limited data, or not found — use AI with what we have
-          const aiResponse = await analyzeBarcodeWithAi(
-            barcodeData || {
-              productName: `Product ${dataParam || ''}`,
-              barcode: dataParam || '',
-              nutrients: {},
-            },
-            {
-              conditions: profile.conditions,
-              goals: profile.goals,
-              nutrientTargets: profile.nutrientTargets,
-            },
-          );
-          result = buildScanResultFromAiResponse(aiResponse, mealType, source);
-        }
-      } else if (source === 'manual') {
-        // Manual search — send food name to AI for text-only analysis
-        const aiResponse = await analyzeTextFood(foodName, {
-          conditions: profile.conditions,
-          goals: profile.goals,
-          nutrientTargets: profile.nutrientTargets,
-        });
-        result = buildScanResultFromAiResponse(aiResponse, mealType, 'manual');
-      } else {
-        // Photo flow — optimize image (resize + compress), then call scan-ai
-        const { base64, mimeType } = await optimizeImageForUpload(uriParam!, {
-          maxWidth: 1200,
-          compress: 0.6,
-        });
-
-        const aiResponse = await analyzeFoodPhoto(
-          base64,
-          mimeType,
-          {
+        } else if (source === 'manual') {
+          const aiResponse = await analyzeTextFood(foodName, {
             conditions: profile.conditions,
             goals: profile.goals,
             nutrientTargets: profile.nutrientTargets,
-          },
-          barcodeData,
-        );
-        result = buildScanResultFromAiResponse(aiResponse, mealType, 'photo');
+          });
+          scanResult = buildScanResultFromAiResponse(aiResponse, mealType, 'manual');
+        } else {
+          const { base64, mimeType } = await optimizeImageForUpload(uriParam!, {
+            maxWidth: 1200,
+            compress: 0.6,
+          });
+
+          const aiResponse = await analyzeFoodPhoto(base64, mimeType, {
+            conditions: profile.conditions,
+            goals: profile.goals,
+            nutrientTargets: profile.nutrientTargets,
+          }, barcodeData);
+          scanResult = buildScanResultFromAiResponse(aiResponse, mealType, 'photo');
+        }
+
+        if (!isActive) return;
+
+        setResult(scanResult);
+      } catch (err: any) {
+        if (!isActive) return;
+        console.error('Analysis failed:', err);
+        setError(err.message || 'Analysis failed. Please try again.');
+      }
+    };
+
+    runAnalysis();
+    return () => { isActive = false; };
+  }, []);
+
+  const showImage = source === 'photo' && uriParam;
+
+  // ── Log to Supabase ──
+  const handleLog = async () => {
+    if (!user) {
+      setLogError('Please sign in to save scans.');
+      return;
+    }
+    if (!result) return;
+
+    setIsSaving(true);
+    setLogError('');
+
+    try {
+      let imageUrl: string | undefined;
+
+      if (uriParam) {
+        imageUrl = await uploadScanImage(user.id, uriParam);
       }
 
-      // Navigate to result with data encoded as JSON param
-      router.replace({
-        pathname: '/scan-result',
-        params: {
-          foodName: result.foodName,
-          mealType: result.mealType,
-          source: result.id.startsWith('barcode') ? 'barcode' : source,
-          imageUri: uriParam || '',
-          resultData: encodeURIComponent(JSON.stringify(result)),
-        },
-      });
-    } catch (err: any) {
-      console.error('Analysis failed:', err);
-      setError(err.message || 'Analysis failed. Please try again.');
-      setAnalyzing(false);
+      await insertScanLog(user.id, result, source, imageUrl);
+      setLogged(true);
+      setTimeout(() => router.replace('/(tabs)'), 1200);
+    } catch {
+      setLogError('Unable to save your scan. Please try again.');
+    } finally {
+      setIsSaving(false);
     }
   };
 
-  if (analyzing) {
-    return (
-      <AppScreen>
-        <TopBar title="Analyzing..." />
-        <View style={styles.analyzingContainer}>
-          <View style={[styles.analyzingIcon, { backgroundColor: theme.colors.primaryLight, borderColor: theme.colors.border }]}>
-            <Ionicons name="scan" size={40} color={theme.colors.primary} />
-          </View>
-          <Text style={{ color: theme.colors.textPrimary, fontSize: theme.fontSizes.xl, fontWeight: theme.fontWeights.bold, fontFamily: theme.fontFamilies.heading, marginTop: 20, textAlign: 'center' }}>
-            {barcodeLoading ? 'Looking up product...' : 'Analyzing your food...'}
-          </Text>
-          <Text style={{ color: theme.colors.textSecondary, fontSize: theme.fontSizes.body, fontFamily: theme.fontFamilies.body, marginTop: 8, textAlign: 'center' }}>
-            {barcodeLoading
-              ? 'Searching Open Food Facts database'
-              : 'Checking nutrients against your health profile'}
-          </Text>
-          <View style={{ width: '100%', paddingHorizontal: 20, marginTop: 32 }}>
-            <SkeletonLoader rows={4} />
-          </View>
-        </View>
-      </AppScreen>
-    );
-  }
-
   return (
-    <AppScreen scroll noPadding>
-      <TopBar title="Confirm Food" showBack />
-      <View style={{ paddingHorizontal: 20, paddingTop: 12, paddingBottom: 40 }}>
-        {/* Captured image — show the actual photo for camera captures */}
-        <View style={[styles.imagePlaceholder, { backgroundColor: theme.colors.surfaceSecondary, borderColor: theme.colors.border, borderRadius: theme.radius.lg, overflow: 'hidden' }]}>
-          {source === 'photo' && uriParam ? (
-            <Image source={{ uri: uriParam }} style={styles.capturedImage} contentFit="cover" />
-          ) : source === 'barcode' ? (
-            <>
-              <Ionicons name="barcode-outline" size={56} color={theme.colors.textTertiary} />
-              <Text style={{ color: theme.colors.textTertiary, fontSize: theme.fontSizes.sm, fontFamily: theme.fontFamilies.body, marginTop: 8 }}>
-                Barcode: {dataParam || 'N/A'}
-              </Text>
-              {barcodeData?.imageUrl && (
-                <Text style={{ color: theme.colors.textTertiary, fontSize: theme.fontSizes.xs, fontFamily: theme.fontFamilies.body, marginTop: 4 }}>
-                  Product image available
-                </Text>
-              )}
-            </>
-          ) : (
-            <>
-              <Ionicons name="image-outline" size={56} color={theme.colors.textTertiary} />
-              <Text style={{ color: theme.colors.textTertiary, fontSize: theme.fontSizes.sm, fontFamily: theme.fontFamilies.body, marginTop: 8 }}>
-                Captured image preview
-              </Text>
-            </>
-          )}
-        </View>
-
-        {/* Error message */}
-        {error && (
-          <View style={[styles.errorBox, { backgroundColor: theme.colors.avoid.bg, borderColor: theme.colors.avoid.border, borderRadius: theme.radius.md }]}>
-            <Text style={{ color: theme.colors.avoid.text, fontSize: theme.fontSizes.sm, fontFamily: theme.fontFamilies.body }}>
-              {error}
-            </Text>
+    <AppScreen noPadding>
+      {/* ── Hero Image ─────────────────────── */}
+      <View style={[styles.heroWrap, { backgroundColor: theme.colors.surfaceSecondary, borderColor: theme.colors.border }]}>
+        {showImage ? (
+          <Image source={{ uri: uriParam }} style={styles.heroImage} contentFit="cover" />
+        ) : (
+          <View style={styles.heroFallback}>
+            <Ionicons name={source === 'barcode' ? 'barcode-outline' : 'image-outline'} size={56} color={theme.colors.textTertiary} />
           </View>
         )}
 
-        {/* Editable food name */}
-        <Text style={{ color: theme.colors.textSecondary, fontSize: theme.fontSizes.sm, fontWeight: theme.fontWeights.medium, marginTop: 20, marginBottom: 8, fontFamily: theme.fontFamilies.body }}>
-          Food Name (tap to edit)
-        </Text>
-        <TextInput
-          value={foodName}
-          onChangeText={setFoodName}
-          style={[styles.nameInput, { backgroundColor: theme.colors.surfaceSecondary, borderColor: theme.colors.border, borderRadius: theme.radius.md, color: theme.colors.textPrimary, fontSize: theme.fontSizes.lg, fontWeight: theme.fontWeights.semibold, fontFamily: theme.fontFamilies.body }]}
-          accessibilityLabel="Food name"
-        />
+        {/* Top gradient overlay for readability */}
+        <View style={styles.heroOverlay} pointerEvents="none" />
+      </View>
 
-        {/* Meal type selector */}
-        <Text style={{ color: theme.colors.textSecondary, fontSize: theme.fontSizes.sm, fontWeight: theme.fontWeights.medium, marginTop: 20, marginBottom: 10, fontFamily: theme.fontFamilies.body }}>
-          Meal Type
-        </Text>
-        <View style={styles.mealRow}>
-          {MEAL_OPTIONS.map((m) => (
-            <TouchableOpacity
-              key={m.key}
-              onPress={() => setMealType(m.key)}
-              style={[styles.mealChip, { backgroundColor: mealType === m.key ? theme.colors.primaryLight : theme.colors.surface, borderColor: theme.colors.border, borderRadius: theme.radius.sm }]}
-              accessibilityRole="button"
-            >
-              <Ionicons name={m.icon} size={16} color={mealType === m.key ? theme.colors.primary : theme.colors.textSecondary} />
-              <Text style={{ color: mealType === m.key ? theme.colors.primary : theme.colors.textSecondary, fontSize: theme.fontSizes.sm, fontWeight: theme.fontWeights.medium, fontFamily: theme.fontFamilies.body, marginLeft: 4 }}>
-                {m.label}
+      {/* ── Bottom Panel ──────────────────── */}
+      <View style={[styles.bottomPanel, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }]}>
+        {/* Drag hint */}
+        <View style={[styles.dragHint, { backgroundColor: theme.colors.textTertiary }]} />
+
+        {!result && !error ? (
+          /* ── Loading State ───────────────────── */
+          <>
+            {/* Status section */}
+            <View style={styles.statusSection}>
+              <View style={[styles.scanIcon, { backgroundColor: theme.colors.primaryLight, borderColor: theme.colors.border }]}>
+                <Ionicons name="scan" size={24} color={theme.colors.primary} />
+              </View>
+              <Animated.Text
+                style={{
+                  color: theme.colors.textPrimary,
+                  fontSize: theme.fontSizes.xl,
+                  fontWeight: theme.fontWeights.bold,
+                  fontFamily: theme.fontFamilies.heading,
+                  marginTop: 16,
+                  opacity: fadeAnim,
+                }}
+              >
+                {STATUS_PHRASES[statusIndex]}
+              </Animated.Text>
+              <Text
+                style={{
+                  color: theme.colors.textSecondary,
+                  fontSize: theme.fontSizes.sm,
+                  fontFamily: theme.fontFamilies.body,
+                  marginTop: 6,
+                  textAlign: 'center',
+                  paddingHorizontal: 20,
+                }}
+              >
+                {'Checking your food against your health profile'}
               </Text>
-            </TouchableOpacity>
-          ))}
-        </View>
+            </View>
 
-        {/* Actions */}
-        <View style={{ marginTop: 32 }}>
-          <PrimaryButton
-            label={barcodeLoading ? 'Loading product data...' : 'Analyze Food'}
-            onPress={handleAnalyze}
-            disabled={barcodeLoading}
-            icon={<Ionicons name="sparkles" size={20} color="#FFFFFF" />}
-          />
-          <SecondaryButton label="Retake Photo" onPress={() => router.back()} style={{ marginTop: 12 }} />
-        </View>
+            {/* Shimmer / Skeleton content */}
+            <View style={styles.shimmerSection}>
+              <ShimmerLine width="65%" theme={theme} />
+              <ShimmerLine width="85%" theme={theme} />
+              <ShimmerLine width="45%" theme={theme} />
+              <ShimmerLine width="70%" theme={theme} />
+              <ShimmerLine width="55%" theme={theme} />
+              <ShimmerLine width="80%" theme={theme} last />
+            </View>
+          </>
+        ) : error ? (
+          /* ── Error State ─────────────────────── */
+          <View style={styles.errorWrap}>
+            <Ionicons name="cloud-offline-outline" size={40} color={theme.colors.caution.icon} />
+            <Text style={{ color: theme.colors.textPrimary, fontSize: theme.fontSizes.lg, fontWeight: theme.fontWeights.bold, fontFamily: theme.fontFamilies.heading, marginTop: 12 }}>
+              Analysis Failed
+            </Text>
+            <Text style={{ color: theme.colors.textSecondary, fontSize: theme.fontSizes.sm, fontFamily: theme.fontFamilies.body, textAlign: 'center', marginTop: 4, paddingHorizontal: 20 }}>
+              {error}
+            </Text>
+            <SecondaryButton
+              label="Try Again"
+              onPress={() => router.replace('/(tabs)/scan')}
+              style={{ marginTop: 20 }}
+              icon={<Ionicons name="scan" size={18} color={theme.colors.primary} />}
+            />
+          </View>
+        ) : result ? (
+          /* ── Result Content ──────────────────── */
+          <ScrollView style={styles.resultScroll} showsVerticalScrollIndicator={false}>
+            {/* Verdict header row */}
+            <View style={styles.verdictRow}>
+              <VerdictBadge verdict={result.verdict} />
+              <View style={styles.verdictInfo}>
+                <Text style={{ color: theme.colors.textPrimary, fontSize: theme.fontSizes['2xl'], fontWeight: theme.fontWeights.bold, fontFamily: theme.fontFamilies.heading }}>
+                  {result.foodName}
+                </Text>
+                <Text style={{ color: theme.colors.textTertiary, fontSize: theme.fontSizes.xs, fontFamily: theme.fontFamilies.body, marginTop: 2 }}>
+                  {result.mealType.charAt(0).toUpperCase() + result.mealType.slice(1)} · {new Date(result.scannedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                </Text>
+              </View>
+            </View>
+
+            {/* Explanation card — premium treatment with verdict-tinted background */}
+            {(() => {
+              const isAvoid = result.verdict === 'avoid';
+              const isCaution = result.verdict === 'caution';
+              const cardBg = isAvoid ? '#FDF0EE' : isCaution ? '#FDF8EE' : '#F0F6EE';
+              const textColor = isAvoid ? '#8B3A3A' : isCaution ? '#8B7A3A' : '#3A7B4A';
+              const accentColor = isAvoid ? '#E05A4A' : isCaution ? '#D4A830' : '#4CAF50';
+              return (
+                <View style={[styles.explainCard, { backgroundColor: cardBg, borderColor: theme.colors.border }]}>
+                  <View style={styles.explainBody}>
+                    <View style={[styles.explainHeader, { borderBottomColor: accentColor }]}>
+                      <Ionicons name={isAvoid ? 'warning' : isCaution ? 'alert-circle' : 'checkmark-circle'} size={18} color={accentColor} />
+                      <Text style={{ color: textColor, fontSize: theme.fontSizes.xs, fontWeight: theme.fontWeights.semibold, fontFamily: theme.fontFamilies.heading, marginLeft: 8, letterSpacing: 0.5 }}>
+                        {isAvoid ? 'NOT RECOMMENDED' : isCaution ? 'USE WITH CAUTION' : 'GOOD CHOICE'}
+                      </Text>
+                    </View>
+                    <Text style={{ color: textColor, fontSize: theme.fontSizes.sm, fontFamily: theme.fontFamilies.body, lineHeight: theme.lineHeights.body }}>
+                      {result.explanation}
+                    </Text>
+                    {result.verdict === 'safe' && result.safeMessage && (
+                      <View style={[styles.safeRow, { borderTopColor: accentColor }]}>
+                        <Ionicons name="checkmark-circle" size={16} color={accentColor} />
+                        <Text style={{ color: textColor, fontSize: theme.fontSizes.sm, fontFamily: theme.fontFamilies.body, marginLeft: 6, flex: 1 }}>
+                          {result.safeMessage}
+                        </Text>
+                      </View>
+                    )}
+                  </View>
+                </View>
+              );
+            })()}
+
+            {/* Nutrient summary */}
+            {result.nutrients.length > 0 && (
+              <NutrientSummary nutrients={result.nutrients} theme={theme} />
+            )}
+
+            {/* Better Alternatives */}
+            {result.alternatives && result.alternatives.length > 0 && (
+              <>
+                <Text style={{ color: theme.colors.textSecondary, fontSize: theme.fontSizes.sm, fontWeight: theme.fontWeights.semibold, fontFamily: theme.fontFamilies.heading, marginTop: 16, marginBottom: 8 }}>
+                  Better Alternatives
+                </Text>
+                {result.alternatives.map((alt) => (
+                  <View key={alt.name} style={[styles.altRow, { borderColor: theme.colors.border }]}>
+                    <View style={styles.altLeft}>
+                      <Ionicons name="swap-horizontal" size={16} color={theme.colors.primary} />
+                      <Text style={{ color: theme.colors.textPrimary, fontSize: theme.fontSizes.sm, fontFamily: theme.fontFamilies.body, flex: 1, marginLeft: 10 }}>
+                        {alt.name}
+                      </Text>
+                    </View>
+                    <VerdictBadge verdict={alt.verdict} />
+                  </View>
+                ))}
+              </>
+            )}
+
+            {/* Actions */}
+            <View style={styles.actions}>
+              {!logged ? (
+                <>
+                  {logError ? (
+                    <Text style={{ color: theme.colors.avoid.text, fontSize: theme.fontSizes.xs, textAlign: 'center', marginBottom: 6 }}>
+                      {logError}
+                    </Text>
+                  ) : null}
+                  <PrimaryButton
+                    label="Add to Food Log"
+                    onPress={handleLog}
+                    icon={<Ionicons name="add-circle" size={20} color="#FFFFFF" />}
+                    loading={isSaving}
+                  />
+                </>
+              ) : (
+                <View style={[styles.loggedBanner, { backgroundColor: theme.colors.safe.bg, borderColor: theme.colors.border }]}>
+                  <Ionicons name="checkmark-circle" size={22} color={theme.colors.safe.icon} />
+                  <Text style={{ color: theme.colors.safe.text, fontSize: theme.fontSizes.sm, fontWeight: theme.fontWeights.semibold, fontFamily: theme.fontFamilies.body, marginLeft: 6 }}>
+                    Added to your food log!
+                  </Text>
+                </View>
+              )}
+              <SecondaryButton
+                label="Scan Another"
+                onPress={() => router.replace('/(tabs)/scan')}
+                style={{ marginTop: 8 }}
+                icon={<Ionicons name="scan" size={18} color={theme.colors.primary} />}
+              />
+            </View>
+
+            <View style={{ height: 40 }} />
+          </ScrollView>
+        ) : null}
       </View>
     </AppScreen>
   );
 }
 
+// ── Nutrient Summary Sub-component ──────────────────────────────────
+
+function NutrientSummary({ nutrients, theme }: { nutrients: ScanResultData['nutrients']; theme: any }) {
+  const [showAll, setShowAll] = useState(false);
+
+  const flagged = nutrients.filter((n) => n.overLimit || n.warning);
+  const hasFlagged = flagged.length > 0;
+
+  const displayList = showAll ? nutrients : hasFlagged ? flagged : nutrients.slice(0, 4);
+
+  return (
+    <>
+      <Text style={{ color: theme.colors.textSecondary, fontSize: theme.fontSizes.sm, fontWeight: theme.fontWeights.semibold, fontFamily: theme.fontFamilies.heading, marginTop: 16, marginBottom: 8 }}>
+        {hasFlagged ? 'Nutrients to Watch' : 'Nutrition Facts'}
+      </Text>
+      <View style={[styles.nutrientCard, { borderColor: theme.colors.border }]}>
+        {displayList.map((n, i) => (
+          <React.Fragment key={n.nutrient}>
+            {i > 0 && <View style={[styles.nutrientDivider, { backgroundColor: theme.colors.border }]} />}
+            <View style={styles.nutrientRow}>
+              <View style={styles.nutrientLabelWrap}>
+                <Text style={{ color: theme.colors.textPrimary, fontSize: theme.fontSizes.sm, fontFamily: theme.fontFamilies.body, fontWeight: theme.fontWeights.medium }}>
+                  {n.label}
+                </Text>
+                {n.warning && (
+                  <Ionicons name="alert-circle" size={12} color={n.overLimit ? theme.colors.avoid.icon : theme.colors.caution.icon} style={{ marginLeft: 4 }} />
+                )}
+              </View>
+              <Text style={{ color: n.overLimit ? theme.colors.avoid.text : theme.colors.textSecondary, fontSize: theme.fontSizes.sm, fontFamily: theme.fontFamilies.body, fontWeight: theme.fontWeights.semibold }}>
+                {n.value}{n.unit} / {n.dailyLimit}{n.unit}
+              </Text>
+            </View>
+            {/* Compact progress dot */}
+            <View style={[styles.nutrientDotTrack, { backgroundColor: theme.colors.surfaceSecondary, borderColor: theme.colors.border }]}>
+              <View style={[styles.nutrientDotFill, {
+                width: `${Math.min((n.value / n.dailyLimit) * 100, 100)}%`,
+                backgroundColor: n.overLimit ? theme.colors.avoid.icon
+                  : (n.value / n.dailyLimit) > 0.7 ? theme.colors.caution.icon
+                  : theme.colors.safe.icon,
+              }]} />
+            </View>
+          </React.Fragment>
+        ))}
+        {!showAll && nutrients.length > displayList.length && (
+          <TouchableOpacity onPress={() => setShowAll(true)} style={styles.showMoreBtn} accessibilityRole="button">
+            <Text style={{ color: theme.colors.primary, fontSize: theme.fontSizes.xs, fontWeight: theme.fontWeights.medium, fontFamily: theme.fontFamilies.body }}>
+              +{nutrients.length - displayList.length} more nutrients
+            </Text>
+            <Ionicons name="chevron-down" size={14} color={theme.colors.primary} />
+          </TouchableOpacity>
+        )}
+      </View>
+    </>
+  );
+}
+
+/** Single animated shimmer line */
+function ShimmerLine({ width, theme, last = false }: { width: string; theme: any; last?: boolean }) {
+  const opacity = useRef(new Animated.Value(0.3)).current;
+
+  useEffect(() => {
+    const anim = Animated.loop(
+      Animated.sequence([
+        Animated.timing(opacity, { toValue: 0.7, duration: 800, useNativeDriver: true }),
+        Animated.timing(opacity, { toValue: 0.3, duration: 800, useNativeDriver: true }),
+      ]),
+    );
+    anim.start();
+    return () => anim.stop();
+  }, [opacity]);
+
+  return (
+    <Animated.View
+      style={{
+        width,
+        height: 14,
+        backgroundColor: theme.colors.surfaceSecondary,
+        borderRadius: 7,
+        opacity,
+        marginBottom: last ? 0 : 12,
+      }}
+    />
+  );
+}
+
 const styles = StyleSheet.create({
-  imagePlaceholder: { height: 220, justifyContent: 'center', alignItems: 'center', overflow: 'hidden', borderWidth: 3 },
-  capturedImage: { width: '100%', height: '100%' },
-  nameInput: { borderWidth: 3, paddingHorizontal: 16, paddingVertical: 14 },
-  mealRow: { flexDirection: 'row', gap: 8, flexWrap: 'wrap' },
-  mealChip: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 14, paddingVertical: 10, borderWidth: 3 },
-  analyzingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 20 },
-  analyzingIcon: { width: 88, height: 88, borderRadius: 44, justifyContent: 'center', alignItems: 'center', borderWidth: 3 },
-  errorBox: { marginTop: 12, padding: 12, borderWidth: 3 },
+  heroWrap: {
+    height: HERO_HEIGHT,
+    overflow: 'hidden',
+    position: 'relative',
+    borderBottomWidth: 0,
+    borderWidth: 3,
+  },
+  heroImage: {
+    width: '100%',
+    height: '100%',
+  },
+  heroFallback: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  heroOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0,0,0,0.06)',
+  },
+  bottomPanel: {
+    flex: 1,
+    marginTop: -BOTTOM_RADIUS,
+    borderTopLeftRadius: BOTTOM_RADIUS,
+    borderTopRightRadius: BOTTOM_RADIUS,
+    borderWidth: 3,
+    paddingHorizontal: 24,
+    paddingTop: 12,
+    alignItems: 'center',
+  },
+  dragHint: {
+    width: 40,
+    height: 4,
+    borderRadius: 2,
+    marginBottom: 16,
+  },
+  statusSection: {
+    alignItems: 'center',
+    marginBottom: 28,
+  },
+  scanIcon: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 3,
+  },
+  shimmerSection: {
+    width: '100%',
+    paddingHorizontal: 8,
+  },
+  errorWrap: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingBottom: 40,
+  },
+  resultScroll: {
+    flex: 1,
+    width: '100%',
+  },
+  verdictRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    width: '100%',
+    marginBottom: 16,
+  },
+  verdictInfo: {
+    flex: 1,
+    marginLeft: 12,
+  },
+  explainCard: {
+    borderWidth: 3,
+    borderRadius: 12,
+    overflow: 'hidden',
+    width: '100%',
+  },
+  explainBody: {
+    padding: 16,
+  },
+  explainHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderBottomWidth: 1,
+    paddingBottom: 10,
+    marginBottom: 12,
+  },
+  safeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 12,
+    paddingTop: 12,
+    borderTopWidth: 1,
+  },
+  nutrientCard: {
+    borderWidth: 3,
+    borderRadius: 12,
+    padding: 14,
+    width: '100%',
+  },
+  nutrientRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 6,
+  },
+  nutrientLabelWrap: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+  },
+  nutrientDivider: {
+    height: 2,
+    marginBottom: 10,
+    marginTop: 2,
+  },
+  nutrientDotTrack: {
+    height: 6,
+    borderRadius: 3,
+    borderWidth: 2,
+    overflow: 'hidden',
+    marginBottom: 4,
+  },
+  nutrientDotFill: {
+    height: 2,
+    marginTop: 0,
+    marginLeft: 0,
+    borderRadius: 1,
+  },
+  showMoreBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingTop: 10,
+    gap: 4,
+  },
+  altRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    borderWidth: 3,
+    borderRadius: 10,
+    paddingVertical: 12,
+    paddingHorizontal: 12,
+    marginBottom: 8,
+  },
+  altLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+    marginRight: 12,
+  },
+  actions: {
+    width: '100%',
+    marginTop: 20,
+  },
+  loggedBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 3,
+    borderRadius: 12,
+    paddingVertical: 14,
+  },
 });

@@ -18,22 +18,27 @@ function RootLayoutNav() {
 
     const inAuthGroup = segments[0] === '(auth)';
     const inOnboardingGroup = segments[0] === '(onboarding)';
-    const isSplash = pathname === '/' || pathname === '/index';
+    // Landing screen is the index route — allow unauthenticated users to stay here
+    const isLanding = pathname === '/' || pathname === '/index';
 
-    if (!session && !inAuthGroup && !isSplash) {
-      // Redirect to login if unauthenticated and not on splash or auth pages
-      router.replace('/(auth)/login');
-    } else if (session) {
-      if (!profile.onboardingCompleted && !inOnboardingGroup && !isSplash) {
-        // Redirect to onboarding if not completed
-        router.replace('/(onboarding)/welcome');
-      } else if (profile.onboardingCompleted && inAuthGroup) {
-        // Logged in, onboarding done, trying to access auth screens -> go to tabs
-        router.replace('/(tabs)');
-      } else if (!profile.onboardingCompleted && inAuthGroup) {
-        // Logged in, onboarding NOT done, trying to access auth screens -> go to onboarding
+    if (!session) {
+      // Unauthenticated: allow landing and auth screens; everything else → landing
+      if (!inAuthGroup && !isLanding) {
+        router.replace('/');
+      }
+      // If on landing or auth screens, do nothing — let user navigate naturally
+      return;
+    }
+
+    // ── Authenticated user ─────────────────────────────────────────────────
+    if (!profile.onboardingCompleted) {
+      // Onboarding not done: push to onboarding (unless already there)
+      if (!inOnboardingGroup) {
         router.replace('/(onboarding)/welcome');
       }
+    } else if (inAuthGroup || isLanding) {
+      // Fully authenticated + onboarded: skip auth / landing → go to tabs
+      router.replace('/(tabs)');
     }
   }, [session, authLoading, profile.onboardingCompleted, profileHydrated, segments, pathname, router]);
 

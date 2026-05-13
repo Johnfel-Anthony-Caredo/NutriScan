@@ -5,8 +5,7 @@
  * personalization matters. Sets the tone for the entire flow.
  */
 
-import { AppScreen, PrimaryButton, SecondaryButton } from '@/components/ui';
-import { useProfile } from '@/context/ProfileContext';
+import { AppScreen, PrimaryButton } from '@/components/ui';
 import { useTheme } from '@/hooks/useTheme';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
@@ -16,7 +15,6 @@ import { StyleSheet, Text, View } from 'react-native';
 export default function WelcomeScreen() {
   const theme = useTheme();
   const router = useRouter();
-  const { completeOnboarding } = useProfile();
 
   return (
     <AppScreen>
@@ -30,12 +28,10 @@ export default function WelcomeScreen() {
 
           <Text
             style={{
+              ...theme.textStyles.displayMd,
               color: theme.colors.textPrimary,
-              fontSize: theme.fontSizes['3xl'],
-              fontWeight: theme.fontWeights.bold,
               textAlign: 'center',
               marginTop: 28,
-              fontFamily: theme.fontFamilies.heading,
             }}
           >
             Let's personalize{'\n'}your experience
@@ -43,13 +39,11 @@ export default function WelcomeScreen() {
 
           <Text
             style={{
+              ...theme.textStyles.body,
               color: theme.colors.textSecondary,
-              fontSize: theme.fontSizes.lg,
-              lineHeight: theme.lineHeights.lg,
               textAlign: 'center',
               marginTop: 12,
               maxWidth: 300,
-              fontFamily: theme.fontFamilies.body,
             }}
           >
             Tell us about your health so we can give you accurate, helpful food guidance.
@@ -67,9 +61,8 @@ export default function WelcomeScreen() {
                 </View>
                 <Text
                   style={{
+                    ...theme.textStyles.body,
                     color: theme.colors.textSecondary,
-                    fontSize: theme.fontSizes.body,
-                    fontFamily: theme.fontFamilies.body,
                     marginLeft: 12,
                     flex: 1,
                   }}
@@ -81,43 +74,20 @@ export default function WelcomeScreen() {
           </View>
         </View>
 
-        <View style={styles.actions}>
-          <PrimaryButton
-            label="Get Started"
-            onPress={() => router.push('/(onboarding)/conditions')}
-          />
-          <SecondaryButton
-            label="Skip for Now"
-            onPress={() => {
-              completeOnboarding();
-              router.replace('/(tabs)');
-            }}
-            style={{ marginTop: 12 }}
-          />
-          <Text
-            style={{
-              color: theme.colors.textTertiary,
-              fontSize: theme.fontSizes.sm,
-              textAlign: 'center',
-              marginTop: 16,
-              lineHeight: theme.lineHeights.sm,
-              fontFamily: theme.fontFamilies.body,
-            }}
-          >
-            You can always update your health profile{'\n'}from Settings later.
-          </Text>
-        </View>
+        <PrimaryButton
+          label="Get Started"
+          onPress={() => router.push('/(onboarding)/conditions')}
+        />
       </View>
     </AppScreen>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, justifyContent: 'space-between', paddingTop: 60, paddingBottom: 40 },
+  container: { flex: 1, paddingTop: 60, paddingBottom: 40 },
   top: { alignItems: 'center' },
   iconCircle: { width: 108, height: 108, borderRadius: 54, justifyContent: 'center', alignItems: 'center', borderWidth: 3 },
   highlights: { marginTop: 40, alignSelf: 'stretch', gap: 16, paddingHorizontal: 8 },
   highlightRow: { flexDirection: 'row', alignItems: 'center' },
   highlightIcon: { width: 36, height: 36, borderRadius: 18, justifyContent: 'center', alignItems: 'center', borderWidth: 2 },
-  actions: {},
 });

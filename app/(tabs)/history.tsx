@@ -195,7 +195,7 @@ export default function HistoryScreen() {
             <Text style={{ color: theme.colors.textPrimary, fontSize: theme.fontSizes['3xl'], fontWeight: theme.fontWeights.bold, fontFamily: theme.fontFamilies.heading }}>{total}</Text>
             <Text style={{ color: theme.colors.textTertiary, fontSize: theme.fontSizes.sm, fontFamily: theme.fontFamilies.body }}>Total Scans</Text>
           </View>
-          <View style={styles.weekStatDivider} />
+          <View style={[styles.weekStatDivider, { backgroundColor: theme.colors.border }]} />
           {[
             { label: 'Safe', count: weeklySummary.safe, verdict: 'safe' as const },
             { label: 'Caution', count: weeklySummary.caution, verdict: 'caution' as const },
@@ -317,7 +317,7 @@ const styles = StyleSheet.create({
   weekCard: { marginBottom: 24 },
   weekStats: { flexDirection: 'row', alignItems: 'center', marginBottom: 12 },
   weekStatItem: { alignItems: 'center' },
-  weekStatDivider: { width: 2, height: 36, backgroundColor: theme.colors.border, marginHorizontal: 16 },
+  weekStatDivider: { width: 2, height: 36, marginHorizontal: 16 },
   weekStatSmall: { alignItems: 'center', flex: 1 },
   dayScroll: { gap: 8, paddingBottom: 16 },
   dayChip: { paddingHorizontal: 18, paddingVertical: 10, borderWidth: 3 },

@@ -1,13 +1,13 @@
 /**
- * Login Screen — full authentication entry point.
+ * Login Screen — email/password authentication.
  *
  * Features:
+ * - Logo image branding header
  * - Email/password fields with validation feedback
- * - Primary Sign In button
- * - Google + Apple social login buttons
  * - Forgot password link
+ * - Primary Sign In button
  * - Create account link
- * - Medical disclaimer footer
+ * - Footer disclaimer
  */
 
 import { AppScreen, PrimaryButton } from '@/components/ui';
@@ -16,7 +16,7 @@ import { signIn } from '@/services/authService';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
-import { Alert, Platform, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { Image, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 
 export default function LoginScreen() {
   const theme = useTheme();
@@ -55,10 +55,6 @@ export default function LoginScreen() {
     }
   };
 
-  const handleSocial = (provider: string) => {
-    Alert.alert(`${provider} Sign In`, `${provider} authentication will be integrated in a future update.`);
-  };
-
   const inputStyle = (hasError: boolean) => ({
     backgroundColor: theme.colors.surfaceSecondary,
     borderColor: hasError ? theme.colors.avoid.icon : theme.colors.border,
@@ -76,15 +72,17 @@ export default function LoginScreen() {
       <View style={styles.container}>
         {/* ── Branding ────────────────────── */}
         <View style={styles.branding}>
-          <View style={[styles.logoCircle, { backgroundColor: theme.colors.primaryLight, borderColor: theme.colors.border }]}>
-            <Ionicons name="leaf" size={48} color={theme.colors.primary} />
-          </View>
+          <Image
+            source={require('../../assets/images/Logo.png')}
+            style={styles.logo}
+            resizeMode="contain"
+          />
           <Text
             style={{
               color: theme.colors.textPrimary,
               fontSize: theme.fontSizes['3xl'],
               fontWeight: theme.fontWeights.bold,
-              marginTop: 16,
+              marginTop: 14,
               fontFamily: theme.fontFamilies.heading,
             }}
           >
@@ -124,7 +122,10 @@ export default function LoginScreen() {
               />
             </View>
             {errors.email && (
-              <Text style={{ color: theme.colors.avoid.text, fontSize: theme.fontSizes.sm, fontFamily: theme.fontFamilies.body, marginTop: 4 }}>{errors.email}</Text>
+              <View style={styles.errorRow}>
+                <Ionicons name="alert-circle" size={14} color={theme.colors.avoid.icon} />
+                <Text style={{ color: theme.colors.avoid.text, fontSize: theme.fontSizes.sm, fontFamily: theme.fontFamilies.body }}>{errors.email}</Text>
+              </View>
             )}
           </View>
 
@@ -144,12 +145,15 @@ export default function LoginScreen() {
                 secureTextEntry={!showPassword}
                 accessibilityLabel="Password input"
               />
-              <TouchableOpacity onPress={() => setShowPassword(!showPassword)} accessibilityRole="button">
+              <TouchableOpacity onPress={() => setShowPassword(!showPassword)} accessibilityRole="button" hitSlop={8}>
                 <Ionicons name={showPassword ? 'eye-off-outline' : 'eye-outline'} size={20} color={theme.colors.textTertiary} />
               </TouchableOpacity>
             </View>
             {errors.password && (
-              <Text style={{ color: theme.colors.avoid.text, fontSize: theme.fontSizes.sm, fontFamily: theme.fontFamilies.body, marginTop: 4 }}>{errors.password}</Text>
+              <View style={styles.errorRow}>
+                <Ionicons name="alert-circle" size={14} color={theme.colors.avoid.icon} />
+                <Text style={{ color: theme.colors.avoid.text, fontSize: theme.fontSizes.sm, fontFamily: theme.fontFamilies.body }}>{errors.password}</Text>
+              </View>
             )}
           </View>
 
@@ -160,58 +164,18 @@ export default function LoginScreen() {
             </Text>
           </TouchableOpacity>
 
+          {/* Auth error banner */}
           {authError ? (
-            <Text style={{ color: theme.colors.avoid.text, fontSize: theme.fontSizes.sm, fontFamily: theme.fontFamilies.body, marginTop: 4 }}>
-              {authError}
-            </Text>
+            <View style={[styles.errorBanner, { backgroundColor: theme.colors.avoid.bg, borderColor: theme.colors.avoid.border }]}>
+              <Ionicons name="alert-circle" size={16} color={theme.colors.avoid.icon} />
+              <Text style={{ color: theme.colors.avoid.text, fontSize: theme.fontSizes.sm, fontFamily: theme.fontFamilies.body, flex: 1 }}>
+                {authError}
+              </Text>
+            </View>
           ) : null}
 
           {/* Sign In button */}
           <PrimaryButton label="Sign In" onPress={handleSignIn} style={{ marginTop: 8 }} loading={isSubmitting} />
-
-          {/* Divider */}
-          <View style={styles.dividerRow}>
-            <View style={[styles.dividerLine, { backgroundColor: theme.colors.border }]} />
-            <Text style={{ color: theme.colors.textTertiary, fontSize: theme.fontSizes.sm, fontFamily: theme.fontFamilies.body, marginHorizontal: 12 }}>or</Text>
-            <View style={[styles.dividerLine, { backgroundColor: theme.colors.border }]} />
-          </View>
-
-          {/* Social Login */}
-          <View style={styles.socialRow}>
-            <View style={styles.socialShadowWrap}>
-              {Platform.OS === 'android' && (
-                <View style={[styles.socialShadowBlock, { backgroundColor: theme.colors.shadow, borderRadius: theme.radius.md }]} pointerEvents="none" />
-              )}
-              <TouchableOpacity
-                onPress={() => handleSocial('Google')}
-                style={[styles.socialBtn, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border, borderRadius: theme.radius.md }]}
-                accessibilityRole="button"
-                accessibilityLabel="Sign in with Google"
-              >
-                <Ionicons name="logo-google" size={20} color="#DB4437" />
-                <Text style={{ color: theme.colors.textPrimary, fontSize: theme.fontSizes.body, fontWeight: theme.fontWeights.medium, fontFamily: theme.fontFamilies.body, marginLeft: 8 }}>
-                  Google
-                </Text>
-              </TouchableOpacity>
-            </View>
-
-            <View style={styles.socialShadowWrap}>
-              {Platform.OS === 'android' && (
-                <View style={[styles.socialShadowBlock, { backgroundColor: theme.colors.shadow, borderRadius: theme.radius.md }]} pointerEvents="none" />
-              )}
-              <TouchableOpacity
-                onPress={() => handleSocial('Apple')}
-                style={[styles.socialBtn, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border, borderRadius: theme.radius.md }]}
-                accessibilityRole="button"
-                accessibilityLabel="Sign in with Apple"
-              >
-                <Ionicons name="logo-apple" size={20} color={theme.colors.textPrimary} />
-                <Text style={{ color: theme.colors.textPrimary, fontSize: theme.fontSizes.body, fontWeight: theme.fontWeights.medium, fontFamily: theme.fontFamilies.body, marginLeft: 8 }}>
-                  Apple
-                </Text>
-              </TouchableOpacity>
-            </View>
-          </View>
 
           {/* Create Account */}
           <TouchableOpacity onPress={() => router.push('/(auth)/register')} style={styles.createRow} accessibilityRole="link">
@@ -222,7 +186,6 @@ export default function LoginScreen() {
               Sign Up
             </Text>
           </TouchableOpacity>
-
         </View>
 
         {/* ── Footer ──────────────────────── */}
@@ -246,16 +209,12 @@ export default function LoginScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1, paddingTop: 50, paddingBottom: 20 },
   branding: { alignItems: 'center', marginBottom: 36 },
-  logoCircle: { width: 96, height: 96, borderRadius: 48, justifyContent: 'center', alignItems: 'center', borderWidth: 3 },
+  logo: { width: 96, height: 96 },
   form: {},
   fieldWrap: { marginBottom: 16 },
   inputRow: { flexDirection: 'row', alignItems: 'center' },
+  errorRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 6 },
   forgotLink: { alignSelf: 'flex-end', marginBottom: 8 },
-  dividerRow: { flexDirection: 'row', alignItems: 'center', marginVertical: 20 },
-  dividerLine: { flex: 1, height: 2 },
-  socialRow: { flexDirection: 'row', gap: 12 },
-  socialShadowWrap: { flex: 1, position: 'relative' },
-  socialShadowBlock: { position: 'absolute', top: 5, left: 5, right: 0, bottom: 0 },
-  socialBtn: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: 14, borderWidth: 3 },
-  createRow: { flexDirection: 'row', justifyContent: 'center', marginTop: 20 },
+  errorBanner: { flexDirection: 'row', alignItems: 'center', gap: 8, borderWidth: 3, borderRadius: 12, paddingHorizontal: 12, paddingVertical: 10, marginBottom: 8 },
+  createRow: { flexDirection: 'row', justifyContent: 'center', marginTop: 24 },
 });

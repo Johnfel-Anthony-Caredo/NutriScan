@@ -1,5 +1,21 @@
 # NutriScan — Full Codebase Overview
 
+## What Is NutriScan?
+
+A mobile app that scans food (via camera, barcode, or manual search) and analyzes it against the user's personal health profile — conditions, dietary goals, and nutrient targets — to give an instant **Safe / Caution / Avoid** verdict. Built for anyone managing a health condition through diet: diabetes, hypertension, kidney disease, heart disease, liver disease, and more.
+
+---
+
+## How It Works
+
+1. **Personalize** — During onboarding, the user selects their health condition(s) and dietary goals. The app automatically builds a set of monitored nutrients with daily limits (e.g., sodium ≤ 1500mg for hypertension).
+2. **Scan** — User takes a photo of a food, scans its barcode, or types its name. The app sends the food data + health profile to a Gemini AI model.
+3. **Analyze** — The AI evaluates the food against the user's condition-specific nutrient targets and returns a verdict (safe / caution / avoid) with explanation, nutrient breakdown, and healthier alternatives.
+4. **Track** — Scans are logged to a daily history with weekly trend charts and a health report showing compliance over time.
+5. **Chat** — The NutriBot AI assistant answers diet questions in context of the user's health profile.
+
+---
+
 ## Architecture
 
 - **Framework**: React Native + Expo (file-based routing via `expo-router`)
@@ -18,27 +34,37 @@
 
 | Screen | Path | Purpose |
 |---|---|---|
-| Splash | `app/index.tsx` | Entry point / loading screen |
-| Login | `app/(auth)/login.tsx` | Email/password authentication + social login placeholders |
+| Landing | `app/index.tsx` | Hero splash with animated CTA — first screen for new users |
+| Login | `app/(auth)/login.tsx` | Email/password authentication |
 | Register | `app/(auth)/register.tsx` | Account creation with validation + email verification |
 | Auth Callback | `app/auth/callback.tsx` | OAuth deep-link handler |
-| Welcome | `app/(onboarding)/welcome.tsx` | Onboarding intro — explains personalization, skip option |
+| Welcome | `app/(onboarding)/welcome.tsx` | Onboarding intro — explains personalization, no skip |
 | Conditions | `app/(onboarding)/conditions.tsx` | Select primary health condition (listed / custom / AI-assisted) |
 | NutriBot Assist | `app/(onboarding)/nutribot-assist.tsx` | AI-guided condition classification for unsure users |
 | Goals | `app/(onboarding)/goals.tsx` | Select dietary goals with emoji chips |
-| Confirmation | `app/(onboarding)/confirmation.tsx` | Review and confirm onboarding selections |
-| Home | `app/(tabs)/index.tsx` | Daily health summary, today's log, personalized tips |
+| Confirmation | `app/(onboarding)/confirmation.tsx` | Review and confirm onboarding — must complete to enter app |
+| Home | `app/(tabs)/index.tsx` | Daily health summary, today's log, personalized articles |
 | Scan | `app/(tabs)/scan.tsx` | Camera interface for barcode/photo scanning |
-| History | `app/(tabs)/history.tsx` | Past scan logs, weekly trends, health summary |
+| History | `app/(tabs)/history.tsx` | Past scan logs, weekly trends, risky foods |
 | Profile | `app/(tabs)/profile.tsx` | Health conditions, goals, account settings |
-| Scan Preview | `app/scan-preview.tsx` | Preview scanned item, select meal type, edit food name, trigger AI analysis |
-| Scan Result | `app/scan-result.tsx` | Verdict display (safe/caution/avoid), nutrient breakdown, alternatives, log to history |
-| NutriBot | `app/nutribot.tsx` | AI chat assistant with health profile context |
+| Scan Preview | `app/scan-preview.tsx` | Preview scanned item, select meal type, edit name, trigger AI analysis |
+| Scan Result | `app/scan-result.tsx` | Verdict (safe/caution/avoid), nutrient breakdown, alternatives, log to history |
+| NutriBot | `app/nutribot.tsx` | AI chat assistant with full health profile context |
 | Manual Search | `app/manual-search.tsx` | Search food products via Open Food Facts API |
 | Health Report | `app/health-report.tsx` | Weekly compliance summary, risky foods, nutrient monitoring |
-| Chat History | `app/chat-history.tsx` | Date-grouped conversation list, new chat button |
+| Chat History | `app/chat-history.tsx` | Date-grouped conversation list |
 | Edit Profile | `app/edit-profile.tsx` | Update name, age, height, weight, blood type |
 | Article Detail | `app/article/[id].tsx` | Wikipedia-sourced health article viewer |
+
+---
+
+## Three Scan Modes
+
+**1. Photo Scan** — User takes a photo of the food. The image is optimized (resized to 1024px, compressed to 0.7 quality, converted to base64) and sent to the `scan-ai` Edge Function. The AI analyzes the visual appearance and returns a verdict.
+
+**2. Barcode Scan** — User scans a barcode. The app looks up the product on Open Food Facts, extracts name, brand, nutriscore, and nutrients, then sends that data to the `scan-ai` Edge Function for personalized analysis.
+
+**3. Manual Search** — User types a food name. Results come from Open Food Facts search. Tapping a result routes through the same analysis pipeline.
 
 ---
 
@@ -65,7 +91,6 @@
 - **Input**: `{ slugs: string[] }` (Wikipedia article slugs)
 - **Process**: Verifies auth → fetches each slug from Wikipedia REST API `/page/summary/{slug}` → infers category, extracts takeaways, resolves related slugs
 - **Output**: `{ articles: Article[] }` with slug, title, category, summary, content, imageUrl, sourceUrl, keyTakeaways, relatedSlugs
-- **Category inference**: Keyword-based mapping (diabetes, hypertension, kidney_disease, heart_disease, liver_disease, cancer, other)
 
 ---
 
@@ -74,11 +99,10 @@
 ### Authentication Flow
 1. User signs in via `login.tsx` or `register.tsx` using `authService` (Supabase Auth)
 2. `AuthContext` listens for auth state changes via `supabase.auth.onAuthStateChange()`
-3. Session persisted automatically by Supabase JS client
-4. `RootLayoutNav` enforces route guards:
-   - No session → redirect to `/(auth)/login`
+3. `RootLayoutNav` enforces route guards:
+   - No session + not on landing/auth → redirect to `/` (landing screen)
    - Session + no onboarding → redirect to `/(onboarding)/welcome`
-   - Session + onboarding done + on auth screen → redirect to `/(tabs)`
+   - Session + onboarding done + on auth/landing → redirect to `/(tabs)`
 
 ### Profile Hydration Flow
 1. `ProfileContext` hydrates on mount
@@ -88,10 +112,7 @@
 
 ### Scan Flow
 1. Camera captures photo OR barcode scanner reads barcode OR user enters text
-2. `scan-preview.tsx`:
-   - Photo: optimize image via `optimizeImageForUpload()` → send base64 to `scan-ai` Edge Function
-   - Barcode: look up Open Food Facts API → send product data to `scan-ai` Edge Function
-   - Manual: send text to `scan-ai` Edge Function
+2. `scan-preview.tsx` sends data to `scan-ai` Edge Function with user profile
 3. Edge Function returns verdict + nutrients + alternatives
 4. Navigate to `scan-result.tsx` with result data
 5. User logs scan → `insertScanLog()` to Supabase + `uploadScanImage()` to Supabase Storage
@@ -100,13 +121,13 @@
 1. User opens NutriBot → `nutribot.tsx`
 2. New conversation: `createConversation()` in Supabase
 3. Existing conversation: `getMessages()` loads history
-4. User sends message → `insertMessage()` to Supabase → call `nutribot` Edge Function → insert bot reply
-5. Chat history viewable in `chat-history.tsx` via `getConversations()`
+4. User sends message → `insertMessage()` → call `nutribot` Edge Function → insert bot reply
+5. Chat history viewable in `chat-history.tsx`
 
 ### Health Condition → Nutrient Targets
 1. User selects conditions during onboarding
 2. `buildNutrientTargets(conditions)` maps each condition to monitored nutrients
-3. Duplicate nutrients across conditions → most restrictive (lowest) daily limit wins
+3. Duplicate nutrients → most restrictive (lowest) daily limit wins
 4. Targets stored in `user_nutrient_targets` table and used in scan-ai prompts
 
 ---
@@ -186,37 +207,36 @@
 ### AuthContext (`context/AuthContext.tsx`)
 - **State**: `session`, `user`, `isLoading`
 - **Actions**: `signOut()`
-- **Init**: Loads persisted session via `supabase.auth.getSession()`, then listens for changes via `onAuthStateChange()`
-- **Mount safety**: Uses `mountedRef` to prevent state updates after unmount
+- **Init**: Loads persisted session via `supabase.auth.getSession()`, then listens for changes
 
 ### ProfileContext (`context/ProfileContext.tsx`)
 - **State**: `profile` (UserHealthProfile), `isLoading`, `isHydrated`, `hydrationError`
 - **Architecture**: `useReducer` with typed actions (HYDRATE, SET_CONDITIONS, SET_GOALS, COMPLETE_ONBOARDING, etc.)
 - **Persistence**: AsyncStorage (`@nutriscan/profile`) on every change after hydration
-- **Supabase sync**: Fire-and-forget writes on every state change (conditions, goals, profile fields, onboarding completion)
+- **Supabase sync**: Fire-and-forget writes on every state change
 - **Hydration priority**: Supabase first → AsyncStorage fallback → DEFAULT_PROFILE
 - **Actions**:
-  - `setPrimaryCondition()` — sets condition + auto-builds nutrient targets + syncs to Supabase
+  - `setPrimaryCondition()` — sets condition + auto-builds nutrient targets + syncs
   - `setConditions()` — replaces all conditions + rebuilds targets
   - `setGoals()` — updates dietary goals
   - `setNutriBotNote()` — saves AI chat note
   - `completeOnboarding()` — marks onboarding done + bulk syncs all profile data
-  - `updateProfile()` — partial update with field mapping (camelCase → snake_case for Supabase)
+  - `updateProfile()` — partial update with camelCase → snake_case field mapping
   - `resetProfile()` — clears local state + AsyncStorage (preserves remote data)
 
 ---
 
 ## Theming
 
-### Color System (`constants/theme/colors.ts`)
-- **Primary**: Teal shades (50–900) for brand identity
-- **Verdict colors**: `safe` (green), `caution` (amber), `avoid` (red)
-- **Neutral**: Gray scale (50–950) for text, surfaces, borders
-- **Light + Dark themes**: Full token sets for both modes
+### Design System (`constants/theme/`)
 
-### Theme Hook (`hooks/useTheme.ts`)
-- Resolves `useColorScheme()` → returns `lightTheme` or `darkTheme`
-- Theme object includes: `colors`, `fontSizes`, `fontWeights`, `lineHeights`, `radius`, `shadows`
+- **Style**: Neo-brutalist — thick black borders (3px), bold typography, high contrast
+- **Mode**: Light-only (mint tint `#E0F2F1` background, deep black `#0A0A0A` text/borders)
+- **Primary**: Medical teal `#00897B`
+- **Verdict colors**: Safe (green), Caution (amber), Avoid (red) — each with bg/text/border/icon tokens
+- **Typography**: Space Grotesk (headings, labels) + DM Sans (body text)
+- **Spacing**: 4px base unit (xs=4, sm=8, md=16, lg=24, xl=32, 2xl=48)
+- **Shadows**: Hard drop shadows (5px offset) — iOS shadow properties, Android via absolute positioned View
 
 ### Tab Layout (`app/(tabs)/_layout.tsx`)
 - 4 tabs: Home, Scan, History, Profile
@@ -230,7 +250,6 @@
 ### Image Optimization (`utils/optimizeImage.ts`)
 - `optimizeImage(uri)`: Resize to 1024px max dimension, compress to 0.7 quality, convert to base64
 - `optimizeImageForUpload(uri)`: Same as above but returns both base64 and optimized file URI for upload
-- Logs size comparison (original vs optimized) for debugging
 
 ---
 
@@ -266,12 +285,22 @@
 ## Route Guards (`app/_layout.tsx`)
 
 The `RootLayoutNav` component enforces navigation rules:
-- **Unauthenticated** → redirect to `/(auth)/login`
+- **Unauthenticated** → landing screen `/` (animated hero splash with create account / sign in)
 - **Authenticated + onboarding incomplete** → redirect to `/(onboarding)/welcome`
-- **Authenticated + onboarding complete + on auth screen** → redirect to `/(tabs)`
-- **Authenticated + onboarding incomplete + on auth screen** → redirect to `/(onboarding)/welcome`
+- **Authenticated + onboarding complete** → redirect to `/(tabs)`
 
 Screen animations:
 - `scan-preview`, `scan-result`, `chat-history`, `health-report` → slide from right
 - `manual-search`, `nutribot`, `article/[id]` → modal (slide from bottom)
 - `auth/callback` → fade
+
+---
+
+## Benefits
+
+- **Personalized to you**: Every scan result is evaluated against your specific health conditions and nutrient limits, not generic dietary advice
+- **Instant feedback**: Point, scan, know — no manual nutrition label reading or mental math
+- **AI-powered analysis**: Food photos analyzed by AI, not a pre-built database, so even homemade/unlabeled foods work
+- **Tracks progress**: Weekly charts and health reports show how your diet aligns with your health goals over time
+- **Ask NutriBot**: An AI chat assistant that knows your profile — ask about foods, alternatives, or meal planning
+- **Privacy-first**: Your health profile stays between you and the app; scans are stored in your private Supabase database

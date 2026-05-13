@@ -193,7 +193,7 @@ export default function HealthReportScreen() {
         </Card>
 
         {/* ── Frequent Risky Foods ────── */}
-        <SectionHeader title="Frequent Risky Foods" />
+        <SectionHeader title="Frequent Risky Scans" />
         <Card>
           {r.riskyFoods.map((food, i) => (
             <View key={food.name} style={[styles.riskyRow, i < r.riskyFoods.length - 1 && { borderBottomWidth: 2, borderBottomColor: theme.colors.border }]}>

@@ -188,7 +188,7 @@ export default function EditProfileScreen() {
         <View style={styles.avatarSection}>
           <View style={[styles.avatarRing, { backgroundColor: theme.colors.primaryLight, borderColor: theme.colors.border }]}>
             <View style={[styles.avatar, { backgroundColor: theme.colors.surfaceSecondary }]}>
-              {avatarUri ? <Image source={{ uri: avatarUri }} style={styles.avatarImage} /> : <Ionicons name="person" size={40} color={theme.colors.primary} />}
+              {avatarUri ? <Image source={{ uri: avatarUri }} style={styles.avatarImage} /> : <Image source={require('../assets/images/avatar.png')} style={styles.avatarImage} />}
             </View>
           </View>
           <Text style={{ color: theme.colors.textPrimary, fontSize: theme.fontSizes.xl, fontWeight: theme.fontWeights.bold, fontFamily: theme.fontFamilies.heading, marginTop: 14 }}>

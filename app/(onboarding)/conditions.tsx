@@ -85,26 +85,14 @@ export default function ConditionsScreen() {
 
   return (
     <AppScreen scroll noPadding>
-      <View style={{ paddingHorizontal: 20, paddingTop: 16, paddingBottom: 40 }}>
+      <View style={{ paddingHorizontal: 20, paddingTop: theme.spacing.md, paddingBottom: 40 }}>
         <Text
-          style={{
-            color: theme.colors.textPrimary,
-            fontSize: theme.fontSizes.xl,
-            fontWeight: theme.fontWeights.bold,
-            marginBottom: 6,
-            fontFamily: theme.fontFamilies.heading,
-          }}
+          style={[theme.textStyles.h2, { color: theme.colors.textPrimary, marginBottom: theme.spacing.xs }]}
         >
           What are you managing?
         </Text>
         <Text
-          style={{
-            color: theme.colors.textSecondary,
-            fontSize: theme.fontSizes.body,
-            lineHeight: theme.lineHeights.body,
-            marginBottom: 24,
-            fontFamily: theme.fontFamilies.body,
-          }}
+          style={[theme.textStyles.body, { color: theme.colors.textSecondary, marginBottom: theme.spacing.lg }]}
         >
           Pick the one that best describes your situation. You can always update this later.
         </Text>
@@ -140,7 +128,7 @@ export default function ConditionsScreen() {
         {/* Divider for bottom options */}
         <View style={styles.dividerRow}>
           <View style={[styles.dividerLine, { backgroundColor: theme.colors.border }]} />
-          <Text style={{ color: theme.colors.textTertiary, fontSize: theme.fontSizes.sm, marginHorizontal: 12, fontFamily: theme.fontFamilies.body }}>or</Text>
+          <Text style={[theme.textStyles.caption, { color: theme.colors.textTertiary, marginHorizontal: 12 }]}>or</Text>
           <View style={[styles.dividerLine, { backgroundColor: theme.colors.border }]} />
         </View>
 
@@ -153,7 +141,7 @@ export default function ConditionsScreen() {
             selected={selectedCondition === 'other'}
             onPress={() => handleSelect('other')}
           />
-          <View style={{ marginTop: 10 }}>
+          <View style={{ marginTop: theme.spacing.sm }}>
             <SelectableCard
               key="unsure"
               label="I'm not sure"
@@ -166,13 +154,7 @@ export default function ConditionsScreen() {
 
         {isOtherSelected && !customText.trim() && (
           <Text
-            style={{
-              color: theme.colors.textTertiary,
-              fontSize: theme.fontSizes.sm,
-              textAlign: 'center',
-              marginTop: 12,
-              fontFamily: theme.fontFamilies.body,
-            }}
+            style={[theme.textStyles.small, { color: theme.colors.textTertiary, textAlign: 'center', marginTop: theme.spacing.sm }]}
           >
             Please describe your condition to continue.
           </Text>
@@ -190,7 +172,7 @@ export default function ConditionsScreen() {
           }
           onPress={handleContinue}
           disabled={!canContinue}
-          style={{ marginTop: 24 }}
+          style={{ marginTop: theme.spacing.lg }}
         />
       </View>
     </AppScreen>
@@ -210,10 +192,10 @@ const styles = StyleSheet.create({
   },
   dividerLine: {
     flex: 1,
-    height: 2,
+    height: 3,
   },
   bottomOptions: {
-    gap: 4,
+    gap: theme.spacing.xs,
   },
   customInputWrap: {
     borderWidth: 3,

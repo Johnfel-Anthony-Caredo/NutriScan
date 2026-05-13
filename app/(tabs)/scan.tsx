@@ -149,7 +149,7 @@ const styles = StyleSheet.create({
   container: { flex: 1 },
   toggleRow: { flexDirection: 'row', padding: 4, alignSelf: 'center', marginBottom: 20 },
   toggleBtn: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20, paddingVertical: 10 },
-  cameraContainer: { flex: 1, overflow: 'hidden', borderWidth: 1, marginBottom: 20, minHeight: 280, position: 'relative' },
+  cameraContainer: { flex: 1, overflow: 'hidden', borderWidth: 3, marginBottom: 20, minHeight: 280, position: 'relative' },
   corner: { position: 'absolute', width: 28, height: 28, borderWidth: 3, zIndex: 2 },
   barcodeTarget: {
     position: 'absolute',

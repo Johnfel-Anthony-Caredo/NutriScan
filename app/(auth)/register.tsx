@@ -1,14 +1,22 @@
 /**
- * Register Screen — full sign-up form with validation.
+ * Register Screen — email/password sign-up form.
+ *
+ * Structure mirrors the Login screen for consistency:
+ * - Logo image branding header (same as login)
+ * - Name, email, password, confirm password fields
+ * - Password strength indicator
+ * - Primary "Create Account" button
+ * - "Already have an account?" link
+ * - Footer disclaimer
  */
 
-import { AppScreen, PrimaryButton, TopBar } from '@/components/ui';
+import { AppScreen, PrimaryButton } from '@/components/ui';
 import { useTheme } from '@/hooks/useTheme';
 import { signUp } from '@/services/authService';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
-import { KeyboardAvoidingView, Platform, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { Image, KeyboardAvoidingView, Platform, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 
 export default function RegisterScreen() {
   const theme = useTheme();
@@ -18,11 +26,9 @@ export default function RegisterScreen() {
   const [password, setPassword] = useState('');
   const [confirmPw, setConfirmPw] = useState('');
   const [showPw, setShowPw] = useState(false);
-  const [focusedField, setFocusedField] = useState<'name' | 'email' | 'password' | 'confirmPw' | null>(null);
-  const [terms, setTerms] = useState(false);
+
   const [errs, setErrs] = useState<Record<string, string>>({});
   const [authError, setAuthError] = useState('');
-  const [info, setInfo] = useState('');
   const [emailSent, setEmailSent] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -41,26 +47,15 @@ export default function RegisterScreen() {
     if (!password) e.password = 'Please create a password';
     else if (password.length < 6) e.password = 'Min 6 characters';
     if (password !== confirmPw) e.confirmPw = 'Passwords do not match';
-    if (!terms) e.terms = 'Please accept terms';
     setErrs(e);
     return Object.keys(e).length === 0;
   };
-
-  const inp = (f: string, isFocused: boolean) => ({
-    backgroundColor: theme.colors.surfaceSecondary,
-    borderColor: errs[f] ? theme.colors.avoid.icon : isFocused ? theme.colors.primary : theme.colors.border,
-    borderWidth: 3,
-    borderRadius: theme.radius.lg,
-    paddingHorizontal: 16,
-    minHeight: 56,
-  });
 
   const handleRegister = async () => {
     if (!validate()) return;
 
     setIsSubmitting(true);
     setAuthError('');
-    setInfo('');
 
     try {
       const data = await signUp(name.trim(), email.trim(), password);
@@ -76,130 +71,267 @@ export default function RegisterScreen() {
     }
   };
 
-  // Email verification sent — show confirmation
+  const inputStyle = (hasError: boolean) => ({
+    backgroundColor: theme.colors.surfaceSecondary,
+    borderColor: hasError ? theme.colors.avoid.icon : theme.colors.border,
+    borderWidth: 3,
+    borderRadius: theme.radius.md,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    fontSize: theme.fontSizes.body,
+    fontFamily: theme.fontFamilies.body,
+    color: theme.colors.textPrimary,
+  });
+
+  // ── Email verification sent — confirmation view ──────────────────────
   if (emailSent) {
     return (
-      <AppScreen noPadding>
-        <TopBar title="Check Your Email" showBack />
-        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 20, paddingTop: 60 }}>
-          <View style={[{ width: 96, height: 96, borderRadius: 48, justifyContent: 'center', alignItems: 'center' }, { backgroundColor: theme.colors.safe.bg }]}>
-            <Ionicons name="mail-open" size={48} color={theme.colors.safe.icon} />
+      <AppScreen scroll>
+        <View style={styles.container}>
+          {/* Same branding header */}
+          <View style={styles.branding}>
+            <Image
+              source={require('../../assets/images/Logo.png')}
+              style={styles.logo}
+              resizeMode="contain"
+            />
           </View>
-          <Text style={{ color: theme.colors.textPrimary, fontSize: theme.fontSizes['2xl'], fontWeight: theme.fontWeights.bold, textAlign: 'center', marginTop: 20, fontFamily: theme.fontFamilies.heading }}>
-            Verify your email
-          </Text>
-          <Text style={{ color: theme.colors.textSecondary, fontSize: theme.fontSizes.body, textAlign: 'center', marginTop: 8, maxWidth: 280, lineHeight: theme.lineHeights.body, fontFamily: theme.fontFamilies.body }}>
-            We sent a confirmation link to{' '}
-            <Text style={{ fontWeight: theme.fontWeights.semibold, color: theme.colors.textPrimary, fontFamily: theme.fontFamilies.body }}>{email}</Text>
-            {'. '}Check your inbox and tap the link to activate your account.
-          </Text>
-          <PrimaryButton label="Go to Sign In" onPress={() => router.replace('/(auth)/login')} style={{ marginTop: 28, width: '100%' }} />
+
+          <View style={{ alignItems: 'center', paddingTop: 20 }}>
+            <View style={[styles.successCircle, { backgroundColor: theme.colors.safe.bg }]}>
+              <Ionicons name="mail-open" size={48} color={theme.colors.safe.icon} />
+            </View>
+            <Text style={{ color: theme.colors.textPrimary, fontSize: theme.fontSizes['2xl'], fontWeight: theme.fontWeights.bold, textAlign: 'center', marginTop: 20, fontFamily: theme.fontFamilies.heading }}>
+              Verify your email
+            </Text>
+            <Text style={{ color: theme.colors.textSecondary, fontSize: theme.fontSizes.body, textAlign: 'center', marginTop: 8, maxWidth: 280, lineHeight: theme.lineHeights.body, fontFamily: theme.fontFamilies.body }}>
+              We sent a confirmation link to{' '}
+              <Text style={{ fontWeight: theme.fontWeights.semibold, color: theme.colors.textPrimary, fontFamily: theme.fontFamilies.body }}>{email}</Text>
+              {'. '}Check your inbox and tap the link to activate your account.
+            </Text>
+            <PrimaryButton label="Go to Sign In" onPress={() => router.replace('/(auth)/login')} style={{ marginTop: 28, width: '100%' }} />
+          </View>
         </View>
       </AppScreen>
     );
   }
 
+  // ── Main register form ───────────────────────────────────────────────
   return (
-    <AppScreen scroll noPadding>
-      <TopBar title="Create Account" showBack />
-      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={s.keyboardWrap}>
-        <View style={s.container}>
-          <View style={s.hero}>
-            <View style={[s.heroIcon, { backgroundColor: theme.colors.primaryLight }]}>
-              <Ionicons name="person-add-outline" size={28} color={theme.colors.primary} />
-            </View>
-            <Text style={{ color: theme.colors.textPrimary, fontSize: theme.fontSizes['2xl'], fontWeight: theme.fontWeights.bold, marginTop: 16, textAlign: 'center', fontFamily: theme.fontFamilies.heading }}>Join NutriScan</Text>
-            <Text style={{ color: theme.colors.textSecondary, fontSize: theme.fontSizes.body, marginTop: 8, textAlign: 'center', lineHeight: theme.lineHeights.body, fontFamily: theme.fontFamilies.body, maxWidth: 320 }}>
-              Create your account to get personalized food guidance.
+    <AppScreen scroll>
+      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1 }}>
+        <View style={styles.container}>
+          {/* ── Branding (matches Login) ──────── */}
+          <View style={styles.branding}>
+            <Image
+              source={require('../../assets/images/Logo.png')}
+              style={styles.logo}
+              resizeMode="contain"
+            />
+            <Text
+              style={{
+                color: theme.colors.textPrimary,
+                fontSize: theme.fontSizes['3xl'],
+                fontWeight: theme.fontWeights.bold,
+                marginTop: 14,
+                fontFamily: theme.fontFamilies.heading,
+              }}
+            >
+              Create Account
+            </Text>
+            <Text
+              style={{
+                color: theme.colors.textSecondary,
+                fontSize: theme.fontSizes.body,
+                marginTop: 4,
+                textAlign: 'center',
+                fontFamily: theme.fontFamilies.body,
+              }}
+            >
+              Join NutriScan for personalized food guidance.
             </Text>
           </View>
 
-          <View style={[s.card, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border, borderRadius: theme.radius.lg }]}>
+          {/* ── Form ─────────────────────────── */}
+          <View style={styles.form}>
+            {/* Full Name */}
+            <View style={styles.fieldWrap}>
+              <Text style={{ color: theme.colors.textSecondary, fontSize: theme.fontSizes.sm, fontWeight: theme.fontWeights.medium, marginBottom: 6, fontFamily: theme.fontFamilies.body }}>
+                Full Name
+              </Text>
+              <View style={[styles.inputRow, inputStyle(!!errs.name)]}>
+                <Ionicons name="person-outline" size={18} color={theme.colors.textTertiary} style={{ marginRight: 10 }} />
+                <TextInput
+                  value={name}
+                  onChangeText={(t) => { setName(t); if (errs.name) setErrs((e) => ({ ...e, name: undefined })); }}
+                  placeholder="John Doe"
+                  placeholderTextColor={theme.colors.textTertiary}
+                  style={{ flex: 1, fontSize: theme.fontSizes.body, fontFamily: theme.fontFamilies.body, color: theme.colors.textPrimary }}
+                  autoCapitalize="words"
+                  accessibilityLabel="Full name input"
+                />
+                {name.trim() ? <Ionicons name="checkmark-circle" size={18} color={theme.colors.primary} /> : null}
+              </View>
+              {errs.name && (
+                <View style={styles.errorRow}>
+                  <Ionicons name="alert-circle" size={14} color={theme.colors.avoid.icon} />
+                  <Text style={{ color: theme.colors.avoid.text, fontSize: theme.fontSizes.sm, fontFamily: theme.fontFamilies.body }}>{errs.name}</Text>
+                </View>
+              )}
+            </View>
 
-        {/* Name */}
-        <Text style={{ color: theme.colors.textSecondary, fontSize: theme.fontSizes.sm, fontWeight: theme.fontWeights.medium, marginBottom: 6, fontFamily: theme.fontFamilies.body }}>Full Name</Text>
-        <View style={[s.row, inp('name', focusedField === 'name')]}>
-          <Ionicons name="person-outline" size={18} color={focusedField === 'name' ? theme.colors.primary : theme.colors.textTertiary} style={{ marginRight: 10 }} />
-          <TextInput value={name} onChangeText={setName} onFocus={() => setFocusedField('name')} onBlur={() => setFocusedField(null)} placeholder="John Doe" placeholderTextColor={theme.colors.textTertiary} style={s.inputText} />
-          {name.trim() ? <Ionicons name="checkmark-circle" size={18} color={theme.colors.primary} /> : null}
-        </View>
-        {errs.name ? <View style={s.errorRow}><Ionicons name="alert-circle" size={14} color={theme.colors.avoid.icon} /><Text style={{ color: theme.colors.avoid.text, fontSize: theme.fontSizes.sm, fontFamily: theme.fontFamilies.body }}>{errs.name}</Text></View> : null}
+            {/* Email */}
+            <View style={styles.fieldWrap}>
+              <Text style={{ color: theme.colors.textSecondary, fontSize: theme.fontSizes.sm, fontWeight: theme.fontWeights.medium, marginBottom: 6, fontFamily: theme.fontFamilies.body }}>
+                Email
+              </Text>
+              <View style={[styles.inputRow, inputStyle(!!errs.email)]}>
+                <Ionicons name="mail-outline" size={18} color={theme.colors.textTertiary} style={{ marginRight: 10 }} />
+                <TextInput
+                  value={email}
+                  onChangeText={(t) => { setEmail(t); if (errs.email) setErrs((e) => ({ ...e, email: undefined })); }}
+                  placeholder="your@email.com"
+                  placeholderTextColor={theme.colors.textTertiary}
+                  style={{ flex: 1, fontSize: theme.fontSizes.body, fontFamily: theme.fontFamilies.body, color: theme.colors.textPrimary }}
+                  keyboardType="email-address"
+                  autoCapitalize="none"
+                  accessibilityLabel="Email input"
+                />
+                {email.trim() ? <Ionicons name="checkmark-circle" size={18} color={theme.colors.primary} /> : null}
+              </View>
+              {errs.email && (
+                <View style={styles.errorRow}>
+                  <Ionicons name="alert-circle" size={14} color={theme.colors.avoid.icon} />
+                  <Text style={{ color: theme.colors.avoid.text, fontSize: theme.fontSizes.sm, fontFamily: theme.fontFamilies.body }}>{errs.email}</Text>
+                </View>
+              )}
+            </View>
 
-        {/* Email */}
-        <Text style={{ color: theme.colors.textSecondary, fontSize: theme.fontSizes.sm, fontWeight: theme.fontWeights.medium, marginBottom: 6, marginTop: 18, fontFamily: theme.fontFamilies.body }}>Email</Text>
-        <View style={[s.row, inp('email', focusedField === 'email')]}>
-          <Ionicons name="mail-outline" size={18} color={focusedField === 'email' ? theme.colors.primary : theme.colors.textTertiary} style={{ marginRight: 10 }} />
-          <TextInput value={email} onChangeText={setEmail} onFocus={() => setFocusedField('email')} onBlur={() => setFocusedField(null)} placeholder="your@email.com" placeholderTextColor={theme.colors.textTertiary} style={s.inputText} keyboardType="email-address" autoCapitalize="none" />
-          {email.trim() ? <Ionicons name="checkmark-circle" size={18} color={theme.colors.primary} /> : null}
-        </View>
-        {errs.email ? <View style={s.errorRow}><Ionicons name="alert-circle" size={14} color={theme.colors.avoid.icon} /><Text style={{ color: theme.colors.avoid.text, fontSize: theme.fontSizes.sm, fontFamily: theme.fontFamilies.body }}>{errs.email}</Text></View> : null}
+            {/* Password */}
+            <View style={styles.fieldWrap}>
+              <Text style={{ color: theme.colors.textSecondary, fontSize: theme.fontSizes.sm, fontWeight: theme.fontWeights.medium, marginBottom: 6, fontFamily: theme.fontFamilies.body }}>
+                Password
+              </Text>
+              <View style={[styles.inputRow, inputStyle(!!errs.password)]}>
+                <Ionicons name="lock-closed-outline" size={18} color={theme.colors.textTertiary} style={{ marginRight: 10 }} />
+                <TextInput
+                  value={password}
+                  onChangeText={(t) => { setPassword(t); if (errs.password) setErrs((e) => ({ ...e, password: undefined })); }}
+                  placeholder="Create a password"
+                  placeholderTextColor={theme.colors.textTertiary}
+                  style={{ flex: 1, fontSize: theme.fontSizes.body, fontFamily: theme.fontFamilies.body, color: theme.colors.textPrimary }}
+                  secureTextEntry={!showPw}
+                  accessibilityLabel="Password input"
+                />
+                <TouchableOpacity onPress={() => setShowPw(!showPw)} accessibilityRole="button" hitSlop={8}>
+                  <Ionicons name={showPw ? 'eye-off-outline' : 'eye-outline'} size={20} color={theme.colors.textTertiary} />
+                </TouchableOpacity>
+              </View>
+              {errs.password && (
+                <View style={styles.errorRow}>
+                  <Ionicons name="alert-circle" size={14} color={theme.colors.avoid.icon} />
+                  <Text style={{ color: theme.colors.avoid.text, fontSize: theme.fontSizes.sm, fontFamily: theme.fontFamilies.body }}>{errs.password}</Text>
+                </View>
+              )}
+              {/* Password strength meter */}
+              {password.length > 0 && (
+                <View style={styles.strengthWrap}>
+                  <View style={styles.strengthHeader}>
+                    <Text style={{ color: theme.colors.textSecondary, fontSize: theme.fontSizes.xs, fontFamily: theme.fontFamilies.body }}>Password strength</Text>
+                    <Text style={{ color: strength.color, fontSize: theme.fontSizes.xs, fontWeight: theme.fontWeights.semibold, fontFamily: theme.fontFamilies.body }}>{strength.label}</Text>
+                  </View>
+                  <View style={[styles.strengthTrack, { backgroundColor: theme.colors.surfaceSecondary, borderRadius: theme.radius.full }]}>
+                    <View style={{ height: 6, width: strength.w as any, backgroundColor: strength.color, borderRadius: 999 }} />
+                  </View>
+                </View>
+              )}
+            </View>
 
-        {/* Password */}
-        <Text style={{ color: theme.colors.textSecondary, fontSize: theme.fontSizes.sm, fontWeight: theme.fontWeights.medium, marginBottom: 6, marginTop: 18, fontFamily: theme.fontFamilies.body }}>Password</Text>
-        <View style={[s.row, inp('password', focusedField === 'password')]}>
-          <Ionicons name="lock-closed-outline" size={18} color={focusedField === 'password' ? theme.colors.primary : theme.colors.textTertiary} style={{ marginRight: 10 }} />
-          <TextInput value={password} onChangeText={setPassword} onFocus={() => setFocusedField('password')} onBlur={() => setFocusedField(null)} placeholder="Create a password" placeholderTextColor={theme.colors.textTertiary} style={s.inputText} secureTextEntry={!showPw} />
-          <TouchableOpacity onPress={() => setShowPw(!showPw)} hitSlop={8}><Ionicons name={showPw ? 'eye-off-outline' : 'eye-outline'} size={20} color={focusedField === 'password' ? theme.colors.primary : theme.colors.textTertiary} /></TouchableOpacity>
-        </View>
-        {errs.password ? <View style={s.errorRow}><Ionicons name="alert-circle" size={14} color={theme.colors.avoid.icon} /><Text style={{ color: theme.colors.avoid.text, fontSize: theme.fontSizes.sm, fontFamily: theme.fontFamilies.body }}>{errs.password}</Text></View> : null}
-        {password.length > 0 && (
-          <View style={s.strengthWrap}>
-            <View style={s.strengthHeader}><Text style={{ color: theme.colors.textSecondary, fontSize: theme.fontSizes.xs, fontFamily: theme.fontFamilies.body }}>Password strength</Text><Text style={{ color: strength.color, fontSize: theme.fontSizes.xs, fontWeight: theme.fontWeights.semibold, fontFamily: theme.fontFamilies.body }}>{strength.label}</Text></View>
-            <View style={[s.track, { backgroundColor: theme.colors.surfaceSecondary, borderRadius: theme.radius.full }]}><View style={{ height: 6, width: strength.w as any, backgroundColor: strength.color, borderRadius: 999 }} /></View>
+            {/* Confirm Password */}
+            <View style={styles.fieldWrap}>
+              <Text style={{ color: theme.colors.textSecondary, fontSize: theme.fontSizes.sm, fontWeight: theme.fontWeights.medium, marginBottom: 6, fontFamily: theme.fontFamilies.body }}>
+                Confirm Password
+              </Text>
+              <View style={[styles.inputRow, inputStyle(!!errs.confirmPw)]}>
+                <Ionicons name="lock-closed-outline" size={18} color={theme.colors.textTertiary} style={{ marginRight: 10 }} />
+                <TextInput
+                  value={confirmPw}
+                  onChangeText={(t) => { setConfirmPw(t); if (errs.confirmPw) setErrs((e) => ({ ...e, confirmPw: undefined })); }}
+                  placeholder="Confirm password"
+                  placeholderTextColor={theme.colors.textTertiary}
+                  style={{ flex: 1, fontSize: theme.fontSizes.body, fontFamily: theme.fontFamilies.body, color: theme.colors.textPrimary }}
+                  secureTextEntry={!showPw}
+                  accessibilityLabel="Confirm password input"
+                />
+                {confirmPw && confirmPw === password ? <Ionicons name="checkmark-circle" size={18} color={theme.colors.primary} /> : null}
+              </View>
+              {errs.confirmPw && (
+                <View style={styles.errorRow}>
+                  <Ionicons name="alert-circle" size={14} color={theme.colors.avoid.icon} />
+                  <Text style={{ color: theme.colors.avoid.text, fontSize: theme.fontSizes.sm, fontFamily: theme.fontFamilies.body }}>{errs.confirmPw}</Text>
+                </View>
+              )}
+            </View>
+
+            {/* Auth error banner */}
+            {authError ? (
+              <View style={[styles.errorBanner, { backgroundColor: theme.colors.avoid.bg, borderColor: theme.colors.avoid.border }]}>
+                <Ionicons name="alert-circle" size={16} color={theme.colors.avoid.icon} />
+                <Text style={{ color: theme.colors.avoid.text, fontSize: theme.fontSizes.sm, flex: 1, fontFamily: theme.fontFamilies.body }}>{authError}</Text>
+              </View>
+            ) : null}
+
+            {/* Create Account button */}
+            <PrimaryButton
+              label="Create Account"
+              onPress={handleRegister}
+              style={{ marginTop: 20 }}
+              loading={isSubmitting}
+            />
+
+            {/* Already have an account? */}
+            <TouchableOpacity onPress={() => router.back()} style={styles.loginRow} accessibilityRole="link">
+              <Text style={{ color: theme.colors.textSecondary, fontSize: theme.fontSizes.body, fontFamily: theme.fontFamilies.body }}>
+                Already have an account?{' '}
+              </Text>
+              <Text style={{ color: theme.colors.primary, fontSize: theme.fontSizes.body, fontWeight: theme.fontWeights.semibold, fontFamily: theme.fontFamilies.body }}>
+                Sign In
+              </Text>
+            </TouchableOpacity>
           </View>
-        )}
 
-        {/* Confirm */}
-        <Text style={{ color: theme.colors.textSecondary, fontSize: theme.fontSizes.sm, fontWeight: theme.fontWeights.medium, marginBottom: 6, marginTop: 18, fontFamily: theme.fontFamilies.body }}>Confirm Password</Text>
-        <View style={[s.row, inp('confirmPw', focusedField === 'confirmPw')]}>
-          <Ionicons name="lock-closed-outline" size={18} color={focusedField === 'confirmPw' ? theme.colors.primary : theme.colors.textTertiary} style={{ marginRight: 10 }} />
-          <TextInput value={confirmPw} onChangeText={setConfirmPw} onFocus={() => setFocusedField('confirmPw')} onBlur={() => setFocusedField(null)} placeholder="Confirm password" placeholderTextColor={theme.colors.textTertiary} style={s.inputText} secureTextEntry={!showPw} />
-          {confirmPw && confirmPw === password ? <Ionicons name="checkmark-circle" size={18} color={theme.colors.primary} /> : null}
-        </View>
-        {errs.confirmPw ? <View style={s.errorRow}><Ionicons name="alert-circle" size={14} color={theme.colors.avoid.icon} /><Text style={{ color: theme.colors.avoid.text, fontSize: theme.fontSizes.sm, fontFamily: theme.fontFamilies.body }}>{errs.confirmPw}</Text></View> : null}
-
-        {/* Terms */}
-        <View style={[s.termsCard, { backgroundColor: theme.colors.surfaceSecondary, borderColor: errs.terms ? theme.colors.avoid.border : theme.colors.border, borderRadius: theme.radius.lg }]}>
-          <TouchableOpacity onPress={() => setTerms(!terms)} style={s.terms} accessibilityRole="checkbox" accessibilityState={{ checked: terms }}>
-            <Ionicons name={terms ? 'checkbox' : 'square-outline'} size={22} color={terms ? theme.colors.primary : theme.colors.textTertiary} />
-            <Text style={{ color: theme.colors.textSecondary, fontSize: theme.fontSizes.sm, marginLeft: 10, flex: 1, lineHeight: 20, fontFamily: theme.fontFamilies.body }}>I agree to the Terms and Privacy Policy</Text>
-          </TouchableOpacity>
-        </View>
-        {errs.terms ? <View style={s.errorRow}><Ionicons name="alert-circle" size={14} color={theme.colors.avoid.icon} /><Text style={{ color: theme.colors.avoid.text, fontSize: theme.fontSizes.sm, fontFamily: theme.fontFamilies.body }}>{errs.terms}</Text></View> : null}
-
-        {authError ? <View style={[s.banner, { backgroundColor: theme.colors.avoid.bg, borderColor: theme.colors.avoid.border }]}><Ionicons name="alert-circle" size={16} color={theme.colors.avoid.icon} /><Text style={{ color: theme.colors.avoid.text, fontSize: theme.fontSizes.sm, flex: 1, fontFamily: theme.fontFamilies.body }}>{authError}</Text></View> : null}
-        {info ? <View style={[s.banner, { backgroundColor: theme.colors.primaryLight, borderColor: theme.colors.border }]}><Ionicons name="information-circle" size={16} color={theme.colors.primary} /><Text style={{ color: theme.colors.textSecondary, fontSize: theme.fontSizes.sm, flex: 1, fontFamily: theme.fontFamilies.body }}>{info}</Text></View> : null}
-
-        <PrimaryButton
-          label="Create Account"
-          onPress={handleRegister}
-          style={{ ...s.primaryButton, borderRadius: theme.radius.lg }}
-          loading={isSubmitting}
-        />
-          </View>
-
-          <TouchableOpacity onPress={() => router.back()} style={s.login}><Text style={{ color: theme.colors.textSecondary, fontSize: theme.fontSizes.body, fontFamily: theme.fontFamilies.body }}>Already have an account? </Text><Text style={{ color: theme.colors.primary, fontSize: theme.fontSizes.body, fontWeight: theme.fontWeights.semibold, fontFamily: theme.fontFamilies.body, textDecorationLine: 'underline' }}>Sign In</Text></TouchableOpacity>
+          {/* ── Footer ──────────────────────── */}
+          <Text
+            style={{
+              color: theme.colors.textTertiary,
+              fontSize: theme.fontSizes.xs,
+              textAlign: 'center',
+              marginTop: 24,
+              lineHeight: theme.lineHeights.xs,
+              fontFamily: theme.fontFamilies.body,
+            }}
+          >
+            By continuing, you agree to our Terms of Service{'\n'}and Privacy Policy.
+          </Text>
         </View>
       </KeyboardAvoidingView>
     </AppScreen>
   );
 }
 
-const s = StyleSheet.create({
-  keyboardWrap: { flex: 1 },
-  container: { paddingHorizontal: 20, paddingTop: 16, paddingBottom: 40 },
-  hero: { alignItems: 'center', marginBottom: 24 },
-  heroIcon: { width: 72, height: 72, borderRadius: 36, alignItems: 'center', justifyContent: 'center' },
-  card: { borderWidth: 3, padding: 20 },
-  row: { flexDirection: 'row', alignItems: 'center' },
-  inputText: { flex: 1, fontSize: 16, fontFamily: 'DMSans', paddingVertical: 16 },
-  errorRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 8 },
+const styles = StyleSheet.create({
+  container: { flex: 1, paddingTop: 40, paddingBottom: 24 },
+  branding: { alignItems: 'center', marginBottom: 28 },
+  logo: { width: 96, height: 96 },
+  successCircle: { width: 96, height: 96, borderRadius: 48, justifyContent: 'center', alignItems: 'center' },
+  form: {},
+  fieldWrap: { marginBottom: 12 },
+  inputRow: { flexDirection: 'row', alignItems: 'center' },
+  errorRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 6 },
   strengthWrap: { marginTop: 10 },
   strengthHeader: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 6 },
-  track: { flex: 1, height: 6 },
-  termsCard: { borderWidth: 3, marginTop: 20, paddingHorizontal: 14, paddingVertical: 10 },
-  terms: { flexDirection: 'row', alignItems: 'flex-start' },
-  banner: { flexDirection: 'row', alignItems: 'center', gap: 8, borderWidth: 3, borderRadius: 12, paddingHorizontal: 12, paddingVertical: 10, marginTop: 14 },
-  primaryButton: { marginTop: 22, height: 56 },
-  login: { flexDirection: 'row', justifyContent: 'center', marginTop: 22 },
+  strengthTrack: { flex: 1, height: 6 },
+
+  errorBanner: { flexDirection: 'row', alignItems: 'center', gap: 8, borderWidth: 3, borderRadius: 12, paddingHorizontal: 12, paddingVertical: 10, marginTop: 12 },
+  loginRow: { flexDirection: 'row', justifyContent: 'center', marginTop: 24 },
 });
