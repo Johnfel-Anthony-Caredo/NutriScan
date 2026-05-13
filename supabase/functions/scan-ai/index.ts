@@ -11,6 +11,41 @@ const corsHeaders = {
 const apiKey = Deno.env.get('GEMINI_API_KEY')
 const ai = apiKey ? new GoogleGenAI({ apiKey }) : null
 
+/**
+ * Retry an async function with exponential backoff.
+ * Used to handle transient 500 errors from Gemini model serving layer.
+ */
+async function withRetry<T>(
+  fn: () => Promise<T>,
+  maxRetries = 3,
+  baseDelay = 1500,
+): Promise<T> {
+  let lastError: unknown
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    try {
+      return await fn()
+    } catch (err) {
+      lastError = err
+      // Only retry on 5xx-like errors (including Google's INTERNAL errors)
+      const message = err instanceof Error ? err.message : String(err)
+      const isRetryable =
+        message.includes('500') ||
+        message.includes('INTERNAL') ||
+        message.includes('503') ||
+        message.includes('UNAVAILABLE') ||
+        message.includes('timeout') ||
+        message.includes('DEADLINE_EXCEEDED')
+      if (!isRetryable || attempt >= maxRetries) {
+        throw err
+      }
+      const delay = baseDelay * Math.pow(2, attempt)
+      console.log(`Gemini API attempt ${attempt + 1} failed, retrying in ${delay}ms: ${message.substring(0, 100)}`)
+      await new Promise((resolve) => setTimeout(resolve, delay))
+    }
+  }
+  throw lastError
+}
+
 Deno.serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
@@ -114,13 +149,15 @@ Rules:
     }
 
     // Call Gemini API
-    const response = await ai.models.generateContent({
-      model: model,
-      contents: contents,
-      config: {
-        systemInstruction,
-        temperature: 0.2, // precise JSON output
-      }
+    const response = await withRetry(async () => {
+      return await ai.models.generateContent({
+        model: model,
+        contents: contents,
+        config: {
+          systemInstruction,
+          temperature: 0.2, // precise JSON output
+        }
+      })
     })
 
     const reply = response.text || ''
