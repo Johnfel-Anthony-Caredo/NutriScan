@@ -12,6 +12,7 @@ export interface ScanLogRow {
   image_url?: string | null;
   scanned_at: string;
   source: 'photo' | 'barcode' | 'manual';
+  portion_guidance?: string | null;
 }
 
 export async function getUserProfile(userId: string) {
@@ -92,6 +93,7 @@ export async function insertScanLog(
       source,
       nutrients: result.nutrients,
       alternatives: result.alternatives ?? [],
+      portion_guidance: result.portionGuidance ?? null,
       scanned_at: new Date().toISOString(),
     })
     .select()
