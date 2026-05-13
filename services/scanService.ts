@@ -29,6 +29,8 @@ export interface ScanAiResponse {
   reasoningSummary: string[];
   alternatives: { name: string; verdict: Verdict }[];
   nutrients: NutrientInfo[];
+  confidence?: number;           // 0-1 from AI
+  portionGuidance?: string;      // e.g. "Best eaten in small portions"
 }
 
 // ── Open Food Facts API ─────────────────────────────────────────────
@@ -342,6 +344,8 @@ export function buildScanResultFromAiResponse(
     safeMessage: aiResponse.safeMessage,
     nutrients: aiResponse.nutrients,
     alternatives: aiResponse.alternatives,
+    confidence: aiResponse.confidence,
+    portionGuidance: aiResponse.portionGuidance,
   };
 }
 
