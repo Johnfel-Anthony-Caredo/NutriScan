@@ -35,6 +35,70 @@ const STATUS_PHRASES = [
 
 type MealType = 'breakfast' | 'lunch' | 'dinner' | 'snack';
 
+/** Renders a small confidence indicator next to the food name */
+function ConfidenceBadge({ confidence, theme }: { confidence?: number; theme: any }) {
+  if (confidence === undefined) return null;
+
+  const isHigh = confidence >= 0.8;
+  const isMedium = confidence >= 0.5 && confidence < 0.8;
+  const isLow = confidence < 0.5;
+
+  const bgColor = isHigh ? '#E8F5E9' : isMedium ? '#FFF8E1' : '#FFEBEE';
+  const textColor = isHigh ? '#2E7D32' : isMedium ? '#F57F17' : '#C62828';
+  const icon = isHigh ? 'checkmark-circle' : isMedium ? 'help-circle' : 'alert-circle';
+
+  return (
+    <View style={{
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: bgColor,
+      borderRadius: 12,
+      paddingHorizontal: 8,
+      paddingVertical: 3,
+      marginTop: 4,
+      alignSelf: 'flex-start',
+    }}>
+      <Ionicons name={icon} size={14} color={textColor} />
+      <Text style={{
+        color: textColor,
+        fontSize: 11,
+        fontWeight: '600',
+        fontFamily: theme.fontFamilies?.body,
+        marginLeft: 4,
+      }}>
+        {isHigh ? 'Identified' : `${Math.round(confidence * 100)}% confident`}
+      </Text>
+    </View>
+  );
+}
+
+/** Renders portion guidance as a small inline note in the explanation card */
+function PortionGuidanceNote({ text, theme }: { text?: string; theme: any }) {
+  if (!text) return null;
+  return (
+    <View style={{
+      flexDirection: 'row',
+      alignItems: 'center',
+      marginTop: 12,
+      paddingTop: 12,
+      borderTopWidth: 1,
+      borderTopColor: 'rgba(0,0,0,0.08)',
+    }}>
+      <Ionicons name="restaurant-outline" size={16} color={theme.colors?.textTertiary || '#999'} />
+      <Text style={{
+        color: theme.colors?.textTertiary || '#999',
+        fontSize: theme.fontSizes?.xs || 12,
+        fontFamily: theme.fontFamilies?.body,
+        marginLeft: 6,
+        flex: 1,
+        fontStyle: 'italic',
+      }}>
+        {text}
+      </Text>
+    </View>
+  );
+}
+
 export default function ScanPreviewScreen() {
   const theme = useTheme();
   const router = useRouter();
@@ -293,6 +357,7 @@ export default function ScanPreviewScreen() {
                 <Text style={{ color: theme.colors.textPrimary, fontSize: theme.fontSizes['2xl'], fontWeight: theme.fontWeights.bold, fontFamily: theme.fontFamilies.heading }}>
                   {result.foodName}
                 </Text>
+                <ConfidenceBadge confidence={result.confidence} theme={theme} />
                 <Text style={{ color: theme.colors.textTertiary, fontSize: theme.fontSizes.xs, fontFamily: theme.fontFamilies.body, marginTop: 2 }}>
                   {result.mealType.charAt(0).toUpperCase() + result.mealType.slice(1)} · {new Date(result.scannedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                 </Text>
@@ -318,6 +383,7 @@ export default function ScanPreviewScreen() {
                     <Text style={{ color: textColor, fontSize: theme.fontSizes.sm, fontFamily: theme.fontFamilies.body, lineHeight: theme.lineHeights.body }}>
                       {result.explanation}
                     </Text>
+                    <PortionGuidanceNote text={result.portionGuidance} theme={theme} />
                     {result.verdict === 'safe' && result.safeMessage && (
                       <View style={[styles.safeRow, { borderTopColor: accentColor }]}>
                         <Ionicons name="checkmark-circle" size={16} color={accentColor} />
