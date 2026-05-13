@@ -57,6 +57,7 @@ Deno.serve(async (req) => {
 
 Your response MUST be ONLY valid JSON matching this structure exactly (no markdown formatting, no \`\`\`json wrappers):
 {
+  "confidence": 0.95,
   "foodName": "Name of the identified food",
   "verdict": "safe" | "caution" | "avoid",
   "explanation": "Detailed, specific explanation of why this food is safe/caution/avoid based on their profile.",
@@ -75,13 +76,16 @@ Your response MUST be ONLY valid JSON matching this structure exactly (no markdo
       "overLimit": false,
       "warning": "Optional warning string if over limit"
     }
-  ]
+  ],
+  "portionGuidance": "Optional short phrase about portion considerations based on the verdict (e.g. 'Best eaten in small portions', 'Fine in moderation', 'Avoid large servings')"
 }
 
 Rules:
 1. Provide a precise JSON output. DO NOT wrap the output in markdown code blocks.
-2. Consider the user's specific conditions carefully. If the food is dangerous for their conditions, set verdict to "avoid" or "caution".
-3. Extract nutrients as accurately as possible from the image or barcode data.`
+2. Set confidence based on how certain you are about the food identification (1.0 = absolutely certain, 0.0 = completely unsure). Factor in image quality, clarity, and whether the food is clearly identifiable.
+3. Consider the user's specific conditions carefully. If the food is dangerous for their conditions, set verdict to "avoid" or "caution".
+4. Extract nutrients as accurately as possible from the image or barcode data.
+5. portionGuidance should reflect the verdict and conditions — "Fine in moderation" for safe, "Best in small portions" for caution, "Avoid large servings" for avoid items.`
 
     
     const model = 'gemma-4-31b-it'
