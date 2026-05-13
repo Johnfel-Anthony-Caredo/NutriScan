@@ -169,7 +169,7 @@ export default function HistoryScreen() {
       </View>
 
       {/* ── Weekly Summary Card ────────── */}
-      <SectionHeader title="This Week" />
+      <SectionHeader title="This Week" style={{ marginTop: 0 }} />
       {isLoading ? (
         <Card><SkeletonLoader rows={3} /></Card>
       ) : loadError ? (

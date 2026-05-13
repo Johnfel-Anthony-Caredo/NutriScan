@@ -195,7 +195,7 @@ const styles = StyleSheet.create({
     height: 3,
   },
   bottomOptions: {
-    gap: theme.spacing.xs,
+    gap: 8,
   },
   customInputWrap: {
     borderWidth: 3,

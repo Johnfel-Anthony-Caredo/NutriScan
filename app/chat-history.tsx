@@ -163,6 +163,7 @@ export default function ChatHistoryScreen() {
           removeClippedSubviews
           renderSectionHeader={renderSectionHeader}
           renderItem={renderConversation}
+        />
       ) : (
         <View style={styles.emptyWrap}>
           <EmptyState

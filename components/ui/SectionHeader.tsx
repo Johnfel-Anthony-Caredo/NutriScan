@@ -1,18 +1,19 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, type ViewStyle } from 'react-native';
 import { useTheme } from '@/hooks/useTheme';
 
 interface SectionHeaderProps {
   title: string;
   action?: string;
   onAction?: () => void;
+  style?: ViewStyle;
 }
 
-export function SectionHeader({ title, action, onAction }: SectionHeaderProps) {
+export function SectionHeader({ title, action, onAction, style }: SectionHeaderProps) {
   const theme = useTheme();
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, style]}>
       <Text
         style={[
           styles.title,
@@ -57,7 +58,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: 12,
+    marginTop: 28,
+    marginBottom: 14,
   },
   title: {
     flex: 1,

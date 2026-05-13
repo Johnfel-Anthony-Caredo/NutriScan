@@ -47,8 +47,8 @@ A mobile app that scans food (via camera, barcode, or manual search) and analyze
 | Scan | `app/(tabs)/scan.tsx` | Camera interface for barcode/photo scanning |
 | History | `app/(tabs)/history.tsx` | Past scan logs, weekly trends, risky foods |
 | Profile | `app/(tabs)/profile.tsx` | Health conditions, goals, account settings |
-| Scan Preview | `app/scan-preview.tsx` | Preview scanned item, select meal type, edit name, trigger AI analysis |
-| Scan Result | `app/scan-result.tsx` | Verdict (safe/caution/avoid), nutrient breakdown, alternatives, log to history |
+| Scan Preview | `app/scan-preview.tsx` | Captures photo/barcode → AI analysis → renders result inline with confidence indicator and portion guidance |
+| Scan Result | `app/scan-result.tsx` | Verdict (safe/caution/avoid), confidence badge, portion guidance, nutrient breakdown, alternatives, log to history |
 | NutriBot | `app/nutribot.tsx` | AI chat assistant with full health profile context |
 | Manual Search | `app/manual-search.tsx` | Search food products via Open Food Facts API |
 | Health Report | `app/health-report.tsx` | Weekly compliance summary, risky foods, nutrient monitoring |
@@ -72,11 +72,11 @@ A mobile app that scans food (via camera, barcode, or manual search) and analyze
 
 ### scan-ai (`supabase/functions/scan-ai/index.ts`)
 
-- **Model**: `gemma-4-31b-it` (temperature 0.2 for precise JSON)
+- **Model**: `gemma-4-31b-it` (temperature 0.2 for precise JSON output)
 - **Input**: `{ image?, barcodeData?, text?, userProfile }`
-- **Process**: Verifies auth token → builds system prompt with user's conditions/goals/nutrient targets → sends image + text to Gemini → parses JSON response
-- **Output**: `{ foodName, verdict, explanation, safeMessage?, reasoningSummary[], alternatives[], nutrients[] }`
-- **Key detail**: Strips markdown code fences from Gemini output before JSON.parse
+- **Process**: Verifies auth token → builds system prompt with user's conditions/goals/nutrient targets → sends image + text to Gemini → retries with exponential backoff (3 retries, 1.5s/3s/6s) on transient model serving errors → parses JSON response
+- **Output**: `{ confidence, foodName, verdict, explanation, safeMessage?, reasoningSummary[], alternatives[], nutrients[], portionGuidance? }`
+- **Key detail**: Strips markdown code fences from Gemini output before JSON.parse. Returns `confidence` (0-1) reflecting certainty of food identification and `portionGuidance` (e.g., "Best in small portions") with verdict-aware portion tips. Uses `withRetry()` to handle transient 500/INTERNAL errors from Google's model serving layer during model cold-start.
 
 ### nutribot (`supabase/functions/nutribot/index.ts`)
 
@@ -113,8 +113,8 @@ A mobile app that scans food (via camera, barcode, or manual search) and analyze
 ### Scan Flow
 1. Camera captures photo OR barcode scanner reads barcode OR user enters text
 2. `scan-preview.tsx` sends data to `scan-ai` Edge Function with user profile
-3. Edge Function returns verdict + nutrients + alternatives
-4. Navigate to `scan-result.tsx` with result data
+3. Edge Function returns verdict + nutrients + alternatives + confidence score + portion guidance
+4. Result renders inline in scan-preview.tsx's bottom panel — the confidence score appears as a color-coded badge next to the food name (green "Identified" for ≥80%, amber "{XX}% confident" for ≥50%, red for <50%); portion guidance shows as an italic note with a plate icon in the explanation card (e.g., "Best in small portions", "Fine in moderation")
 5. User logs scan → `insertScanLog()` to Supabase + `uploadScanImage()` to Supabase Storage
 
 ### Chat Flow
@@ -200,6 +200,23 @@ A mobile app that scans food (via camera, barcode, or manual search) and analyze
 }
 ```
 
+### ScanResultData (`data/mockData.ts`)
+```typescript
+{
+  id: string;
+  foodName: string;
+  verdict: Verdict;
+  mealType: 'breakfast' | 'lunch' | 'dinner' | 'snack';
+  scannedAt: string;
+  explanation: string;
+  safeMessage?: string;
+  nutrients: NutrientInfo[];
+  alternatives?: { name: string; verdict: Verdict }[];
+  confidence?: number;         // 0-1, AI confidence in food identification
+  portionGuidance?: string;    // portion recommendation hint from AI
+}
+```
+
 ---
 
 ## Context Providers
@@ -248,7 +265,7 @@ A mobile app that scans food (via camera, barcode, or manual search) and analyze
 ## Utilities
 
 ### Image Optimization (`utils/optimizeImage.ts`)
-- `optimizeImage(uri)`: Resize to 1024px max dimension, compress to 0.7 quality, convert to base64
+- `optimizeImage(uri)`: Resize to 1200px max dimension, compress to 0.6 quality, convert to base64
 - `optimizeImageForUpload(uri)`: Same as above but returns both base64 and optimized file URI for upload
 
 ---

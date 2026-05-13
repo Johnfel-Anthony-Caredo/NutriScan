@@ -1,22 +1,26 @@
 /**
  * Landing Screen — welcoming first-open screen before auth.
  *
- * Layout:
- *   - Full-bleed hero image (Salad.jpg) covering the top ~55%
- *   - Bold tagline overlaid on hero with text shadows
- *   - Clean white bottom sheet with logo, welcome text, and CTAs at bottom
+ * Layout (matches design reference):
+ *   - Full-screen hero image bleeding edge-to-edge
+ *   - Gradient fade from image into clean white content area
+ *   - Logo icon top-left inside hero
+ *   - Bold headline with green accent word in white content area
+ *   - Subtitle paragraph
+ *   - Gradient pill "Create an account" CTA
+ *   - Plain "Already have an account?" secondary link
  *
  * Authenticated users are redirected by _layout.tsx route guard.
  */
 
 import { useTheme } from '@/hooks/useTheme';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import React, { useEffect, useRef } from 'react';
 import {
   Animated,
   Dimensions,
   Image,
-  Platform,
   StyleSheet,
   Text,
   TouchableOpacity,
@@ -25,7 +29,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const { height: SCREEN_HEIGHT, width: SCREEN_WIDTH } = Dimensions.get('window');
-const HERO_HEIGHT = SCREEN_HEIGHT * 0.52;
+const HERO_HEIGHT = SCREEN_HEIGHT * 0.58;
 
 export default function LandingScreen() {
   const theme = useTheme();
@@ -33,34 +37,27 @@ export default function LandingScreen() {
   const insets = useSafeAreaInsets();
 
   // Entrance animations
-  const heroScale = useRef(new Animated.Value(1.08)).current;
-  const taglineOpacity = useRef(new Animated.Value(0)).current;
-  const taglineTranslateY = useRef(new Animated.Value(16)).current;
+  const heroScale = useRef(new Animated.Value(1.06)).current;
   const contentOpacity = useRef(new Animated.Value(0)).current;
-  const contentTranslateY = useRef(new Animated.Value(30)).current;
+  const contentTranslateY = useRef(new Animated.Value(24)).current;
+  const logoOpacity = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
+    // Hero zoom-out
     Animated.timing(heroScale, {
       toValue: 1,
-      duration: 1000,
+      duration: 1100,
       useNativeDriver: true,
     }).start();
 
-    setTimeout(() => {
-      Animated.parallel([
-        Animated.timing(taglineOpacity, {
-          toValue: 1,
-          duration: 600,
-          useNativeDriver: true,
-        }),
-        Animated.timing(taglineTranslateY, {
-          toValue: 0,
-          duration: 600,
-          useNativeDriver: true,
-        }),
-      ]).start();
-    }, 250);
+    // Logo fades in quickly
+    Animated.timing(logoOpacity, {
+      toValue: 1,
+      duration: 600,
+      useNativeDriver: true,
+    }).start();
 
+    // Content slides up
     setTimeout(() => {
       Animated.parallel([
         Animated.timing(contentOpacity, {
@@ -75,83 +72,81 @@ export default function LandingScreen() {
           useNativeDriver: true,
         }),
       ]).start();
-    }, 350);
+    }, 300);
   }, []);
 
   return (
     <View style={styles.root}>
-      {/* ── Hero Image ─────────────────────────────── */}
+      {/* ── Full-bleed Hero Image ─────────────────────── */}
       <Animated.View style={[styles.heroWrap, { transform: [{ scale: heroScale }] }]}>
         <Image
           source={require('../assets/images/Salad.jpg')}
           style={styles.heroImage}
           resizeMode="cover"
         />
-        <View style={styles.heroFade} />
-
-        {/* Tagline */}
-        <Animated.View
-          style={[
-            styles.heroTaglineWrap,
-            {
-              opacity: taglineOpacity,
-              transform: [{ translateY: taglineTranslateY }],
-            },
-          ]}
-        >
-          <Text style={[styles.heroTagline, { fontFamily: theme.fontFamilies.heading }]}>
-            Eat smart.
-          </Text>
-          <Text style={[styles.heroTagline, { fontFamily: theme.fontFamilies.heading }]}>
-            Live better.
-          </Text>
-        </Animated.View>
       </Animated.View>
 
-      {/* ── Bottom Sheet ──────────────────────────────── */}
+      {/* ── Logo top-left overlaid on hero ───────────── */}
       <Animated.View
         style={[
-          styles.contentCard,
+          styles.logoWrap,
+          { top: insets.top + 16, opacity: logoOpacity },
+        ]}
+      >
+        <View style={styles.logoBubble}>
+          <Image
+            source={require('../assets/images/Logo.png')}
+            style={styles.logoIcon}
+            resizeMode="contain"
+          />
+        </View>
+      </Animated.View>
+
+      {/* ── Gradient fade hero → white ───────────────── */}
+      <LinearGradient
+        colors={['transparent', 'rgba(255,255,255,0.72)', '#ffffff']}
+        locations={[0, 0.55, 1]}
+        style={styles.gradient}
+        pointerEvents="none"
+      />
+
+      {/* ── Bottom content area ───────────────────────── */}
+      <Animated.View
+        style={[
+          styles.content,
           {
-            backgroundColor: theme.colors.background,
             opacity: contentOpacity,
             transform: [{ translateY: contentTranslateY }],
-            paddingBottom: Math.max(insets.bottom, 16) + 8,
+            paddingBottom: Math.max(insets.bottom, 20) + 8,
           },
         ]}
       >
-        {/* Handle */}
-        <View style={[styles.handle, { backgroundColor: theme.colors.border }]} />
-
-        {/* Logo + welcome */}
-        <View style={styles.welcomeRow}>
-          <Image
-            source={require('../assets/images/Logo.png')}
-            style={styles.logoSmall}
-            resizeMode="contain"
-          />
-          <Text
-            style={[
-              styles.welcomeText,
-              { color: theme.colors.textPrimary, fontFamily: theme.fontFamilies.heading },
-            ]}
-          >
-            Welcome to NutriScan
+        {/* Headline */}
+        <Text style={[styles.headlineBlack, { fontFamily: theme.fontFamilies.heading }]}>
+          Scan your food.
+        </Text>
+        <View style={styles.headlineAccentRow}>
+          <Text style={[styles.headlineAccent, { fontFamily: theme.fontFamilies.heading, color: theme.colors.primary }]}>
+            Protect{' '}
+          </Text>
+          <Text style={[styles.headlineBlack, { fontFamily: theme.fontFamilies.heading }]}>
+            your health.
           </Text>
         </View>
 
-        {/* Spacer */}
-        <View style={{ flex: 1 }} />
+        {/* Subtitle */}
+        <Text style={[styles.subtitle, { color: theme.colors.textSecondary, fontFamily: theme.fontFamilies.body }]}>
+          Point your camera at any food, scan a barcode, or search manually — get an instant Safe, Caution, or Avoid verdict tailored to your health profile.
+        </Text>
 
-        {/* Primary CTA */}
-        <CTAButton
+        {/* Primary CTA — gradient pill */}
+        <GradientCTA
           label="Create an account"
           onPress={() => router.push('/(auth)/register')}
-          primary
-          theme={theme}
+          primaryColor={theme.colors.primary}
         />
 
-        {/* Secondary */}
+        {/* Secondary — plain text link */}
         <TouchableOpacity
           onPress={() => router.push('/(auth)/login')}
           style={styles.loginRow}
@@ -159,21 +154,8 @@ export default function LandingScreen() {
           accessibilityRole="button"
           accessibilityLabel="Already have an account? Sign in"
         >
-          <Text
-            style={[
-              styles.loginText,
-              { color: theme.colors.textSecondary, fontFamily: theme.fontFamilies.body },
-            ]}
-          >
-            Already have an account?{' '}
-          </Text>
-          <Text
-            style={[
-              styles.loginLink,
-              { color: theme.colors.primary, fontFamily: theme.fontFamilies.heading },
-            ]}
-          >
-            Sign in
+          <Text style={[styles.loginText, { color: theme.colors.textSecondary, fontFamily: theme.fontFamilies.body }]}>
+            Already have an account?
           </Text>
         </TouchableOpacity>
       </Animated.View>
@@ -181,47 +163,26 @@ export default function LandingScreen() {
   );
 }
 
-// ─── CTA button ──────────────────────────────────────────────────────────────
-function CTAButton({
+// ─── Gradient CTA Button ─────────────────────────────────────────────────────
+function GradientCTA({
   label,
   onPress,
-  primary,
-  theme,
+  primaryColor,
 }: {
   label: string;
   onPress: () => void;
-  primary?: boolean;
-  theme: any;
+  primaryColor: string;
 }) {
   const scale = useRef(new Animated.Value(1)).current;
 
   const onPressIn = () =>
-    Animated.spring(scale, {
-      toValue: 0.96,
-      tension: 150,
-      friction: 6,
-      useNativeDriver: true,
-    }).start();
+    Animated.spring(scale, { toValue: 0.96, tension: 150, friction: 6, useNativeDriver: true }).start();
 
   const onPressOut = () =>
-    Animated.spring(scale, {
-      toValue: 1,
-      tension: 100,
-      friction: 7,
-      useNativeDriver: true,
-    }).start();
+    Animated.spring(scale, { toValue: 1, tension: 100, friction: 7, useNativeDriver: true }).start();
 
   return (
-    <Animated.View style={{ transform: [{ scale }] }}>
-      {Platform.OS === 'android' && primary && (
-        <View
-          style={[
-            styles.shadowBlock,
-            { backgroundColor: theme.colors.shadow, borderRadius: theme.radius.full },
-          ]}
-          pointerEvents="none"
-        />
-      )}
+    <Animated.View style={[styles.ctaWrap, { transform: [{ scale }] }]}>
       <TouchableOpacity
         onPress={onPress}
         onPressIn={onPressIn}
@@ -229,26 +190,16 @@ function CTAButton({
         activeOpacity={1}
         accessibilityRole="button"
         accessibilityLabel={label}
-        style={[
-          styles.ctaBtn,
-          {
-            backgroundColor: primary ? theme.colors.primary : 'transparent',
-            borderColor: primary ? theme.colors.border : theme.colors.border,
-            borderRadius: theme.radius.full,
-          },
-        ]}
+        style={styles.ctaTouchable}
       >
-        <Text
-          style={[
-            styles.ctaLabel,
-            {
-              color: primary ? theme.colors.textInverse : theme.colors.textPrimary,
-              fontFamily: theme.fontFamilies.heading,
-            },
-          ]}
+        <LinearGradient
+          colors={[primaryColor, '#0d2b0d']}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 0 }}
+          style={styles.ctaGradient}
         >
-          {label}
-        </Text>
+          <Text style={styles.ctaLabel}>{label}</Text>
+        </LinearGradient>
       </TouchableOpacity>
     </Animated.View>
   );
@@ -258,124 +209,117 @@ function CTAButton({
 const styles = StyleSheet.create({
   root: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: '#ffffff',
   },
 
   // ── Hero
   heroWrap: {
-    width: SCREEN_WIDTH,
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
     height: HERO_HEIGHT,
     overflow: 'hidden',
   },
   heroImage: {
-    width: '100%',
-    height: '100%',
+    width: SCREEN_WIDTH,
+    height: HERO_HEIGHT,
   },
-  heroFade: {
+
+  // ── Logo
+  logoWrap: {
+    position: 'absolute',
+    left: 20,
+  },
+  logoBubble: {
+    width: 46,
+    height: 46,
+    borderRadius: 14,
+    backgroundColor: 'rgba(255,255,255,0.88)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  logoIcon: {
+    width: 30,
+    height: 30,
+  },
+
+  // ── Gradient overlay
+  gradient: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    top: HERO_HEIGHT - 180,
+    height: 240,
+  },
+
+  // ── Content
+  content: {
     position: 'absolute',
     bottom: 0,
     left: 0,
     right: 0,
-    height: 160,
-    backgroundColor: 'rgba(0,0,0,0.18)',
-  },
-  heroTaglineWrap: {
-    position: 'absolute',
-    bottom: 32,
-    left: 28,
-    right: 28,
-  },
-  heroTagline: {
-    color: '#fff',
-    fontSize: 38,
-    fontWeight: '700',
-    letterSpacing: -0.5,
-    lineHeight: 46,
-    textShadowColor: 'rgba(0,0,0,0.45)',
-    textShadowOffset: { width: 0, height: 2 },
-    textShadowRadius: 10,
-  },
-
-  // ── Bottom sheet
-  contentCard: {
-    flex: 1,
     paddingHorizontal: 28,
-    paddingTop: 16,
-    marginTop: -24,
-    borderTopLeftRadius: 32,
-    borderTopRightRadius: 32,
-    ...Platform.select({
-      ios: {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: -6 },
-        shadowOpacity: 0.08,
-        shadowRadius: 16,
-      },
-      android: {
-        elevation: 12,
-      },
-    }),
+    paddingTop: 12,
   },
-  handle: {
-    width: 36,
-    height: 4,
-    borderRadius: 2,
-    alignSelf: 'center',
-    marginBottom: 20,
+  headlineBlack: {
+    fontSize: 36,
+    fontWeight: '800',
+    color: '#0f1a0f',
+    letterSpacing: -0.5,
+    lineHeight: 44,
   },
-
-  // ── Welcome
-  welcomeRow: {
+  headlineAccentRow: {
     flexDirection: 'row',
-    alignItems: 'center',
-    gap: 14,
+    alignItems: 'flex-end',
+    flexWrap: 'wrap',
+    marginBottom: 16,
   },
-  logoSmall: {
-    width: 44,
-    height: 44,
+  headlineAccent: {
+    fontSize: 36,
+    fontWeight: '800',
+    letterSpacing: -0.5,
+    lineHeight: 44,
   },
-  welcomeText: {
-    fontSize: 22,
-    fontWeight: '700',
-    letterSpacing: -0.2,
+  subtitle: {
+    fontSize: 14,
+    lineHeight: 22,
+    marginBottom: 32,
+    opacity: 0.8,
   },
 
   // ── CTA
-  shadowBlock: {
-    position: 'absolute',
-    top: 5,
-    left: 5,
-    right: 0,
-    bottom: 0,
+  ctaWrap: {
+    marginBottom: 4,
+    borderRadius: 999,
+    overflow: 'hidden',
   },
-  ctaBtn: {
+  ctaTouchable: {
+    borderRadius: 999,
+    overflow: 'hidden',
+  },
+  ctaGradient: {
     height: 56,
+    borderRadius: 999,
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: 3,
   },
   ctaLabel: {
+    color: '#ffffff',
     fontSize: 16,
     fontWeight: '700',
     letterSpacing: 0.3,
+    fontFamily: 'Space Grotesk',
   },
 
   // ── Login row
   loginRow: {
-    flexDirection: 'row',
-    justifyContent: 'center',
     alignItems: 'center',
+    justifyContent: 'center',
     paddingVertical: 18,
-    marginTop: 4,
   },
   loginText: {
     fontSize: 15,
     lineHeight: 20,
-  },
-  loginLink: {
-    fontSize: 15,
-    fontWeight: '700',
-    lineHeight: 20,
-    textDecorationLine: 'underline',
   },
 });

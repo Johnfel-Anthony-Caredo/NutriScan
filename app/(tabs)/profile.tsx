@@ -194,7 +194,7 @@ export default function ProfileScreen() {
       </View>
 
       {/* ── Conditions ─────────────────── */}
-      <SectionHeader title="My Conditions" action="Edit" onAction={handleEditProfile} />
+      <SectionHeader title="My Conditions" action="Edit" onAction={handleEditProfile} style={{ marginTop: 0 }} />
       {profile.conditions.length > 0 ? (
         <Card style={styles.emptyCard}><View style={styles.pillRow}>{profile.conditions.map((c) => (<ConditionPill key={c} condition={c} />))}</View></Card>
       ) : (

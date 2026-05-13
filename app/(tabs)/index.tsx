@@ -122,7 +122,8 @@ export default function HomeScreen() {
   const loadArticles = useCallback(async () => {
     if (!user) return;
     const fetched = await fetchArticlesForConditions(profile.conditions);
-    setArticles(fetched);
+    // Only show articles that have a real image — blank cards are not shown
+    setArticles(fetched.filter((a) => !!a.imageUrl));
   }, [user, profile.conditions]);
 
   // Combined loader for pull-to-refresh
@@ -245,7 +246,7 @@ export default function HomeScreen() {
       <PrimaryButton label="Scan Your Food" onPress={() => router.push('/(tabs)/scan')} icon={<Ionicons name="scan" size={20} color="#FFFFFF" />} style={styles.scanBtn} />
 
       {/* ── Today's Overview ────────────── */}
-      <SectionHeader title="Today's Overview" />
+      <SectionHeader title="Today's Overview" style={{ marginTop: 0 }} />
       {!isLoading && !loadError && (
         <Card style={styles.summaryCard}>
           <View style={styles.donutRow}>
@@ -312,7 +313,7 @@ export default function HomeScreen() {
       )}
 
       {/* ── Health Tips Carousel ────────── */}
-      <SectionHeader title="Health Tips" action="Explore" onAction={() => {}} />
+      <SectionHeader title="Health Tips" />
       {articlesLoading ? (
         <Card>
           <View style={{ paddingVertical: 4, gap: 10 }}>
