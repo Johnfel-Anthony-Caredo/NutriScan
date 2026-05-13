@@ -125,6 +125,33 @@ export default function ScanResultScreen() {
           <Text style={{ color: theme.colors.textPrimary, fontSize: theme.fontSizes['2xl'], fontWeight: theme.fontWeights.bold, fontFamily: theme.fontFamilies.heading, marginTop: 16 }}>
             {result.foodName}
           </Text>
+          {/* Confidence badge */}
+          {result.confidence !== undefined && (
+            <View style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              backgroundColor: result.confidence >= 0.8 ? '#E8F5E9' : result.confidence >= 0.5 ? '#FFF8E1' : '#FFEBEE',
+              borderRadius: 12,
+              paddingHorizontal: 8,
+              paddingVertical: 3,
+              marginTop: 4,
+            }}>
+              <Ionicons
+                name={result.confidence >= 0.8 ? 'checkmark-circle' : result.confidence >= 0.5 ? 'help-circle' : 'alert-circle'}
+                size={14}
+                color={result.confidence >= 0.8 ? '#2E7D32' : result.confidence >= 0.5 ? '#F57F17' : '#C62828'}
+              />
+              <Text style={{
+                color: result.confidence >= 0.8 ? '#2E7D32' : result.confidence >= 0.5 ? '#F57F17' : '#C62828',
+                fontSize: 11,
+                fontWeight: '600',
+                fontFamily: theme.fontFamilies.body,
+                marginLeft: 4,
+              }}>
+                {result.confidence >= 0.8 ? 'Identified' : `${Math.round(result.confidence * 100)}% confident`}
+              </Text>
+            </View>
+          )}
           <Text style={{ color: theme.colors.textTertiary, fontSize: theme.fontSizes.sm, fontFamily: theme.fontFamilies.body, marginTop: 4 }}>
             {result.mealType.charAt(0).toUpperCase() + result.mealType.slice(1)} · {new Date(result.scannedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
           </Text>
@@ -142,6 +169,14 @@ export default function ScanResultScreen() {
             <Text style={{ color: theme.colors[result.verdict].text, fontSize: theme.fontSizes.body, fontFamily: theme.fontFamilies.body, lineHeight: theme.lineHeights.body, marginTop: 8 }}>
               {result.explanation}
             </Text>
+            {result.portionGuidance && (
+              <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 10, paddingTop: 10, borderTopWidth: 1, borderTopColor: theme.colors.border }}>
+                <Ionicons name="restaurant-outline" size={16} color={theme.colors.textTertiary} />
+                <Text style={{ color: theme.colors.textTertiary, fontSize: theme.fontSizes.xs, fontFamily: theme.fontFamilies.body, marginLeft: 6, flex: 1, fontStyle: 'italic' }}>
+                  {result.portionGuidance}
+                </Text>
+              </View>
+            )}
           </Card>
         )}
 
@@ -154,6 +189,14 @@ export default function ScanResultScreen() {
                 {result.safeMessage}
               </Text>
             </View>
+            {result.portionGuidance && (
+              <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 10, paddingTop: 10, borderTopWidth: 1, borderTopColor: theme.colors.border }}>
+                <Ionicons name="restaurant-outline" size={16} color={theme.colors.textTertiary} />
+                <Text style={{ color: theme.colors.textTertiary, fontSize: theme.fontSizes.xs, fontFamily: theme.fontFamilies.body, marginLeft: 6, flex: 1, fontStyle: 'italic' }}>
+                  {result.portionGuidance}
+                </Text>
+              </View>
+            )}
           </Card>
         )}
 
