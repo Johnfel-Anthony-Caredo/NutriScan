@@ -41,8 +41,6 @@ function ConfidenceBadge({ confidence, theme }: { confidence?: number; theme: an
 
   const isHigh = confidence >= 0.8;
   const isMedium = confidence >= 0.5 && confidence < 0.8;
-  const isLow = confidence < 0.5;
-
   const bgColor = isHigh ? '#E8F5E9' : isMedium ? '#FFF8E1' : '#FFEBEE';
   const textColor = isHigh ? '#2E7D32' : isMedium ? '#F57F17' : '#C62828';
   const icon = isHigh ? 'checkmark-circle' : isMedium ? 'help-circle' : 'alert-circle';
@@ -82,7 +80,7 @@ function PortionGuidanceNote({ text, theme }: { text?: string; theme: any }) {
       marginTop: 12,
       paddingTop: 12,
       borderTopWidth: 1,
-      borderTopColor: 'rgba(0,0,0,0.08)',
+      borderTopColor: theme.colors?.border || 'rgba(0,0,0,0.08)',
     }}>
       <Ionicons name="restaurant-outline" size={16} color={theme.colors?.textTertiary || '#999'} />
       <Text style={{
