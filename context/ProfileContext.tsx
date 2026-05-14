@@ -170,11 +170,21 @@ const ProfileContext = createContext<ProfileContextValue | null>(null);
 const STORAGE_KEY = '@nutriscan/profile';
 
 function mapSupabaseProfile(data: any): UserHealthProfile {
-  const conditions = (data?.user_conditions ?? [])
-    .map((row: { condition: HealthCondition }) => row.condition)
-    .filter(Boolean);
+  const conditions = Array.from(
+    new Set(
+      (data?.user_conditions ?? [])
+        .map((row: { condition: HealthCondition }) => row.condition)
+        .filter(Boolean) as HealthCondition[],
+    ),
+  );
 
+  const seenTargets = new Set<MonitoredNutrient>();
   const nutrientTargets = (data?.user_nutrient_targets ?? [])
+    .filter((row: { nutrient: MonitoredNutrient }) => {
+      if (seenTargets.has(row.nutrient)) return false;
+      seenTargets.add(row.nutrient);
+      return true;
+    })
     .map((row: { nutrient: MonitoredNutrient; daily_limit: number; unit: string }) => ({
       nutrient: row.nutrient,
       label: nutrientLabels[row.nutrient] ?? row.nutrient,

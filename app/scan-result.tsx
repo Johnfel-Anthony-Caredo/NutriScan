@@ -215,8 +215,8 @@ export default function ScanResultScreen() {
         {/* ── Nutrients ────────────────────── */}
         <SectionHeader title={relevantNutrients.length > 0 ? 'Key Nutrients to Watch' : 'Nutrition Facts'} />
         <Card>
-          {displayNutrients.map((n) => (
-            <NutrientRow key={n.nutrient} nutrient={n} />
+          {displayNutrients.map((n, i) => (
+            <NutrientRow key={`${n.nutrient}-${i}`} nutrient={n} />
           ))}
           {!showAllNutrients && otherNutrients.length > 0 && relevantNutrients.length > 0 && (
             <TouchableOpacity onPress={() => setShowAllNutrients(true)} style={styles.showMore} accessibilityRole="button">

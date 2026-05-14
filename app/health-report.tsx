@@ -215,7 +215,7 @@ export default function HealthReportScreen() {
             <SectionHeader title="Nutrient Monitoring" />
             <Card>
               {profile.nutrientTargets.map((nt, i) => (
-                <View key={nt.nutrient} style={[styles.nutrientItem, i < profile.nutrientTargets.length - 1 && { borderBottomWidth: 2, borderBottomColor: theme.colors.border }]}>
+                <View key={`${nt.nutrient}-${i}`} style={[styles.nutrientItem, i < profile.nutrientTargets.length - 1 && { borderBottomWidth: 2, borderBottomColor: theme.colors.border }]}>
                   <View style={styles.nutrientHeader}>
                     <Text style={{ color: theme.colors.textPrimary, fontSize: theme.fontSizes.body, fontWeight: theme.fontWeights.medium, fontFamily: theme.fontFamilies.body, flex: 1 }}>{nt.label}</Text>
                     <Text style={{ color: theme.colors.textSecondary, fontSize: theme.fontSizes.sm, fontWeight: theme.fontWeights.semibold, fontFamily: theme.fontFamilies.body }}>

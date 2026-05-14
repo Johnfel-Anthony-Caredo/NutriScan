@@ -477,7 +477,7 @@ function NutrientSummary({ nutrients, theme }: { nutrients: ScanResultData['nutr
       </Text>
       <View style={[styles.nutrientCard, { borderColor: theme.colors.border }]}>
         {displayList.map((n, i) => (
-          <React.Fragment key={n.nutrient}>
+          <React.Fragment key={`${n.nutrient}-${i}`}>
             {i > 0 && <View style={[styles.nutrientDivider, { backgroundColor: theme.colors.border }]} />}
             <View style={styles.nutrientRow}>
               <View style={styles.nutrientLabelWrap}>

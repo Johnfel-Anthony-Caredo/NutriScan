@@ -301,8 +301,8 @@ export default function HomeScreen() {
         <>
           <SectionHeader title="What We're Watching" />
           <Card style={styles.nutrientCard}>
-            {profile.nutrientTargets.slice(0, 4).map((nt) => (
-              <View key={nt.nutrient} style={styles.nutrientRow}>
+            {profile.nutrientTargets.slice(0, 4).map((nt, i) => (
+              <View key={`${nt.nutrient}-${i}`} style={styles.nutrientRow}>
                 <View style={[styles.nutrientDot, { backgroundColor: theme.colors.primary, borderColor: theme.colors.border }]} />
                 <Text style={{ color: theme.colors.textPrimary, fontSize: theme.fontSizes.body, fontFamily: theme.fontFamilies.body, flex: 1 }}>{nt.label}</Text>
                 <Text style={{ color: theme.colors.textSecondary, fontSize: theme.fontSizes.sm, fontFamily: theme.fontFamilies.body }}>≤ {nt.dailyLimit} {nt.unit}</Text>

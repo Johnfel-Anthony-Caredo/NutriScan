@@ -106,8 +106,8 @@ export function ProfileSummaryCard({ profile, compact = false }: ProfileSummaryC
               Monitored Nutrients
             </Text>
           </View>
-          {profile.nutrientTargets.map((nt) => (
-            <View key={nt.nutrient} style={styles.nutrientRow}>
+          {profile.nutrientTargets.map((nt, i) => (
+            <View key={`${nt.nutrient}-${i}`} style={styles.nutrientRow}>
               <Text
                 style={{
                   color: theme.colors.textPrimary,

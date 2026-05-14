@@ -2,12 +2,12 @@
  * Landing Screen — welcoming first-open screen before auth.
  *
  * Layout:
- *   - Hero image fills the ENTIRE screen (absolute, full height)
- *   - One long LinearGradient overlays: transparent → #fff
- *     Starting at 32% of screen height, ending at bottom
- *     This eliminates any visible seam — the image bleeds right into white
- *   - Logo bubble top-left over the hero
- *   - Content (headline, subtitle, CTAs) pinned to the bottom
+ *   - Hero image fills the top portion (55% screen), clipped with rounded bottom
+ *   - LinearGradient overlaid on the BOTTOM of the hero image only
+ *     (transparent → #fff) so the image melts into the white content area
+ *   - Content area is 100% solid white — no transparency, fully readable
+ *   - Logo bubble overlaid top-left on the hero
+ *   - Bold headline + subtitle + gradient CTA + secondary link
  *
  * Authenticated users are redirected by _layout.tsx route guard.
  */
@@ -28,36 +28,23 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const { height: SCREEN_H, width: SCREEN_W } = Dimensions.get('window');
-
-// The gradient starts this far from the top — deep enough into the image
-// to avoid any visible boundary between image and white
-const GRADIENT_START_Y = SCREEN_H * 0.32;
+const HERO_HEIGHT = SCREEN_H * 0.52;
 
 export default function LandingScreen() {
   const theme = useTheme();
   const router = useRouter();
   const insets = useSafeAreaInsets();
 
-  const heroScale   = useRef(new Animated.Value(1.06)).current;
-  const logoOpacity = useRef(new Animated.Value(0)).current;
+  const heroScale   = useRef(new Animated.Value(1.07)).current;
   const contentAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
-    // Hero subtle zoom-out on mount
     Animated.timing(heroScale, {
       toValue: 1,
       duration: 1200,
       useNativeDriver: true,
     }).start();
 
-    // Logo fades in
-    Animated.timing(logoOpacity, {
-      toValue: 1,
-      duration: 700,
-      useNativeDriver: true,
-    }).start();
-
-    // Content slides up from below
     setTimeout(() => {
       Animated.spring(contentAnim, {
         toValue: 1,
@@ -65,56 +52,44 @@ export default function LandingScreen() {
         tension: 45,
         useNativeDriver: true,
       }).start();
-    }, 250);
+    }, 200);
   }, []);
 
   const contentTranslateY = contentAnim.interpolate({
     inputRange: [0, 1],
-    outputRange: [32, 0],
+    outputRange: [28, 0],
   });
 
   return (
-    <View style={styles.root}>
+    <View style={[styles.root, { paddingTop: insets.top }]}>
 
-      {/* ── Hero: fills the entire screen ─────────────────────────────── */}
-      <Animated.View style={[StyleSheet.absoluteFill, { transform: [{ scale: heroScale }] }]}>
-        <Image
-          source={require('../assets/images/Salad.jpg')}
-          style={styles.heroImage}
-          resizeMode="cover"
-        />
-      </Animated.View>
-
-      {/* ── Gradient: transparent → white, tall single pass ───────────── */}
-      {/* Starts well inside the image, fades to pure #fff at bottom.     */}
-      {/* No mid-stop with opacity — pure two-stop so there's no band.    */}
-      <LinearGradient
-        colors={['transparent', '#ffffff']}
-        locations={[0, 1]}
-        style={[styles.gradient, { top: GRADIENT_START_Y }]}
-        pointerEvents="none"
-      />
-
-      {/* White floor below the gradient — ensures bottom is truly opaque */}
-      <View style={[styles.whiteFloor, { bottom: 0 }]} pointerEvents="none" />
-
-      {/* ── Logo bubble, top-left ──────────────────────────────────────── */}
-      <Animated.View style={[styles.logoWrap, { top: insets.top + 16, opacity: logoOpacity }]}>
-        <View style={styles.logoBubble}>
+      {/* ── Hero block (clipped, image + gradient overlay) ────────── */}
+      <View style={styles.heroBlock}>
+        <Animated.View style={[StyleSheet.absoluteFill, { transform: [{ scale: heroScale }] }]}>
           <Image
-            source={require('../assets/images/Logo.png')}
-            style={styles.logoIcon}
-            resizeMode="contain"
+            source={require('../assets/images/Salad.jpg')}
+            style={styles.heroImage}
+            resizeMode="cover"
           />
-        </View>
-      </Animated.View>
+        </Animated.View>
 
-      {/* ── Content: headline, subtitle, CTAs ────────────────────────── */}
+        {/* Gradient melts the bottom of the hero INTO the white content below */}
+        <LinearGradient
+          colors={['transparent', '#ffffff']}
+          locations={[0.45, 1]}
+          style={StyleSheet.absoluteFill}
+          pointerEvents="none"
+        />
+
+
+      </View>
+
+      {/* ── Content — solid white, always 100% readable ───────────── */}
       <Animated.View
         style={[
           styles.content,
           {
-            paddingBottom: Math.max(insets.bottom, 24) + 4,
+            paddingBottom: Math.max(insets.bottom, 24) + 8,
             opacity: contentAnim,
             transform: [{ translateY: contentTranslateY }],
           },
@@ -145,7 +120,7 @@ export default function LandingScreen() {
           primaryColor={theme.colors.primary}
         />
 
-        {/* Secondary */}
+        {/* Secondary link */}
         <TouchableOpacity
           onPress={() => router.push('/(auth)/login')}
           style={styles.loginRow}
@@ -179,7 +154,7 @@ function GradientCTA({
   const pressOut = () => Animated.spring(scale, { toValue: 1,    tension: 110, friction: 7, useNativeDriver: true }).start();
 
   return (
-    <Animated.View style={{ transform: [{ scale }], marginBottom: 4 }}>
+    <Animated.View style={{ transform: [{ scale }], marginBottom: 6 }}>
       <TouchableOpacity
         onPress={onPress}
         onPressIn={pressIn}
@@ -195,12 +170,14 @@ function GradientCTA({
           end={{ x: 1, y: 0 }}
           style={styles.ctaGradient}
         >
-          <Text style={[styles.ctaLabel, { fontFamily: 'Space Grotesk' }]}>{label}</Text>
+          <Text style={styles.ctaLabel}>{label}</Text>
         </LinearGradient>
       </TouchableOpacity>
     </Animated.View>
   );
 }
+
+
 
 // ─── Styles ───────────────────────────────────────────────────────────────────
 const styles = StyleSheet.create({
@@ -209,40 +186,29 @@ const styles = StyleSheet.create({
     backgroundColor: '#ffffff',
   },
 
+  // Hero block — fixed height, clips the image + bottom gradient
+  heroBlock: {
+    width: SCREEN_W,
+    height: HERO_HEIGHT,
+    overflow: 'hidden',
+    backgroundColor: '#e8f5e9',
+  },
   heroImage: {
     width: SCREEN_W,
-    height: SCREEN_H,
-  },
-
-  // Gradient runs from GRADIENT_START_Y all the way to the bottom of the screen.
-  // Height = SCREEN_H - GRADIENT_START_Y ensures full coverage with no seam.
-  gradient: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    height: SCREEN_H - GRADIENT_START_Y,
-  },
-
-  // Solid white block that fills the bottom few pixels in case
-  // of any sub-pixel rounding gaps on the gradient edge.
-  whiteFloor: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    height: 2,
-    backgroundColor: '#ffffff',
+    height: HERO_HEIGHT,
   },
 
   // Logo
   logoWrap: {
     position: 'absolute',
+    top: 16,
     left: 20,
   },
   logoBubble: {
     width: 46,
     height: 46,
     borderRadius: 14,
-    backgroundColor: 'rgba(255,255,255,0.90)',
+    backgroundColor: 'rgba(255,255,255,0.92)',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -251,14 +217,13 @@ const styles = StyleSheet.create({
     height: 30,
   },
 
-  // Content area
+  // Content — solid white, stacks below hero naturally
   content: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
+    flex: 1,
+    backgroundColor: '#ffffff',
     paddingHorizontal: 28,
-    paddingTop: 8,
+    paddingTop: 6,
+    justifyContent: 'flex-end',
   },
   headlineBlack: {
     fontSize: 36,

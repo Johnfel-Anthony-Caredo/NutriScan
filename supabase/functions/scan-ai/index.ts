@@ -176,6 +176,16 @@ Rules:
     
     const resultData = JSON.parse(jsonOutput.trim())
 
+    // Deduplicate nutrients by name to avoid React key collisions on the client
+    if (Array.isArray(resultData.nutrients)) {
+      const seen = new Set<string>()
+      resultData.nutrients = resultData.nutrients.filter((n: { nutrient: string }) => {
+        if (seen.has(n.nutrient)) return false
+        seen.add(n.nutrient)
+        return true
+      })
+    }
+
     return new Response(
       JSON.stringify(resultData),
       { headers: { "Content-Type": "application/json", ...corsHeaders } },
