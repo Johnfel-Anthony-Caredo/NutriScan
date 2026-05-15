@@ -179,6 +179,7 @@ export default function ConditionsScreen() {
             selected={selectedCondition === 'other'}
             onPress={() => handleSelect('other')}
             style={styles.bottomCard}
+            cardStyle={styles.bottomCardInner}
             flat
           />
           <SelectableCard
@@ -188,6 +189,7 @@ export default function ConditionsScreen() {
             selected={selectedCondition === 'unsure'}
             onPress={() => handleSelect('unsure')}
             style={styles.bottomCard}
+            cardStyle={styles.bottomCardInner}
             flat
           />
         </View>
@@ -260,5 +262,9 @@ const styles = StyleSheet.create({
   },
   bottomCard: {
     flex: 1,
+  },
+  bottomCardInner: {
+    minHeight: 120,
+    justifyContent: 'center',
   },
 });

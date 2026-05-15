@@ -1,7 +1,7 @@
-import React from 'react';
-import { TouchableOpacity, Text, View, StyleSheet, Platform, type ViewStyle } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '@/hooks/useTheme';
+import { Ionicons } from '@expo/vector-icons';
+import React from 'react';
+import { Platform, StyleSheet, Text, TouchableOpacity, View, type ViewStyle } from 'react-native';
 
 interface SelectableCardProps {
   label: string;
@@ -10,6 +10,7 @@ interface SelectableCardProps {
   onPress: () => void;
   subtitle?: string;
   style?: ViewStyle;
+  cardStyle?: ViewStyle;
   flat?: boolean;
 }
 
@@ -20,6 +21,7 @@ export function SelectableCard({
   onPress,
   subtitle,
   style,
+  cardStyle,
   flat = false,
 }: SelectableCardProps) {
   const theme = useTheme();
@@ -45,6 +47,7 @@ export function SelectableCard({
             borderColor: theme.colors.border,
             borderRadius: theme.radius.md,
           },
+          cardStyle,
         ]}
       >
         <Ionicons

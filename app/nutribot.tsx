@@ -21,7 +21,7 @@ import { createConversation, getMessages, insertMessage } from '@/services/supab
 import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { ActivityIndicator, FlatList, KeyboardAvoidingView, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, FlatList, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 type SuggestionItem = {
@@ -58,8 +58,9 @@ export default function NutriBotScreen() {
   const insets = useSafeAreaInsets();
   const flatListRef = useRef<FlatList>(null);
 
-  const TOPBAR_HEIGHT = 56;
   const effectiveBottomInset = insets.bottom || 16;
+  const inputBarHeight = 72;
+  const suggestionsHeight = 60;
 
   const hasConditions = profile.conditions.length > 0;
   const isFirstMessage = messages.length <= 1 && !isTyping;
@@ -201,9 +202,10 @@ export default function NutriBotScreen() {
   );
   const conditionsOverflow = profile.conditions.length > 3;
 
+  const listFooter = isTyping ? <NutriBotShimmer /> : null;
+
   return (
     <AppScreen noPadding>
-      <KeyboardAvoidingView style={{ flex: 1 }} behavior="padding" keyboardVerticalOffset={insets.top + TOPBAR_HEIGHT}>
         <View style={{ flex: 1 }}>
           <TopBar
             title="NutriBot"
@@ -261,130 +263,141 @@ export default function NutriBotScreen() {
             </View>
           )}
 
-          {isLoadingHistory ? (
-            <View style={styles.loadingWrap}>
-              <ActivityIndicator size="large" color={theme.colors.primary} />
-            </View>
-          ) : (
-            <>
-              {/* Messages list */}
-              <FlatList
-                ref={flatListRef}
-                data={messages}
-                keyExtractor={keyExtractor}
-                contentContainerStyle={[
-                  styles.messageList,
-                  isFirstMessage && hasConditions && styles.messageListWithContext,
-                ]}
-                style={{ flex: 1 }}
-                showsVerticalScrollIndicator={false}
-                onContentSizeChange={scrollToEnd}
-                renderItem={renderBubble}
-                ListFooterComponent={isTyping ? <NutriBotShimmer /> : null}
-                windowSize={5}
-                maxToRenderPerBatch={10}
-                removeClippedSubviews
-              />
-
-              {/* Quick suggestions — floating chip row when conversation is fresh */}
-              {isFirstMessage && (
-                <View style={styles.suggestionsOuter}>
-                  <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chipsWrap}>
-                    {SUGGESTIONS.map((s) => (
-                      <TouchableOpacity
-                        key={s.text}
-                        onPress={() => handleChip(s.text)}
-                        style={[
-                          styles.chip,
-                          {
-                            backgroundColor: theme.colors.surfaceSecondary,
-                            borderColor: theme.colors.border,
-                          },
-                        ]}
-                        accessibilityRole="button"
-                        activeOpacity={0.7}
-                      >
-                        <Ionicons name={s.icon} size={15} color={theme.colors.primary} style={{ marginRight: 6 }} />
-                        <Text
-                          style={{
-                            color: theme.colors.textPrimary,
-                            fontSize: theme.fontSizes.sm,
-                            fontFamily: theme.fontFamilies.body,
-                            fontWeight: theme.fontWeights.medium,
-                          }}
-                        >
-                          {s.text}
-                        </Text>
-                      </TouchableOpacity>
-                    ))}
-                  </ScrollView>
+          <KeyboardAvoidingView
+            behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+            style={{ flex: 1 }}
+          >
+            {/* Messages area */}
+            <View style={{ flex: 1 }}>
+              {isLoadingHistory ? (
+                <View style={styles.loadingWrap}>
+                  <ActivityIndicator size="large" color={theme.colors.primary} />
                 </View>
+              ) : (
+                <FlatList
+                  ref={flatListRef}
+                  data={messages}
+                  keyExtractor={keyExtractor}
+                  contentContainerStyle={[
+                    styles.messageList,
+                    isFirstMessage && hasConditions && styles.messageListWithContext,
+                    {
+                      paddingBottom:
+                        inputBarHeight +
+                        effectiveBottomInset +
+                        (isFirstMessage ? suggestionsHeight : 0) +
+                        8,
+                    },
+                  ]}
+                  style={{ flex: 1 }}
+                  showsVerticalScrollIndicator={false}
+                  onContentSizeChange={scrollToEnd}
+                  renderItem={renderBubble}
+                  ListFooterComponent={listFooter}
+                  windowSize={5}
+                  maxToRenderPerBatch={10}
+                  removeClippedSubviews
+                />
               )}
+            </View>
 
-              {/* Input bar */}
+            {/* Quick suggestions — docked above input */}
+            {isFirstMessage && (
+              <View style={styles.suggestionsOuter}>
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chipsWrap}>
+                  {SUGGESTIONS.map((s) => (
+                    <TouchableOpacity
+                      key={s.text}
+                      onPress={() => handleChip(s.text)}
+                      style={[
+                        styles.chip,
+                        {
+                          backgroundColor: theme.colors.surfaceSecondary,
+                          borderColor: theme.colors.border,
+                        },
+                      ]}
+                      accessibilityRole="button"
+                      activeOpacity={0.7}
+                    >
+                      <Ionicons name={s.icon} size={15} color={theme.colors.primary} style={{ marginRight: 6 }} />
+                      <Text
+                        style={{
+                          color: theme.colors.textPrimary,
+                          fontSize: theme.fontSizes.sm,
+                          fontFamily: theme.fontFamilies.body,
+                          fontWeight: theme.fontWeights.medium,
+                        }}
+                      >
+                        {s.text}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </ScrollView>
+              </View>
+            )}
+
+            {/* Input bar */}
+            <View
+              style={[
+                styles.inputBar,
+                {
+                  backgroundColor: theme.colors.surface,
+                  borderTopColor: theme.colors.border,
+                  shadowColor: theme.colors.shadow,
+                  paddingBottom: effectiveBottomInset,
+                },
+              ]}
+            >
               <View
                 style={[
-                  styles.inputBar,
+                  styles.inputField,
                   {
-                    backgroundColor: theme.colors.surface,
-                    borderTopColor: theme.colors.border,
-                    shadowColor: theme.colors.shadow,
-                    paddingBottom: effectiveBottomInset,
+                    backgroundColor: theme.colors.surfaceSecondary,
+                    borderColor: theme.colors.border,
                   },
                 ]}
               >
-                <View
+                <TextInput
+                  value={input}
+                  onChangeText={setInput}
+                  placeholder="Ask NutriBot anything..."
+                  placeholderTextColor={theme.colors.textTertiary}
+                  style={{
+                    flex: 1,
+                    height: 44,
+                    color: theme.colors.textPrimary,
+                    fontSize: theme.fontSizes.body,
+                    fontFamily: theme.fontFamilies.body,
+                    paddingHorizontal: 16,
+                  }}
+                  onSubmitEditing={handleSend}
+                  returnKeyType="send"
+                  accessibilityLabel="Chat message input"
+                />
+                <TouchableOpacity
+                  onPress={handleSend}
+                  disabled={!input.trim() || isTyping}
                   style={[
-                    styles.inputField,
+                    styles.sendBtn,
                     {
-                      backgroundColor: theme.colors.surfaceSecondary,
+                      backgroundColor: input.trim() && !isTyping ? theme.colors.primary : theme.colors.surfaceSecondary,
                       borderColor: theme.colors.border,
                     },
                   ]}
+                  accessibilityRole="button"
+                  accessibilityLabel="Send message"
+                  activeOpacity={0.7}
                 >
-                  <TextInput
-                    value={input}
-                    onChangeText={setInput}
-                    placeholder="Ask NutriBot anything..."
-                    placeholderTextColor={theme.colors.textTertiary}
-                    style={{
-                      flex: 1,
-                      height: 44,
-                      color: theme.colors.textPrimary,
-                      fontSize: theme.fontSizes.body,
-                      fontFamily: theme.fontFamilies.body,
-                      paddingHorizontal: 16,
-                    }}
-                    onSubmitEditing={handleSend}
-                    returnKeyType="send"
-                    accessibilityLabel="Chat message input"
+                  <Ionicons
+                    name="arrow-up"
+                    size={20}
+                    color={input.trim() && !isTyping ? '#FFFFFF' : theme.colors.textTertiary}
                   />
-                  <TouchableOpacity
-                    onPress={handleSend}
-                    disabled={!input.trim() || isTyping}
-                    style={[
-                      styles.sendBtn,
-                      {
-                        backgroundColor: input.trim() && !isTyping ? theme.colors.primary : theme.colors.surfaceSecondary,
-                        borderColor: theme.colors.border,
-                      },
-                    ]}
-                    accessibilityRole="button"
-                    accessibilityLabel="Send message"
-                    activeOpacity={0.7}
-                  >
-                    <Ionicons
-                      name="arrow-up"
-                      size={20}
-                      color={input.trim() && !isTyping ? '#FFFFFF' : theme.colors.textTertiary}
-                    />
-                  </TouchableOpacity>
-                </View>
+                </TouchableOpacity>
               </View>
-            </>
-          )}
+            </View>
+          </KeyboardAvoidingView>
         </View>
-      </KeyboardAvoidingView>
     </AppScreen>
   );
 }
