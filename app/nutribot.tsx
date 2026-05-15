@@ -21,7 +21,8 @@ import { createConversation, getMessages, insertMessage } from '@/services/supab
 import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { ActivityIndicator, FlatList, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, FlatList, KeyboardAvoidingView, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 type SuggestionItem = {
   text: string;
@@ -54,7 +55,11 @@ export default function NutriBotScreen() {
   const [input, setInput] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const [isLoadingHistory, setIsLoadingHistory] = useState(!!params.conversationId);
+  const insets = useSafeAreaInsets();
   const flatListRef = useRef<FlatList>(null);
+
+  const TOPBAR_HEIGHT = 56;
+  const effectiveBottomInset = insets.bottom || 16;
 
   const hasConditions = profile.conditions.length > 0;
   const isFirstMessage = messages.length <= 1 && !isTyping;
@@ -198,7 +203,7 @@ export default function NutriBotScreen() {
 
   return (
     <AppScreen noPadding>
-      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined} keyboardVerticalOffset={0}>
+      <KeyboardAvoidingView style={{ flex: 1 }} behavior="padding" keyboardVerticalOffset={insets.top + TOPBAR_HEIGHT}>
         <View style={{ flex: 1 }}>
           <TopBar
             title="NutriBot"
@@ -324,6 +329,7 @@ export default function NutriBotScreen() {
                     backgroundColor: theme.colors.surface,
                     borderTopColor: theme.colors.border,
                     shadowColor: theme.colors.shadow,
+                    paddingBottom: effectiveBottomInset,
                   },
                 ]}
               >
@@ -442,7 +448,6 @@ const styles = StyleSheet.create({
   inputBar: {
     paddingHorizontal: 12,
     paddingVertical: 8,
-    paddingBottom: 22,
     borderTopWidth: 3,
     shadowOffset: { width: 0, height: -3 },
     shadowOpacity: 1,

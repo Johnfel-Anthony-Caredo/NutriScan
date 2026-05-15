@@ -212,7 +212,7 @@ export default function ProfileScreen() {
 
       {/* ── Quick Stats ────────────────── */}
       <SectionHeader title="My Stats" />
-      <View style={styles.statsGrid}>{[{ icon: 'scan' as const, label: 'Total Scans', value: stats.total.toString() }, { icon: 'checkmark-circle' as const, label: 'Safe Scans', value: stats.total > 0 ? `${stats.safePercent}%` : '—' }, { icon: 'flame' as const, label: 'Day Streak', value: stats.streak.toString() }].map((stat) => (<Card key={stat.label} style={styles.statCard}><View style={[styles.statIconWrap, { backgroundColor: theme.colors.primaryLight, borderColor: theme.colors.border }]}><Ionicons name={stat.icon} size={20} color={theme.colors.primary} /></View><Text style={{ color: theme.colors.textSecondary, fontSize: theme.fontSizes.xs, fontWeight: theme.fontWeights.medium, fontFamily: theme.fontFamilies.body, marginTop: 12, textAlign: 'center' }}>{stat.label}</Text><Text style={{ color: theme.colors.textPrimary, fontSize: theme.fontSizes['2xl'], fontWeight: theme.fontWeights.bold, fontFamily: theme.fontFamilies.heading, marginTop: 4, textAlign: 'center' }}>{stat.value}</Text></Card>))}</View>
+      <View style={styles.statsGrid}>{[{ icon: 'scan' as const, label: 'Total Scans', value: stats.total.toString() }, { icon: 'checkmark-circle' as const, label: 'Safe Scans', value: stats.total > 0 ? `${stats.safePercent}%` : '—' }, { icon: 'flame' as const, label: 'Day Streak', value: stats.streak.toString() }].map((stat) => (<Card key={stat.label} noPadding style={styles.statCard}><View style={[styles.statIconWrap, { backgroundColor: theme.colors.primaryLight, borderColor: theme.colors.border }]}><Ionicons name={stat.icon} size={22} color={theme.colors.primary} /></View><Text style={{ color: theme.colors.textSecondary, fontSize: theme.fontSizes.xs, fontWeight: theme.fontWeights.medium, fontFamily: theme.fontFamilies.body, marginTop: 10, textAlign: 'center' }}>{stat.label}</Text><Text style={{ color: theme.colors.textPrimary, fontSize: theme.fontSizes['2xl'], fontWeight: theme.fontWeights.bold, fontFamily: theme.fontFamilies.heading, marginTop: 2, textAlign: 'center' }}>{stat.value}</Text></Card>))}</View>
 
       {/* ── Nutrient Monitoring ─────────── */}
       {profile.nutrientTargets.length > 0 && (
@@ -310,7 +310,7 @@ const styles = StyleSheet.create({
   goalChip: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 14, paddingVertical: 10, borderWidth: 3 },
   goalEmoji: { fontSize: 18, marginRight: 8 },
   statsGrid: { flexDirection: 'row', gap: 12, marginBottom: 28 },
-  statCard: { flex: 1, alignItems: 'center', paddingVertical: 18, minHeight: 130 },
+  statCard: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingVertical: 20, minHeight: 130 },
   statIconWrap: { width: 42, height: 42, borderRadius: 21, alignItems: 'center', justifyContent: 'center', borderWidth: 2 },
   nutrientRow: { flexDirection: 'row', alignItems: 'flex-start', paddingVertical: 14, gap: 10 },
   nutrientDot: { width: 10, height: 10, borderRadius: 5, marginTop: 6, borderWidth: 2 },
