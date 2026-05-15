@@ -8,15 +8,17 @@ interface CardProps {
   noPadding?: boolean;
   /** Use mint tint background instead of white (default: false) */
   mint?: boolean;
+  /** Remove shadow, offset effect, and reduce border for a flat clean look */
+  flat?: boolean;
 }
 
-export function Card({ children, style, noPadding = false, mint = false }: CardProps) {
+export function Card({ children, style, noPadding = false, mint = false, flat = false }: CardProps) {
   const theme = useTheme();
 
   return (
-    <View style={styles.shadowWrapper}>
+    <View style={flat ? undefined : styles.shadowWrapper}>
       {/* Hard shadow block — only visible on Android where shadowRadius:0 doesn't work */}
-      {Platform.OS === 'android' && (
+      {!flat && Platform.OS === 'android' && (
         <View
           style={[
             styles.shadowBlock,
@@ -35,7 +37,8 @@ export function Card({ children, style, noPadding = false, mint = false }: CardP
             backgroundColor: mint ? theme.colors.surfaceSecondary : theme.colors.surface,
             borderRadius: theme.radius.md,
             borderColor: theme.colors.border,
-            ...(Platform.OS === 'ios' ? theme.shadows.md : {}),
+            borderWidth: flat ? 2 : 3,
+            ...(flat ? {} : Platform.OS === 'ios' ? theme.shadows.md : {}),
           },
           !noPadding && { padding: theme.spacing.md },
           style,

@@ -1,3 +1,10 @@
+/**
+ * NutriBotShimmer — polished loading indicator for bot responses.
+ *
+ * Animated shimmer lines inside a bot-style bubble with avatar.
+ * Uses a smooth opacity pulse for a clean, modern feel.
+ */
+
 import React, { useEffect, useRef } from 'react';
 import { View, Animated, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
@@ -5,34 +12,34 @@ import { useTheme } from '@/hooks/useTheme';
 
 export function NutriBotShimmer() {
   const theme = useTheme();
-  const animatedValue = useRef(new Animated.Value(0)).current;
+  const pulseAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
     Animated.loop(
       Animated.sequence([
-        Animated.timing(animatedValue, {
+        Animated.timing(pulseAnim, {
           toValue: 1,
-          duration: 800,
+          duration: 1200,
           useNativeDriver: true,
         }),
-        Animated.timing(animatedValue, {
+        Animated.timing(pulseAnim, {
           toValue: 0,
-          duration: 800,
+          duration: 1200,
           useNativeDriver: true,
         }),
-      ])
+      ]),
     ).start();
-  }, [animatedValue]);
+  }, [pulseAnim]);
 
-  const opacity = animatedValue.interpolate({
+  const opacity = pulseAnim.interpolate({
     inputRange: [0, 1],
-    outputRange: [0.3, 0.7],
+    outputRange: [0.25, 0.6],
   });
 
   return (
-    <View style={[styles.row, { paddingHorizontal: 16, paddingRight: 48 }]}>
-      <View style={[styles.avatar, { backgroundColor: theme.colors.primaryLight, borderColor: theme.colors.border }]}>
-        <Ionicons name="chatbubble-ellipses" size={14} color={theme.colors.primary} />
+    <View style={[styles.row, { paddingHorizontal: 16, paddingRight: 52 }]}>
+      <View style={[styles.avatar, { backgroundColor: theme.colors.primary, borderColor: theme.colors.border }]}>
+        <Ionicons name="chatbubble-ellipses" size={14} color="#FFFFFF" />
       </View>
       <View
         style={[
@@ -40,14 +47,31 @@ export function NutriBotShimmer() {
           {
             backgroundColor: theme.colors.surface,
             borderColor: theme.colors.border,
-            borderRadius: theme.radius.lg,
+            shadowColor: theme.colors.shadow,
           },
         ]}
       >
         <View style={styles.shimmerWrap}>
-          <Animated.View style={[styles.shimmerLine, { width: '72%', backgroundColor: theme.colors.surfaceSecondary, opacity }]} />
-          <Animated.View style={[styles.shimmerLine, { width: '58%', backgroundColor: theme.colors.surfaceSecondary, opacity }]} />
-          <Animated.View style={[styles.shimmerLine, { width: '81%', backgroundColor: theme.colors.surfaceSecondary, opacity }]} />
+          <Animated.View
+            style={[
+              styles.shimmerLine,
+              { backgroundColor: theme.colors.surfaceSecondary, opacity },
+            ]}
+          />
+          <Animated.View
+            style={[
+              styles.shimmerLine,
+              styles.lineMedium,
+              { backgroundColor: theme.colors.surfaceSecondary, opacity },
+            ]}
+          />
+          <Animated.View
+            style={[
+              styles.shimmerLine,
+              styles.lineShort,
+              { backgroundColor: theme.colors.surfaceSecondary, opacity },
+            ]}
+          />
         </View>
       </View>
     </View>
@@ -55,9 +79,30 @@ export function NutriBotShimmer() {
 }
 
 const styles = StyleSheet.create({
-  row: { flexDirection: 'row', alignItems: 'flex-end', marginBottom: 12 },
-  avatar: { width: 28, height: 28, borderRadius: 14, justifyContent: 'center', alignItems: 'center', marginRight: 8, marginBottom: 4, borderWidth: 2 },
-  bubble: { padding: 14, borderWidth: 3, width: '75%' },
+  row: { flexDirection: 'row', alignItems: 'flex-end', marginBottom: 14 },
+  avatar: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 10,
+    marginBottom: 4,
+    borderWidth: 2,
+  },
+  bubble: {
+    padding: 16,
+    borderWidth: 2,
+    borderTopLeftRadius: 4,
+    borderTopRightRadius: 20,
+    borderBottomRightRadius: 20,
+    borderBottomLeftRadius: 20,
+    width: '70%',
+    shadowOffset: { width: 4, height: 4 },
+    shadowOpacity: 1,
+    shadowRadius: 0,
+    elevation: 6,
+  },
   shimmerWrap: {
     gap: 10,
     width: '100%',
@@ -65,5 +110,12 @@ const styles = StyleSheet.create({
   shimmerLine: {
     height: 12,
     borderRadius: 6,
+    width: '82%',
+  },
+  lineMedium: {
+    width: '65%',
+  },
+  lineShort: {
+    width: '45%',
   },
 });

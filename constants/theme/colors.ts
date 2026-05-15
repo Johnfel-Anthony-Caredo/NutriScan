@@ -54,6 +54,13 @@ export const avoid = {
   icon: '#FF6B57',
 } as const;
 
+export const invalid = {
+  bg: '#F3F4F6',
+  text: '#6B7280',
+  border: '#D1D5DB',
+  icon: '#9CA3AF',
+} as const;
+
 // ── Neutral Scale ──────────────────────────────────────────────────
 export const neutral = {
   0: '#FFFFFF',
@@ -103,6 +110,7 @@ export const colors = {
   safe,
   caution,
   avoid,
+  invalid,
 
   // Misc
   overlay: 'rgba(10, 10, 10, 0.45)',

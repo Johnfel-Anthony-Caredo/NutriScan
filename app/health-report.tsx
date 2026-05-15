@@ -16,7 +16,7 @@ import { useTheme } from '@/hooks/useTheme';
 import { getWeeklyScanLogs, type ScanLogRow } from '@/services/supabaseService';
 import { Ionicons } from '@expo/vector-icons';
 import React, { useEffect, useState } from 'react';
-import { Alert, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 interface ReportData {
   period: string;
@@ -24,19 +24,21 @@ interface ReportData {
   safe: number;
   caution: number;
   avoid: number;
+  invalid: number;
   riskyFoods: { name: string; count: number; tag: string }[];
 }
 
 function buildReportData(rows: ScanLogRow[]): ReportData {
-  let safe = 0, caution = 0, avoid = 0;
+  let safe = 0, caution = 0, avoid = 0, invalid = 0;
   const foodCounts: Record<string, { count: number; tag: string }> = {};
 
   rows.forEach((row) => {
     if (row.verdict === 'safe') safe++;
     else if (row.verdict === 'caution') caution++;
     else if (row.verdict === 'avoid') avoid++;
+    else if (row.verdict === 'invalid') invalid++;
 
-    if (row.verdict !== 'safe') {
+    if (row.verdict === 'caution' || row.verdict === 'avoid') {
       if (!foodCounts[row.food_name]) {
         foodCounts[row.food_name] = { count: 0, tag: row.verdict === 'avoid' ? 'HIGH RISK' : 'MODERATE' };
       }
@@ -51,10 +53,11 @@ function buildReportData(rows: ScanLogRow[]): ReportData {
 
   return {
     period: 'Last 7 Days',
-    totalScans: safe + caution + avoid,
+    totalScans: safe + caution + avoid + invalid,
     safe,
     caution,
     avoid,
+    invalid,
     riskyFoods,
   };
 }
@@ -125,10 +128,11 @@ export default function HealthReportScreen() {
   }
 
   const r = reportData;
-  const total = r.safe + r.caution + r.avoid;
+  const total = r.safe + r.caution + r.avoid + r.invalid;
   const safePct = total > 0 ? Math.round((r.safe / total) * 100) : 0;
   const cautionPct = total > 0 ? Math.round((r.caution / total) * 100) : 0;
-  const avoidPct = total > 0 ? 100 - safePct - cautionPct : 0;
+  const avoidPct = total > 0 ? Math.round((r.avoid / total) * 100) : 0;
+  const invalidPct = total > 0 ? 100 - safePct - cautionPct - avoidPct : 0;
 
   return (
     <AppScreen scroll noPadding>
@@ -165,6 +169,7 @@ export default function HealthReportScreen() {
                 { label: 'Safe', count: r.safe, pct: safePct, color: theme.colors.safe.icon },
                 { label: 'Caution', count: r.caution, pct: cautionPct, color: theme.colors.caution.icon },
                 { label: 'Avoid', count: r.avoid, pct: avoidPct, color: theme.colors.avoid.icon },
+                { label: 'Invalid', count: r.invalid, pct: invalidPct, color: theme.colors.invalid.icon },
               ].map((item) => (
                 <View key={item.label} style={styles.breakdownItem}>
                   <View style={[styles.breakdownDot, { backgroundColor: item.color, borderColor: theme.colors.border }]} />
@@ -187,7 +192,7 @@ export default function HealthReportScreen() {
           </View>
           <View style={{ paddingVertical: 8 }}>
             <Text style={{ color: theme.colors.textPrimary, fontSize: theme.fontSizes.body, fontFamily: theme.fontFamilies.body }}>
-              🟢 {r.safe} Safe · 🟡 {r.caution} Caution · 🔴 {r.avoid} Avoid
+              🟢 {r.safe} Safe · 🟡 {r.caution} Caution · 🔴 {r.avoid} Avoid{r.invalid > 0 ? ` · ⚪ ${r.invalid} Invalid` : ''}
             </Text>
           </View>
         </Card>
@@ -230,28 +235,6 @@ export default function HealthReportScreen() {
             </Card>
           </>
         )}
-
-        {/* ── Actions ─────────────────── */}
-        <View style={{ marginTop: 24, gap: 10 }}>
-          <TouchableOpacity
-            onPress={() => Alert.alert('Share', 'Health summary will be exported as an image.')}
-            style={[styles.actionBtn, { backgroundColor: theme.colors.primary, borderColor: theme.colors.border, borderRadius: theme.radius.md }]}
-            accessibilityRole="button"
-          >
-            <Ionicons name="share-outline" size={20} color="#FFFFFF" />
-            <Text style={{ color: '#FFFFFF', fontSize: theme.fontSizes.body, fontWeight: theme.fontWeights.semibold, fontFamily: theme.fontFamilies.body, marginLeft: 8 }}>Share as Image</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            disabled
-            style={[styles.actionBtn, { backgroundColor: theme.colors.surfaceSecondary, borderColor: theme.colors.border, borderRadius: theme.radius.md, opacity: 0.5 }]}
-          >
-            <Ionicons name="download-outline" size={20} color={theme.colors.textTertiary} />
-            <Text style={{ color: theme.colors.textTertiary, fontSize: theme.fontSizes.body, fontWeight: theme.fontWeights.medium, fontFamily: theme.fontFamilies.body, marginLeft: 8 }}>Export CSV</Text>
-            <View style={[styles.comingSoon, { backgroundColor: theme.colors.caution.bg, borderColor: theme.colors.border, borderRadius: theme.radius.full, marginLeft: 8 }]}>
-              <Text style={{ color: theme.colors.caution.text, fontSize: 10, fontWeight: theme.fontWeights.semibold, fontFamily: theme.fontFamilies.heading }}>v1.1</Text>
-            </View>
-          </TouchableOpacity>
-        </View>
       </View>
     </AppScreen>
   );
@@ -270,6 +253,4 @@ const styles = StyleSheet.create({
   tagPill: { paddingHorizontal: 8, paddingVertical: 4, borderWidth: 2 },
   nutrientItem: { paddingVertical: 12 },
   nutrientHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 6 },
-  actionBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: 16, borderWidth: 3 },
-  comingSoon: { paddingHorizontal: 8, paddingVertical: 2, borderWidth: 2 },
 });

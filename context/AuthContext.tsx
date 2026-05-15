@@ -47,12 +47,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const signOut = useCallback(async () => {
+    // Set session to null immediately so the route guard in _layout.tsx
+    // redirects to the login page before supabase finishes its request.
+    setSession(null);
+
     const { error } = await supabase.auth.signOut();
     if (error) {
       console.error('Sign out failed:', error);
-      throw error;
     }
-    // Session will be set to null by onAuthStateChange listener above
   }, []);
 
   return (

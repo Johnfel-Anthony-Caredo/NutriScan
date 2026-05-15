@@ -123,7 +123,7 @@ export default function ScanPreviewScreen() {
   const [logged, setLogged] = useState(false);
 
   // Hardcoded meal type — no visible selector
-  const mealType: MealType = 'lunch';
+  const mealType: MealType = 'snack';
 
   // Internal food name for API calls
   const [foodName] = useState(
@@ -222,6 +222,19 @@ export default function ScanPreviewScreen() {
         if (!isActive) return;
 
         setResult(scanResult);
+
+        // Auto-save invalid scans so they appear in history
+        if (scanResult.verdict === 'invalid' && user) {
+          try {
+            let imgUrl: string | undefined;
+            if (uriParam) {
+              imgUrl = await uploadScanImage(user.id, uriParam);
+            }
+            await insertScanLog(user.id, scanResult, source, imgUrl);
+          } catch {
+            // Silently fail — scan still shown to user
+          }
+        }
       } catch (err: any) {
         if (!isActive) return;
         console.error('Analysis failed:', err);
@@ -357,7 +370,7 @@ export default function ScanPreviewScreen() {
                 </Text>
                 <ConfidenceBadge confidence={result.confidence} theme={theme} />
                 <Text style={{ color: theme.colors.textTertiary, fontSize: theme.fontSizes.xs, fontFamily: theme.fontFamilies.body, marginTop: 2 }}>
-                  {result.mealType.charAt(0).toUpperCase() + result.mealType.slice(1)} · {new Date(result.scannedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                  {new Date(result.scannedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                 </Text>
               </View>
             </View>
@@ -366,22 +379,23 @@ export default function ScanPreviewScreen() {
             {(() => {
               const isAvoid = result.verdict === 'avoid';
               const isCaution = result.verdict === 'caution';
-              const cardBg = isAvoid ? '#FDF0EE' : isCaution ? '#FDF8EE' : '#F0F6EE';
-              const textColor = isAvoid ? '#8B3A3A' : isCaution ? '#8B7A3A' : '#3A7B4A';
-              const accentColor = isAvoid ? '#E05A4A' : isCaution ? '#D4A830' : '#4CAF50';
+              const isInvalid = result.verdict === 'invalid';
+              const cardBg = isAvoid ? '#FDF0EE' : isCaution ? '#FDF8EE' : isInvalid ? '#F3F4F6' : '#F0F6EE';
+              const textColor = isAvoid ? '#8B3A3A' : isCaution ? '#8B7A3A' : isInvalid ? '#6B7280' : '#3A7B4A';
+              const accentColor = isAvoid ? '#E05A4A' : isCaution ? '#D4A830' : isInvalid ? '#9CA3AF' : '#4CAF50';
               return (
                 <View style={[styles.explainCard, { backgroundColor: cardBg, borderColor: theme.colors.border }]}>
                   <View style={styles.explainBody}>
                     <View style={[styles.explainHeader, { borderBottomColor: accentColor }]}>
-                      <Ionicons name={isAvoid ? 'warning' : isCaution ? 'alert-circle' : 'checkmark-circle'} size={18} color={accentColor} />
+                      <Ionicons name={isAvoid ? 'warning' : isCaution ? 'alert-circle' : isInvalid ? 'help-circle-outline' : 'checkmark-circle'} size={18} color={accentColor} />
                       <Text style={{ color: textColor, fontSize: theme.fontSizes.xs, fontWeight: theme.fontWeights.semibold, fontFamily: theme.fontFamilies.heading, marginLeft: 8, letterSpacing: 0.5 }}>
-                        {isAvoid ? 'NOT RECOMMENDED' : isCaution ? 'USE WITH CAUTION' : 'GOOD CHOICE'}
+                        {isAvoid ? 'NOT RECOMMENDED' : isCaution ? 'USE WITH CAUTION' : isInvalid ? 'NOT EDIBLE' : 'GOOD CHOICE'}
                       </Text>
                     </View>
                     <Text style={{ color: textColor, fontSize: theme.fontSizes.sm, fontFamily: theme.fontFamilies.body, lineHeight: theme.lineHeights.body }}>
                       {result.explanation}
                     </Text>
-                    <PortionGuidanceNote text={result.portionGuidance} theme={theme} />
+                    {!isInvalid && <PortionGuidanceNote text={result.portionGuidance} theme={theme} />}
                     {result.verdict === 'safe' && result.safeMessage && (
                       <View style={[styles.safeRow, { borderTopColor: accentColor }]}>
                         <Ionicons name="checkmark-circle" size={16} color={accentColor} />
@@ -422,7 +436,22 @@ export default function ScanPreviewScreen() {
 
             {/* Actions */}
             <View style={styles.actions}>
-              {!logged ? (
+              {result.verdict === 'invalid' ? (
+                <>
+                  <View style={[styles.infoBanner, { backgroundColor: theme.colors.invalid.bg, borderColor: theme.colors.invalid.border }]}>
+                    <Ionicons name="information-circle-outline" size={16} color={theme.colors.invalid.icon} />
+                    <Text style={{ color: theme.colors.invalid.text, fontSize: theme.fontSizes.sm, fontFamily: theme.fontFamilies.body, marginLeft: 6, flex: 1 }}>
+                      This item was identified as non-edible and won't be added to your daily intake.
+                    </Text>
+                  </View>
+                  <SecondaryButton
+                    label="Scan Another"
+                    onPress={() => router.replace('/(tabs)/scan')}
+                    style={{ marginTop: 10 }}
+                    icon={<Ionicons name="scan" size={18} color={theme.colors.primary} />}
+                  />
+                </>
+              ) : !logged ? (
                 <>
                   {logError ? (
                     <Text style={{ color: theme.colors.avoid.text, fontSize: theme.fontSizes.xs, textAlign: 'center', marginBottom: 6 }}>
@@ -435,21 +464,29 @@ export default function ScanPreviewScreen() {
                     icon={<Ionicons name="add-circle" size={20} color="#FFFFFF" />}
                     loading={isSaving}
                   />
+                  <SecondaryButton
+                    label="Scan Another"
+                    onPress={() => router.replace('/(tabs)/scan')}
+                    style={{ marginTop: 8 }}
+                    icon={<Ionicons name="scan" size={18} color={theme.colors.primary} />}
+                  />
                 </>
               ) : (
-                <View style={[styles.loggedBanner, { backgroundColor: theme.colors.safe.bg, borderColor: theme.colors.border }]}>
-                  <Ionicons name="checkmark-circle" size={22} color={theme.colors.safe.icon} />
-                  <Text style={{ color: theme.colors.safe.text, fontSize: theme.fontSizes.sm, fontWeight: theme.fontWeights.semibold, fontFamily: theme.fontFamilies.body, marginLeft: 6 }}>
-                    Added to your food log!
-                  </Text>
-                </View>
+                <>
+                  <View style={[styles.loggedBanner, { backgroundColor: theme.colors.safe.bg, borderColor: theme.colors.border }]}>
+                    <Ionicons name="checkmark-circle" size={22} color={theme.colors.safe.icon} />
+                    <Text style={{ color: theme.colors.safe.text, fontSize: theme.fontSizes.sm, fontWeight: theme.fontWeights.semibold, fontFamily: theme.fontFamilies.body, marginLeft: 6 }}>
+                      Added to your food log!
+                    </Text>
+                  </View>
+                  <SecondaryButton
+                    label="Scan Another"
+                    onPress={() => router.replace('/(tabs)/scan')}
+                    style={{ marginTop: 8 }}
+                    icon={<Ionicons name="scan" size={18} color={theme.colors.primary} />}
+                  />
+                </>
               )}
-              <SecondaryButton
-                label="Scan Another"
-                onPress={() => router.replace('/(tabs)/scan')}
-                style={{ marginTop: 8 }}
-                icon={<Ionicons name="scan" size={18} color={theme.colors.primary} />}
-              />
             </View>
 
             <View style={{ height: 40 }} />
@@ -710,5 +747,14 @@ const styles = StyleSheet.create({
     borderWidth: 3,
     borderRadius: 12,
     paddingVertical: 14,
+  },
+  infoBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    marginBottom: 10,
+    borderWidth: 2,
+    borderRadius: 10,
   },
 });

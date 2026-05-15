@@ -13,6 +13,8 @@ export interface ScanLogRow {
   scanned_at: string;
   source: 'photo' | 'barcode' | 'manual';
   portion_guidance?: string | null;
+  nutrients?: any;
+  alternatives?: any;
 }
 
 export async function getUserProfile(userId: string) {
@@ -103,6 +105,18 @@ export async function insertScanLog(
   return data as ScanLogRow;
 }
 
+export async function getRecentScanLogs(userId: string, limit = 5) {
+  const { data, error } = await supabase
+    .from('scan_logs')
+    .select('*')
+    .eq('user_id', userId)
+    .order('scanned_at', { ascending: false })
+    .limit(limit);
+
+  if (error) throw error;
+  return (data ?? []) as ScanLogRow[];
+}
+
 export async function getTodaysScanLogs(userId: string) {
   const start = new Date();
   start.setHours(0, 0, 0, 0);
@@ -135,12 +149,26 @@ export async function getWeeklyScanLogs(userId: string) {
 export async function getAllUserScans(userId: string) {
   const { data, error } = await supabase
     .from('scan_logs')
-    .select('scanned_at, verdict')
+    .select('*')
     .eq('user_id', userId)
     .order('scanned_at', { ascending: false });
 
   if (error) throw error;
-  return data ?? [];
+  return (data ?? []) as ScanLogRow[];
+}
+
+export async function getScanLogById(id: string) {
+  const { data, error } = await supabase
+    .from('scan_logs')
+    .select('*')
+    .eq('id', id)
+    .single();
+
+  if (error) {
+    if (error.code === 'PGRST116') return null;
+    throw error;
+  }
+  return data as ScanLogRow;
 }
 
 

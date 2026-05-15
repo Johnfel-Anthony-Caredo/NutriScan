@@ -14,6 +14,7 @@ const verdictIcons: Record<Verdict, keyof typeof Ionicons.glyphMap> = {
   safe: 'checkmark-circle',
   caution: 'warning',
   avoid: 'close-circle',
+  invalid: 'help-circle-outline',
 };
 
 export function VerdictBadge({ verdict, large = false }: VerdictBadgeProps) {

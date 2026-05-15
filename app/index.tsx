@@ -13,6 +13,7 @@
  */
 
 import { useTheme } from '@/hooks/useTheme';
+import { PrimaryButton } from '@/components/ui';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import React, { useEffect, useRef } from 'react';
@@ -35,7 +36,7 @@ export default function LandingScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
 
-  const heroScale   = useRef(new Animated.Value(1.07)).current;
+  const heroScale = useRef(new Animated.Value(1.07)).current;
   const contentAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
@@ -110,14 +111,13 @@ export default function LandingScreen() {
 
         {/* Subtitle */}
         <Text style={[styles.subtitle, { color: theme.colors.textSecondary, fontFamily: theme.fontFamilies.body }]}>
-          Point your camera at any food, scan a barcode, or search manually — get an instant verdict tailored to your health profile.
+          Point your camera at any food, scan a barcode, or search manually, get an instant verdict tailored to your health profile.
         </Text>
 
-        {/* Primary CTA */}
-        <GradientCTA
+        <PrimaryButton
           label="Create an account"
           onPress={() => router.push('/(auth)/register')}
-          primaryColor={theme.colors.primary}
+          style={{ marginBottom: 6 }}
         />
 
         {/* Secondary link */}
@@ -137,47 +137,6 @@ export default function LandingScreen() {
     </View>
   );
 }
-
-// ─── Gradient CTA ─────────────────────────────────────────────────────────────
-function GradientCTA({
-  label,
-  onPress,
-  primaryColor,
-}: {
-  label: string;
-  onPress: () => void;
-  primaryColor: string;
-}) {
-  const scale = useRef(new Animated.Value(1)).current;
-
-  const pressIn  = () => Animated.spring(scale, { toValue: 0.96, tension: 160, friction: 6, useNativeDriver: true }).start();
-  const pressOut = () => Animated.spring(scale, { toValue: 1,    tension: 110, friction: 7, useNativeDriver: true }).start();
-
-  return (
-    <Animated.View style={{ transform: [{ scale }], marginBottom: 6 }}>
-      <TouchableOpacity
-        onPress={onPress}
-        onPressIn={pressIn}
-        onPressOut={pressOut}
-        activeOpacity={1}
-        accessibilityRole="button"
-        accessibilityLabel={label}
-        style={styles.ctaTouchable}
-      >
-        <LinearGradient
-          colors={[primaryColor, '#0a2010']}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 0 }}
-          style={styles.ctaGradient}
-        >
-          <Text style={styles.ctaLabel}>{label}</Text>
-        </LinearGradient>
-      </TouchableOpacity>
-    </Animated.View>
-  );
-}
-
-
 
 // ─── Styles ───────────────────────────────────────────────────────────────────
 const styles = StyleSheet.create({
@@ -250,25 +209,7 @@ const styles = StyleSheet.create({
     marginBottom: 28,
   },
 
-  // CTA
-  ctaTouchable: {
-    borderRadius: 999,
-    overflow: 'hidden',
-  },
-  ctaGradient: {
-    height: 56,
-    borderRadius: 999,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  ctaLabel: {
-    color: '#ffffff',
-    fontSize: 16,
-    fontWeight: '700',
-    letterSpacing: 0.3,
-  },
 
-  // Secondary link
   loginRow: {
     alignItems: 'center',
     justifyContent: 'center',

@@ -74,7 +74,7 @@ export default function ManualSearchScreen() {
   }, [debouncedQuery]);
 
   const handleSelect = useCallback((product: SearchProduct) => {
-    const result = buildScanResultFromSearchProduct(product, 'lunch');
+    const result = buildScanResultFromSearchProduct(product, 'snack');
     router.push({
       pathname: '/scan-result',
       params: {

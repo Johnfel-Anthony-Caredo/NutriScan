@@ -40,14 +40,15 @@ export const conditionDescriptions: Record<HealthCondition, string> = {
   unsure: 'We\'ll give you broad, healthy eating guidance.',
 };
 
-/** The three-tier verdict system */
-export type Verdict = 'safe' | 'caution' | 'avoid';
+/** The verdict system — invalid is for non-edible items */
+export type Verdict = 'safe' | 'caution' | 'avoid' | 'invalid';
 
 /** Display labels for verdicts */
 export const verdictLabels: Record<Verdict, string> = {
   safe: 'Safe',
   caution: 'Caution',
   avoid: 'Avoid',
+  invalid: 'Not Edible',
 };
 
 // ── Health Goals ────────────────────────────────────────────────────

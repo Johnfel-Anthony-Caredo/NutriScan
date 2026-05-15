@@ -1,5 +1,5 @@
 import React from 'react';
-import { TouchableOpacity, Text, View, StyleSheet, Platform } from 'react-native';
+import { TouchableOpacity, Text, View, StyleSheet, Platform, type ViewStyle } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '@/hooks/useTheme';
 
@@ -9,6 +9,8 @@ interface SelectableCardProps {
   selected: boolean;
   onPress: () => void;
   subtitle?: string;
+  style?: ViewStyle;
+  flat?: boolean;
 }
 
 export function SelectableCard({
@@ -17,12 +19,14 @@ export function SelectableCard({
   selected,
   onPress,
   subtitle,
+  style,
+  flat = false,
 }: SelectableCardProps) {
   const theme = useTheme();
 
   return (
-    <View style={styles.wrapper}>
-      {Platform.OS === 'android' && (
+    <View style={[styles.wrapper, style]}>
+      {!flat && Platform.OS === 'android' && (
         <View
           style={[styles.shadowBlock, { backgroundColor: theme.colors.shadow, borderRadius: theme.radius.md }]}
           pointerEvents="none"

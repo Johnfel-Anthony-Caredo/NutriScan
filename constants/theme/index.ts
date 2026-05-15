@@ -5,7 +5,7 @@
  *   import { theme } from '@/constants/theme';
  */
 
-export { colors, teal, medicalTeal, medicalTealDark, medicalTealLight, deepBlack, mintTint, safe, caution, avoid, warningCoral, cautionYellow, successGreen, neutral } from './colors';
+export { colors, teal, medicalTeal, medicalTealDark, medicalTealLight, deepBlack, mintTint, safe, caution, avoid, invalid, warningCoral, cautionYellow, successGreen, neutral } from './colors';
 export type { ThemeColors } from './colors';
 export { fontFamilies, fontSizes, fontWeights, lineHeights, textStyles } from './typography';
 export { spacing, SCREEN_PADDING_H } from './spacing';

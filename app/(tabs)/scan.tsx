@@ -1,171 +1,426 @@
 /**
- * Scan Screen — camera scan hub with Photo/Barcode toggle.
+ * Scan Screen — full-screen camera scanner with overlay controls.
  *
- * Full-screen focused scanner. Capture sends to preview,
- * manual search opens the search modal.
+ * Full-screen live camera preview with a centered scan guide frame,
+ * top header overlay, and bottom floating control dock.
+ * Barcode scanning runs silently in the background.
  */
 
-import { AppScreen, PrimaryButton, SecondaryButton } from '@/components/ui';
 import { useTheme } from '@/hooks/useTheme';
 import { Ionicons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
-import React, { useState, useRef, useEffect } from 'react';
-import { StyleSheet, Text, TouchableOpacity, View, Alert } from 'react-native';
 import { CameraView, useCameraPermissions } from 'expo-camera';
-
-type ScanMode = 'photo' | 'barcode';
+import { useRouter } from 'expo-router';
+import React, { useRef, useState } from 'react';
+import {
+  Alert,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export default function ScanScreen() {
   const theme = useTheme();
   const router = useRouter();
-  const [mode, setMode] = useState<ScanMode>('photo');
-  const [permission, requestPermission] = useCameraPermissions();
+  const insets = useSafeAreaInsets();
   const cameraRef = useRef<CameraView>(null);
+  const [permission, requestPermission] = useCameraPermissions();
   const [scanned, setScanned] = useState(false);
+  const [facing, setFacing] = useState<'back' | 'front'>('back');
+  const [flash, setFlash] = useState<'off' | 'on'>('off');
+  const [zoom, setZoom] = useState(0);
 
-  // Reset scanned state when returning to the screen or changing modes
-  useEffect(() => {
-    setScanned(false);
-  }, [mode]);
+  const zoomLabel =
+    zoom === 0 ? '1.0x' : `${(zoom * 2 + 1).toFixed(1)}x`;
 
   const handleCapture = async () => {
-    if (mode === 'photo') {
-      if (cameraRef.current) {
-        try {
-          const photo = await cameraRef.current.takePictureAsync({ quality: 0.8, base64: true });
-          router.push({ pathname: '/scan-preview', params: { source: 'photo', uri: photo?.uri } });
-        } catch (error) {
-          Alert.alert('Error', 'Failed to take photo. Please try again.');
-        }
-      }
+    if (!cameraRef.current) return;
+    try {
+      const photo = await cameraRef.current.takePictureAsync({
+        quality: 0.8,
+        base64: true,
+      });
+      router.push({
+        pathname: '/scan-preview',
+        params: { source: 'photo', uri: photo?.uri },
+      });
+    } catch {
+      Alert.alert('Error', 'Failed to take photo. Please try again.');
     }
   };
 
-  const handleBarcodeScanned = ({ type, data }: { type: string; data: string }) => {
-    if (mode === 'barcode' && !scanned) {
-      setScanned(true);
-      router.push({ pathname: '/scan-preview', params: { source: 'barcode', data } });
-      
-      // Allow scanning again after 2 seconds
-      setTimeout(() => setScanned(false), 2000);
-    }
+  const handleBarcodeScanned = ({
+    data,
+  }: {
+    type: string;
+    data: string;
+  }) => {
+    if (scanned) return;
+    setScanned(true);
+    router.push({
+      pathname: '/scan-preview',
+      params: { source: 'barcode', data },
+    });
+    setTimeout(() => setScanned(false), 2000);
   };
 
-  const handleSearch = () => {
-    router.push('/manual-search');
-  };
+  const toggleFacing = () =>
+    setFacing((prev) => (prev === 'back' ? 'front' : 'back'));
+
+  const toggleFlash = () =>
+    setFlash((prev) => (prev === 'off' ? 'on' : 'off'));
+
+  const cycleZoom = () =>
+    setZoom((z) => (z + 0.5 > 1 ? 0 : z + 0.5));
+
+  const goHome = () => router.replace('/(tabs)');
+
+  // ── Permission states ──────────────────────────────────────────────
 
   if (!permission) {
-    // Camera permissions are still loading.
     return (
-      <AppScreen noPadding>
-        <View style={[styles.container, { paddingHorizontal: 20, justifyContent: 'center', alignItems: 'center' }]}>
-           <Text style={{ color: theme.colors.textSecondary }}>Requesting camera permission...</Text>
-        </View>
-      </AppScreen>
+      <View style={[styles.permissionRoot, { backgroundColor: theme.colors.background }]}>
+        <Text style={{ color: theme.colors.textSecondary, fontSize: theme.fontSizes.body }}>
+          Requesting camera permission...
+        </Text>
+      </View>
     );
   }
 
   if (!permission.granted) {
-    // Camera permissions are not granted yet.
     return (
-      <AppScreen noPadding>
-        <View style={[styles.container, { paddingHorizontal: 20, justifyContent: 'center', alignItems: 'center' }]}>
-          <Ionicons name="camera-outline" size={64} color={theme.colors.textTertiary} style={{ marginBottom: 16 }} />
-          <Text style={{ color: theme.colors.textPrimary, fontSize: theme.fontSizes.lg, fontWeight: theme.fontWeights.medium, textAlign: 'center', marginBottom: 12 }}>
-            We need your permission to show the camera
+      <View style={[styles.permissionRoot, { backgroundColor: theme.colors.background }]}>
+        <Ionicons
+          name="camera-outline"
+          size={64}
+          color={theme.colors.textTertiary}
+          style={{ marginBottom: 16 }}
+        />
+        <Text
+          style={{
+            color: theme.colors.textPrimary,
+            fontSize: theme.fontSizes.lg,
+            fontWeight: theme.fontWeights.medium,
+            fontFamily: theme.fontFamilies.heading,
+            textAlign: 'center',
+            marginBottom: 12,
+          }}
+        >
+          We need your permission to show the camera
+        </Text>
+        <TouchableOpacity
+          onPress={requestPermission}
+          style={[
+            styles.permissionBtn,
+            {
+              backgroundColor: theme.colors.primary,
+              borderRadius: theme.radius.md,
+            },
+          ]}
+          activeOpacity={0.8}
+        >
+          <Text
+            style={{
+              color: theme.colors.textInverse,
+              fontSize: theme.fontSizes.body,
+              fontWeight: theme.fontWeights.semibold,
+              fontFamily: theme.fontFamilies.body,
+            }}
+          >
+            Grant Permission
           </Text>
-          <PrimaryButton label="Grant Permission" onPress={requestPermission} />
-        </View>
-      </AppScreen>
+        </TouchableOpacity>
+      </View>
     );
   }
 
+  // ── Main camera UI ─────────────────────────────────────────────────
+
   return (
-    <AppScreen noPadding>
-      <View style={[styles.container, { paddingHorizontal: 20 }]}>
-        {/* Header */}
-        <Text style={{ color: theme.colors.textPrimary, fontSize: theme.fontSizes.xl, fontWeight: theme.fontWeights.bold, textAlign: 'center', marginTop: 20 }}>
-          Scan Your Food
-        </Text>
-        <Text style={{ color: theme.colors.textSecondary, fontSize: theme.fontSizes.body, textAlign: 'center', marginTop: 4, marginBottom: 24 }}>
-          Point your camera at a food item or barcode
-        </Text>
+    <View style={styles.root}>
+      {/* Full-screen camera */}
+      <CameraView
+        style={StyleSheet.absoluteFill}
+        facing={facing}
+        ref={cameraRef}
+        flash={flash}
+        zoom={zoom}
+        barcodeScannerSettings={{
+          barcodeTypes: ['ean13', 'ean8', 'qr', 'upc_a', 'upc_e'],
+        }}
+        onBarcodeScanned={handleBarcodeScanned}
+      />
 
-        {/* Mode Toggle */}
-        <View style={[styles.toggleRow, { backgroundColor: theme.colors.surfaceSecondary, borderRadius: theme.radius.md }]}>
-          {(['photo', 'barcode'] as ScanMode[]).map((m) => (
-            <TouchableOpacity
-              key={m}
-              onPress={() => setMode(m)}
-              style={[styles.toggleBtn, { backgroundColor: mode === m ? theme.colors.primary : 'transparent', borderRadius: theme.radius.sm }]}
-              accessibilityRole="button"
-            >
-              <Ionicons name={m === 'photo' ? 'camera' : 'barcode'} size={18} color={mode === m ? theme.colors.textInverse : theme.colors.textSecondary} />
-              <Text style={{ color: mode === m ? theme.colors.textInverse : theme.colors.textSecondary, fontSize: theme.fontSizes.sm, fontWeight: theme.fontWeights.medium, marginLeft: 6 }}>
-                {m === 'photo' ? 'Photo' : 'Barcode'}
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </View>
+      {/* ── Top overlay ─────────────────────────────────── */}
+      <View
+        style={[
+          styles.topOverlay,
+          { paddingTop: insets.top + 10, height: insets.top + 56 },
+        ]}
+      >
+        <TouchableOpacity
+          onPress={goHome}
+          style={styles.headerBtn}
+          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+          accessibilityRole="button"
+          accessibilityLabel="Go back"
+        >
+          <Ionicons name="chevron-back" size={24} color="#FFFFFF" />
+        </TouchableOpacity>
 
-        {/* Camera */}
-        <View style={[styles.cameraContainer, { borderRadius: theme.radius.lg, borderColor: theme.colors.border }]}>
-          <CameraView 
-            style={StyleSheet.absoluteFillObject} 
-            facing="back"
-            ref={cameraRef}
-            barcodeScannerSettings={mode === 'barcode' ? { barcodeTypes: ["ean13", "ean8", "qr", "upc_a", "upc_e"] } : undefined}
-            onBarcodeScanned={mode === 'barcode' ? handleBarcodeScanned : undefined}
-          />
+        <Text style={styles.headerTitle}>Scan Food</Text>
+
+        <TouchableOpacity
+          onPress={goHome}
+          style={styles.headerBtn}
+          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+          accessibilityRole="button"
+          accessibilityLabel="Close scanner"
+        >
+          <Ionicons name="close" size={24} color="#FFFFFF" />
+        </TouchableOpacity>
+      </View>
+
+      {/* ── Scan guide frame ────────────────────────────── */}
+      <View style={styles.guideContainer} pointerEvents="none">
+        <View style={styles.guideFrame}>
           {/* Corner markers */}
-          {[['top', 'left'], ['top', 'right'], ['bottom', 'left'], ['bottom', 'right']].map(([v, h]) => (
-            <View key={`${v}-${h}`} style={[styles.corner, { [v]: 20, [h]: 20, borderColor: theme.colors.primary }]} />
-          ))}
-          {mode === 'barcode' && (
-            <View style={styles.barcodeTarget}>
-              <View style={[styles.barcodeLine, { backgroundColor: theme.colors.primary }]} />
-            </View>
-          )}
+          <View style={[styles.guideCorner, styles.cornerTL]} />
+          <View style={[styles.guideCorner, styles.cornerTR]} />
+          <View style={[styles.guideCorner, styles.cornerBL]} />
+          <View style={[styles.guideCorner, styles.cornerBR]} />
+
+          {/* Crosshair dot */}
+          <View style={styles.crosshair} />
         </View>
 
-        {/* Actions */}
-        <View style={styles.actions}>
-          {mode === 'photo' ? (
-            <PrimaryButton label="Capture" onPress={handleCapture} icon={<Ionicons name="camera" size={20} color="#FFFFFF" />} />
-          ) : (
-            <Text style={{ color: theme.colors.textSecondary, textAlign: 'center', paddingVertical: 12, marginBottom: 4 }}>
-              Looking for barcodes...
-            </Text>
-          )}
-          <SecondaryButton label="Search Manually" onPress={handleSearch} icon={<Ionicons name="search" size={18} color={theme.colors.primary} />} style={{ marginTop: 12 }} />
+        <Text style={styles.guideHint}>Position food in frame</Text>
+      </View>
+
+      {/* ── Bottom control panel ────────────────────────── */}
+      <View
+        style={[
+          styles.bottomPanel,
+          { paddingBottom: insets.bottom + 20 },
+        ]}
+      >
+        {/* Zoom indicator */}
+        <TouchableOpacity onPress={cycleZoom} activeOpacity={0.7} accessibilityRole="button" accessibilityLabel="Cycle zoom">
+          <Text style={styles.zoomLabel}>{zoomLabel}</Text>
+        </TouchableOpacity>
+
+        {/* Control row */}
+        <View style={styles.controlRow}>
+          {/* Secondary: camera flip */}
+          <TouchableOpacity
+            onPress={toggleFacing}
+            style={styles.secondaryBtn}
+            activeOpacity={0.7}
+            accessibilityRole="button"
+            accessibilityLabel="Flip camera"
+          >
+            <Ionicons name="camera-reverse-outline" size={24} color="#FFFFFF" />
+          </TouchableOpacity>
+
+          {/* Shutter */}
+          <TouchableOpacity
+            onPress={handleCapture}
+            style={styles.shutterOuter}
+            activeOpacity={0.7}
+            accessibilityRole="button"
+            accessibilityLabel="Take photo"
+          >
+            <View style={styles.shutterInner} />
+          </TouchableOpacity>
+
+          {/* Secondary: flash toggle */}
+          <TouchableOpacity
+            onPress={toggleFlash}
+            style={styles.secondaryBtn}
+            activeOpacity={0.7}
+            accessibilityRole="button"
+            accessibilityLabel={`Flash ${flash === 'on' ? 'on' : 'off'}`}
+          >
+            <Ionicons
+              name={flash === 'on' ? 'flash' : 'flash-off-outline'}
+              size={24}
+              color={flash === 'on' ? '#FFD54F' : '#FFFFFF'}
+            />
+          </TouchableOpacity>
         </View>
       </View>
-    </AppScreen>
+    </View>
   );
 }
 
+// ── Styles ──────────────────────────────────────────────────────────
+
+const GUIDE_SIZE = 260;
+
 const styles = StyleSheet.create({
-  container: { flex: 1 },
-  toggleRow: { flexDirection: 'row', padding: 4, alignSelf: 'center', marginBottom: 20 },
-  toggleBtn: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20, paddingVertical: 10 },
-  cameraContainer: { flex: 1, overflow: 'hidden', borderWidth: 3, marginBottom: 20, minHeight: 280, position: 'relative' },
-  corner: { position: 'absolute', width: 28, height: 28, borderWidth: 3, zIndex: 2 },
-  barcodeTarget: {
-    position: 'absolute',
-    top: '30%',
-    bottom: '30%',
-    left: '15%',
-    right: '15%',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.3)',
+  root: {
+    flex: 1,
+  },
+
+  // Permission states
+  permissionRoot: {
+    flex: 1,
     justifyContent: 'center',
-    zIndex: 1,
+    alignItems: 'center',
+    paddingHorizontal: 20,
   },
-  barcodeLine: {
-    height: 2,
-    width: '100%',
-    opacity: 0.5,
+  permissionBtn: {
+    paddingHorizontal: 24,
+    paddingVertical: 14,
+    borderWidth: 3,
+    borderColor: '#0A0A0A',
   },
-  actions: { marginBottom: 24 },
+
+  // Top overlay
+  topOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    backgroundColor: 'rgba(0, 0, 0, 0.45)',
+  },
+  headerBtn: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: 'rgba(255, 255, 255, 0.15)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  headerTitle: {
+    color: '#FFFFFF',
+    fontSize: 18,
+    fontWeight: '600',
+    letterSpacing: 0.3,
+  },
+
+  // Scan guide
+  guideContainer: {
+    position: 'absolute',
+    top: '50%',
+    left: '50%',
+    marginLeft: -(GUIDE_SIZE / 2),
+    marginTop: -(GUIDE_SIZE / 2 + 20),
+    alignItems: 'center',
+  },
+  guideFrame: {
+    width: GUIDE_SIZE,
+    height: GUIDE_SIZE,
+    borderRadius: 24,
+    borderWidth: 2,
+    borderColor: 'rgba(255, 255, 255, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  guideCorner: {
+    position: 'absolute',
+    width: 28,
+    height: 28,
+    borderColor: '#FFFFFF',
+  },
+  cornerTL: {
+    top: -3,
+    left: -3,
+    borderTopWidth: 4,
+    borderLeftWidth: 4,
+    borderTopLeftRadius: 8,
+  },
+  cornerTR: {
+    top: -3,
+    right: -3,
+    borderTopWidth: 4,
+    borderRightWidth: 4,
+    borderTopRightRadius: 8,
+  },
+  cornerBL: {
+    bottom: -3,
+    left: -3,
+    borderBottomWidth: 4,
+    borderLeftWidth: 4,
+    borderBottomLeftRadius: 8,
+  },
+  cornerBR: {
+    bottom: -3,
+    right: -3,
+    borderBottomWidth: 4,
+    borderRightWidth: 4,
+    borderBottomRightRadius: 8,
+  },
+  crosshair: {
+    width: 4,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: 'rgba(255, 255, 255, 0.6)',
+  },
+  guideHint: {
+    color: 'rgba(255, 255, 255, 0.85)',
+    fontSize: 14,
+    fontWeight: '500',
+    marginTop: 14,
+    letterSpacing: 0.2,
+    textShadowColor: 'rgba(0, 0, 0, 0.7)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 4,
+  },
+
+  // Bottom panel
+  bottomPanel: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    alignItems: 'center',
+    paddingTop: 20,
+    backgroundColor: 'rgba(0, 0, 0, 0.55)',
+  },
+  zoomLabel: {
+    color: 'rgba(255, 255, 255, 0.7)',
+    fontSize: 13,
+    fontWeight: '500',
+    marginBottom: 16,
+    letterSpacing: 0.5,
+  },
+  controlRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 32,
+  },
+
+  // Shutter
+  shutterOuter: {
+    width: 76,
+    height: 76,
+    borderRadius: 38,
+    borderWidth: 5,
+    borderColor: '#FFFFFF',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  shutterInner: {
+    width: 58,
+    height: 58,
+    borderRadius: 29,
+    backgroundColor: '#FFFFFF',
+  },
+
+  // Secondary buttons
+  secondaryBtn: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: 'rgba(255, 255, 255, 0.15)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
 });

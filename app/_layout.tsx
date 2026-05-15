@@ -22,11 +22,10 @@ function RootLayoutNav() {
     const isLanding = pathname === '/' || pathname === '/index';
 
     if (!session) {
-      // Unauthenticated: allow landing and auth screens; everything else → landing
+      // Unauthenticated: redirect to login unless already on an auth or landing screen
       if (!inAuthGroup && !isLanding) {
-        router.replace('/');
+        router.replace('/(auth)/login');
       }
-      // If on landing or auth screens, do nothing — let user navigate naturally
       return;
     }
 
@@ -55,7 +54,6 @@ function RootLayoutNav() {
         <Stack.Screen name="manual-search" options={{ animation: 'slide_from_bottom', presentation: 'modal' }} />
         <Stack.Screen name="chat-history" options={{ animation: 'slide_from_right' }} />
         <Stack.Screen name="health-report" options={{ animation: 'slide_from_right' }} />
-        <Stack.Screen name="nutribot" options={{ presentation: 'modal', animation: 'slide_from_bottom' }} />
         <Stack.Screen name="article/[id]" options={{ presentation: 'modal', animation: 'slide_from_bottom' }} />
         <Stack.Screen name="auth/callback" options={{ headerShown: false, animation: 'fade' }} />
       </Stack>

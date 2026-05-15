@@ -10,13 +10,13 @@
  * - Footer disclaimer
  */
 
-import { AppScreen, PrimaryButton } from '@/components/ui';
+import { PrimaryButton } from '@/components/ui';
 import { useTheme } from '@/hooks/useTheme';
 import { signIn } from '@/services/authService';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
-import { Image, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { Image, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 
 export default function LoginScreen() {
   const theme = useTheme();
@@ -68,8 +68,16 @@ export default function LoginScreen() {
   });
 
   return (
-    <AppScreen scroll>
-      <View style={styles.container}>
+    <KeyboardAvoidingView
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      style={{ flex: 1, backgroundColor: theme.colors.background }}
+    >
+      <ScrollView
+        contentContainerStyle={{ flexGrow: 1 }}
+        showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
+      >
+        <View style={styles.container}>
         {/* ── Branding ────────────────────── */}
         <View style={styles.branding}>
           <Image
@@ -202,12 +210,13 @@ export default function LoginScreen() {
           By continuing, you agree to our Terms of Service{'\n'}and Privacy Policy.
         </Text>
       </View>
-    </AppScreen>
+      </ScrollView>
+    </KeyboardAvoidingView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, paddingTop: 50, paddingBottom: 20 },
+  container: { flex: 1, paddingTop: 50, paddingBottom: 20, paddingHorizontal: 24 },
   branding: { alignItems: 'center', marginBottom: 36 },
   logo: { width: 96, height: 96 },
   form: {},

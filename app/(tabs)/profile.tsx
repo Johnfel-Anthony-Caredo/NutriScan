@@ -14,7 +14,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { getAllUserScans, updateUserProfile, upsertNutrientTargets, upsertUserConditions } from '@/services/supabaseService';
 import { useFocusEffect, useRouter } from 'expo-router';
 import React, { useCallback, useState } from 'react';
-import { Alert, Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Alert, Animated, Image, Platform, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 function MenuRow({ icon, label, subtitle, onPress, color }: {
   icon: keyof typeof Ionicons.glyphMap;
@@ -116,8 +116,7 @@ export default function ProfileScreen() {
             setIsLoggingOut(true);
             try {
               await signOut();
-              // Session is now null — the route guard in _layout.tsx
-              // will redirect to the landing screen automatically.
+              router.replace('/(auth)/login');
             } catch (error) {
               console.error('Logout failed:', error);
               Alert.alert('Error', 'Failed to log out. Please try again.');
@@ -213,7 +212,7 @@ export default function ProfileScreen() {
 
       {/* ── Quick Stats ────────────────── */}
       <SectionHeader title="My Stats" />
-      <View style={styles.statsGrid}>{[{ icon: 'scan' as const, label: 'Total Scans', value: stats.total.toString() }, { icon: 'checkmark-circle' as const, label: 'Safe Scans', value: stats.total > 0 ? `${stats.safePercent}%` : '—' }, { icon: 'flame' as const, label: 'Day Streak', value: stats.streak.toString() }].map((stat) => (<Card key={stat.label} style={styles.statCard}><View style={[styles.statIconWrap, { backgroundColor: theme.colors.primaryLight, borderColor: theme.colors.border }]}><Ionicons name={stat.icon} size={20} color={theme.colors.primary} /></View><Text style={{ color: theme.colors.textSecondary, fontSize: theme.fontSizes.xs, fontWeight: theme.fontWeights.medium, fontFamily: theme.fontFamilies.body, marginTop: 12 }}>{stat.label}</Text><Text style={{ color: theme.colors.textPrimary, fontSize: theme.fontSizes['2xl'], fontWeight: theme.fontWeights.bold, fontFamily: theme.fontFamilies.heading, marginTop: 4 }}>{stat.value}</Text></Card>))}</View>
+      <View style={styles.statsGrid}>{[{ icon: 'scan' as const, label: 'Total Scans', value: stats.total.toString() }, { icon: 'checkmark-circle' as const, label: 'Safe Scans', value: stats.total > 0 ? `${stats.safePercent}%` : '—' }, { icon: 'flame' as const, label: 'Day Streak', value: stats.streak.toString() }].map((stat) => (<Card key={stat.label} style={styles.statCard}><View style={[styles.statIconWrap, { backgroundColor: theme.colors.primaryLight, borderColor: theme.colors.border }]}><Ionicons name={stat.icon} size={20} color={theme.colors.primary} /></View><Text style={{ color: theme.colors.textSecondary, fontSize: theme.fontSizes.xs, fontWeight: theme.fontWeights.medium, fontFamily: theme.fontFamilies.body, marginTop: 12, textAlign: 'center' }}>{stat.label}</Text><Text style={{ color: theme.colors.textPrimary, fontSize: theme.fontSizes['2xl'], fontWeight: theme.fontWeights.bold, fontFamily: theme.fontFamilies.heading, marginTop: 4, textAlign: 'center' }}>{stat.value}</Text></Card>))}</View>
 
       {/* ── Nutrient Monitoring ─────────── */}
       {profile.nutrientTargets.length > 0 && (
@@ -226,7 +225,7 @@ export default function ProfileScreen() {
       {/* ── Quick Actions ──────────────── */}
       <SectionHeader title="Quick Actions" />
       <Card noPadding>
-        <MenuRow icon="chatbubble-ellipses-outline" label="Chat with NutriBot" subtitle="Ask about food, diet, or scans" onPress={() => router.push('/nutribot')} />
+        <MenuRow icon="chatbubble-ellipses-outline" label="Chat with NutriBot" subtitle="Ask about food, diet, or scans" onPress={() => router.push('/(tabs)/nutribot')} />
         <MenuRow icon="time-outline" label="Chat History" subtitle="View past conversations" onPress={() => router.push('/chat-history')} />
         <MenuRow icon="stats-chart-outline" label="Health Report" subtitle="Weekly summary and trends" onPress={() => router.push('/health-report')} />
       </Card>
@@ -256,39 +255,39 @@ export default function ProfileScreen() {
 
       {/* ── Account Actions ────────────── */}
       <View style={styles.actionGroup}>
-        <TouchableOpacity
-          onPress={handleResetProfile}
-          style={[styles.actionBtn, { backgroundColor: theme.colors.caution.bg, borderColor: theme.colors.border, borderRadius: theme.radius.md }]}
-          accessibilityRole="button"
-        >
-          <Ionicons name="refresh-outline" size={20} color={theme.colors.caution.icon} />
-          <Text style={{ color: theme.colors.caution.text, fontSize: theme.fontSizes.body, fontWeight: theme.fontWeights.medium, fontFamily: theme.fontFamilies.body, marginLeft: 8 }}>
-            Reset Profile & Restart Onboarding
-          </Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          onPress={handleLogout}
-          disabled={isLoggingOut}
-          style={[styles.actionBtn, { backgroundColor: theme.colors.avoid.bg, borderColor: theme.colors.border, borderRadius: theme.radius.md, opacity: isLoggingOut ? 0.6 : 1 }]}
-          accessibilityRole="button"
-        >
-          <Ionicons name="log-out-outline" size={20} color={theme.colors.avoid.icon} />
-          <Text style={{ color: theme.colors.avoid.text, fontSize: theme.fontSizes.body, fontWeight: theme.fontWeights.medium, fontFamily: theme.fontFamilies.body, marginLeft: 8 }}>
-            {isLoggingOut ? 'Logging Out...' : 'Log Out'}
-          </Text>
-        </TouchableOpacity>
-      </View>
-
-      {/* ── Medical Disclaimer ─────────── */}
-      <Card style={[styles.disclaimer, { borderColor: theme.colors.border, borderWidth: 3 }]}>
-        <View style={styles.disclaimerRow}>
-          <Ionicons name="medical-outline" size={16} color={theme.colors.caution.icon} />
-          <Text style={{ color: theme.colors.textTertiary, fontSize: theme.fontSizes.xs, fontFamily: theme.fontFamilies.body, marginLeft: 6, flex: 1, lineHeight: theme.lineHeights.xs }}>
-            NutriScan provides general guidance, not medical advice. Always consult your healthcare provider.
-          </Text>
+        {/* Restart — amber */}
+        <View>
+          {Platform.OS === 'android' && (
+            <View style={[styles.actionShadow, { backgroundColor: theme.colors.shadow, borderRadius: theme.radius.full }]} pointerEvents="none" />
+          )}
+          <TouchableOpacity
+            onPress={handleResetProfile}
+            style={[styles.actionBtn, { backgroundColor: '#D4872F', borderColor: theme.colors.border, borderRadius: theme.radius.full }]}
+            activeOpacity={1}
+            accessibilityRole="button"
+          >
+            <Ionicons name="refresh-outline" size={20} color="#FFFFFF" />
+            <Text style={styles.actionLabel}>Restart Onboarding</Text>
+          </TouchableOpacity>
         </View>
-      </Card>
+
+        {/* Logout — red */}
+        <View>
+          {Platform.OS === 'android' && (
+            <View style={[styles.actionShadow, { backgroundColor: theme.colors.shadow, borderRadius: theme.radius.full }]} pointerEvents="none" />
+          )}
+          <TouchableOpacity
+            onPress={handleLogout}
+            disabled={isLoggingOut}
+            style={[styles.actionBtn, { backgroundColor: isLoggingOut ? '#C0392B' + '60' : '#C0392B', borderColor: isLoggingOut ? theme.colors.textTertiary : theme.colors.border, borderRadius: theme.radius.full, opacity: isLoggingOut ? 0.6 : 1 }]}
+            activeOpacity={1}
+            accessibilityRole="button"
+          >
+            <Ionicons name="log-out-outline" size={20} color="#FFFFFF" />
+            <Text style={styles.actionLabel}>{isLoggingOut ? 'Logging Out...' : 'Log Out'}</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
 
       <View style={{ height: 100 }} />
     </AppScreen>
@@ -311,7 +310,7 @@ const styles = StyleSheet.create({
   goalChip: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 14, paddingVertical: 10, borderWidth: 3 },
   goalEmoji: { fontSize: 18, marginRight: 8 },
   statsGrid: { flexDirection: 'row', gap: 12, marginBottom: 28 },
-  statCard: { flex: 1, alignItems: 'flex-start', paddingVertical: 18 },
+  statCard: { flex: 1, alignItems: 'center', paddingVertical: 18, minHeight: 130 },
   statIconWrap: { width: 42, height: 42, borderRadius: 21, alignItems: 'center', justifyContent: 'center', borderWidth: 2 },
   nutrientRow: { flexDirection: 'row', alignItems: 'flex-start', paddingVertical: 14, gap: 10 },
   nutrientDot: { width: 10, height: 10, borderRadius: 5, marginTop: 6, borderWidth: 2 },
@@ -323,7 +322,26 @@ const styles = StyleSheet.create({
   menuCopy: { flex: 1 },
   menuIcon: { width: 40, height: 40, borderRadius: 12, justifyContent: 'center', alignItems: 'center', marginRight: 12, borderWidth: 2 },
   actionGroup: { marginTop: 24, gap: 12 },
-  actionBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingHorizontal: 16, paddingVertical: 16, minHeight: 56, borderWidth: 3 },
-  disclaimer: { marginTop: 16, opacity: 0.8 },
-  disclaimerRow: { flexDirection: 'row', alignItems: 'flex-start' },
+  actionBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    height: 54,
+    paddingHorizontal: 28,
+    borderWidth: 3,
+  },
+  actionLabel: {
+    color: '#FFFFFF',
+    fontSize: 15,
+    fontWeight: '700',
+    letterSpacing: 0.3,
+    marginLeft: 8,
+  },
+  actionShadow: {
+    position: 'absolute',
+    top: 5,
+    left: 5,
+    right: 0,
+    bottom: 0,
+  },
 });

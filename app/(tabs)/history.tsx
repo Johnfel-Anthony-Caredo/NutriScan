@@ -9,9 +9,11 @@ import { AppScreen, Card, EmptyState, FoodLogItem, SectionHeader, SkeletonLoader
 import { useAuth } from '@/context/AuthContext';
 import { useRefresh } from '@/hooks/useRefresh';
 import { useTheme } from '@/hooks/useTheme';
-import { getTodaysScanLogs, getWeeklyScanLogs, type ScanLogRow } from '@/services/supabaseService';
+import { getResolvedImageUrl } from '@/services/storageService';
+import { getAllUserScans, getTodaysScanLogs, getWeeklyScanLogs, type ScanLogRow } from '@/services/supabaseService';
 import type { FoodItem } from '@/types/health';
 import { Ionicons } from '@expo/vector-icons';
+import { Image } from 'expo-image';
 import { useFocusEffect, useRouter } from 'expo-router';
 import React, { useCallback, useState } from 'react';
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
@@ -20,7 +22,8 @@ interface WeeklySummaryData {
   safe: number;
   caution: number;
   avoid: number;
-  daily: { day: string; safe: number; caution: number; avoid: number }[];
+  invalid: number;
+  daily: { day: string; safe: number; caution: number; avoid: number; invalid: number }[];
 }
 
 const mapScanLogToFoodItem = (row: ScanLogRow): FoodItem => ({
@@ -28,7 +31,7 @@ const mapScanLogToFoodItem = (row: ScanLogRow): FoodItem => ({
   user_id: row.user_id,
   name: row.food_name,
   verdict: row.verdict,
-  image_url: row.image_url ?? undefined,
+  image_url: getResolvedImageUrl(row.image_url),
   scannedAt: row.scanned_at,
   mealType: row.meal_type ?? undefined,
 });
@@ -47,6 +50,7 @@ const buildWeeklySummary = (rows: ScanLogRow[]): WeeklySummaryData => {
       safe: 0,
       caution: 0,
       avoid: 0,
+      invalid: 0,
     };
   });
 
@@ -58,23 +62,27 @@ const buildWeeklySummary = (rows: ScanLogRow[]): WeeklySummaryData => {
     if (!bucket) return;
 
     if (row.verdict === 'safe') bucket.safe += 1;
-    if (row.verdict === 'caution') bucket.caution += 1;
-    if (row.verdict === 'avoid') bucket.avoid += 1;
+    else if (row.verdict === 'caution') bucket.caution += 1;
+    else if (row.verdict === 'avoid') bucket.avoid += 1;
+    else if (row.verdict === 'invalid') bucket.invalid += 1;
   });
 
   const safe = dayBuckets.reduce((sum, day) => sum + day.safe, 0);
   const caution = dayBuckets.reduce((sum, day) => sum + day.caution, 0);
   const avoid = dayBuckets.reduce((sum, day) => sum + day.avoid, 0);
+  const invalid = dayBuckets.reduce((sum, day) => sum + day.invalid, 0);
 
   return {
     safe,
     caution,
     avoid,
+    invalid,
     daily: dayBuckets.map((day) => ({
       day: day.label,
       safe: day.safe,
       caution: day.caution,
       avoid: day.avoid,
+      invalid: day.invalid,
     })),
   };
 };
@@ -85,6 +93,7 @@ export default function HistoryScreen() {
   const [selectedDay, setSelectedDay] = useState(0);
   const { user } = useAuth();
   const [todayLog, setTodayLog] = useState<FoodItem[]>([]);
+  const [allLog, setAllLog] = useState<FoodItem[]>([]);
   const [weeklySummary, setWeeklySummary] = useState<WeeklySummaryData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -94,12 +103,14 @@ export default function HistoryScreen() {
   const loadHistoryData = useCallback(async () => {
     if (!user) return;
 
-    const [todayRows, weeklyRows] = await Promise.all([
+    const [todayRows, weeklyRows, allRows] = await Promise.all([
       getTodaysScanLogs(user.id),
       getWeeklyScanLogs(user.id),
+      getAllUserScans(user.id),
     ]);
 
     setTodayLog(todayRows.map(mapScanLogToFoodItem));
+    setAllLog(allRows.map(mapScanLogToFoodItem));
 
     if (weeklyRows.length > 0) {
       setWeeklySummary(buildWeeklySummary(weeklyRows));
@@ -146,9 +157,38 @@ export default function HistoryScreen() {
   );
 
   const hasLogs = todayLog.length > 0;
-  const total = weeklySummary ? weeklySummary.safe + weeklySummary.caution + weeklySummary.avoid : 0;
+  const hasAllLogs = allLog.length > 0;
+  const total = weeklySummary ? weeklySummary.safe + weeklySummary.caution + weeklySummary.avoid + weeklySummary.invalid : 0;
 
-  const dayChips = ['Today', 'Yesterday', ...(weeklySummary?.daily.slice(2, 7).map(d => d.day) || ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'])];
+  const dayChips = ['Today', 'Yesterday', ...(weeklySummary?.daily.slice(0, 5).map(d => d.day) || ['Mon', 'Tue', 'Wed', 'Thu', 'Fri']), 'All'];
+
+  // Compute date boundaries for each day chip (excluding "All")
+  const todayStart = new Date();
+  todayStart.setHours(0, 0, 0, 0);
+  const dayDates: number[] = [
+    todayStart.getTime(),                                // Today
+    todayStart.getTime() - 86400000,                     // Yesterday
+    todayStart.getTime() - 6 * 86400000,                 // 6 days ago
+    todayStart.getTime() - 5 * 86400000,                 // 5 days ago
+    todayStart.getTime() - 4 * 86400000,                 // 4 days ago
+    todayStart.getTime() - 3 * 86400000,                 // 3 days ago
+    todayStart.getTime() - 2 * 86400000,                 // 2 days ago
+  ];
+
+  const isAll = selectedDay === dayChips.length - 1;
+  const displayLog = isAll
+    ? allLog
+    : allLog.filter((item) => {
+        const itemDate = new Date(item.scannedAt);
+        itemDate.setHours(0, 0, 0, 0);
+        return itemDate.getTime() === dayDates[selectedDay];
+      });
+  const hasDisplayLogs = displayLog.length > 0;
+  // Summary counts for the selected day
+  const daySafe = displayLog.filter((l) => l.verdict === 'safe').length;
+  const dayCaution = displayLog.filter((l) => l.verdict === 'caution').length;
+  const dayAvoid = displayLog.filter((l) => l.verdict === 'avoid').length;
+  const dayInvalid = displayLog.filter((l) => l.verdict === 'invalid').length;
 
   return (
     <AppScreen
@@ -200,6 +240,7 @@ export default function HistoryScreen() {
             { label: 'Safe', count: weeklySummary.safe, verdict: 'safe' as const },
             { label: 'Caution', count: weeklySummary.caution, verdict: 'caution' as const },
             { label: 'Avoid', count: weeklySummary.avoid, verdict: 'avoid' as const },
+            { label: 'Invalid', count: weeklySummary.invalid, verdict: 'invalid' as const },
           ].map((s) => (
             <View key={s.verdict} style={styles.weekStatSmall}>
               <Text style={{ color: theme.colors[s.verdict].text, fontSize: theme.fontSizes.xl, fontWeight: theme.fontWeights.bold, fontFamily: theme.fontFamilies.heading }}>{s.count}</Text>
@@ -238,33 +279,33 @@ export default function HistoryScreen() {
       </ScrollView>
 
       {/* ── Daily Summary ──────────────── */}
-      {selectedDay === 0 && hasLogs && (
-        <Card style={styles.dailySummary}>
+      {!isAll && hasDisplayLogs && (
+        <Card flat style={styles.dailySummary}>
           <View style={styles.dailySummaryRow}>
             <Ionicons name="checkmark-circle" size={18} color={theme.colors.safe.icon} />
             <Text style={{ color: theme.colors.textPrimary, fontSize: theme.fontSizes.body, fontFamily: theme.fontFamilies.body, marginLeft: 8 }}>
-              {todayLog.filter((l) => l.verdict === 'safe').length} safe, {todayLog.filter((l) => l.verdict === 'caution').length} caution, {todayLog.filter((l) => l.verdict === 'avoid').length} avoid
+              {daySafe} safe, {dayCaution} caution, {dayAvoid} avoid{dayInvalid > 0 ? `, ${dayInvalid} invalid` : ''}
             </Text>
           </View>
         </Card>
       )}
 
       {/* ── Food Log List ──────────────── */}
-      {selectedDay === 0 && hasLogs ? (
-        <Card noPadding>
+      {hasDisplayLogs ? (
+        <Card noPadding flat>
           <View style={{ paddingHorizontal: 16 }}>
-            {todayLog.map((item) => (
-              <FoodLogItem key={item.id} item={item} onPress={() => router.push('/scan-result')} />
+            {displayLog.map((item) => (
+              <FoodLogItem key={item.id} item={item} showImage onPress={() => router.push({ pathname: '/scan-result', params: { scanLogId: item.id } })} />
             ))}
           </View>
         </Card>
       ) : (
         <EmptyState
           icon="receipt-outline"
-          title={selectedDay === 0 ? 'No scans yet today' : 'No scans on this day'}
+          title={isAll ? 'No scans yet' : selectedDay === 0 ? 'No scans yet today' : 'No scans on this day'}
           subtitle="Scan your meals to build a complete picture of your daily nutrition."
-          actionLabel={selectedDay === 0 ? 'Scan Now' : undefined}
-          onAction={selectedDay === 0 ? () => router.push('/(tabs)/scan') : undefined}
+          actionLabel={selectedDay === 0 && !isAll ? 'Scan Now' : undefined}
+          onAction={selectedDay === 0 && !isAll ? () => router.push('/(tabs)/scan') : undefined}
         />
       )}
 
@@ -272,16 +313,30 @@ export default function HistoryScreen() {
       {hasLogs && (
         <>
           <SectionHeader title="Foods to Watch" />
-          <Card>
+          <Card noPadding flat>
             {todayLog.filter((l) => l.verdict === 'avoid' || l.verdict === 'caution').slice(0, 3).map((food) => (
-              <View key={food.id} style={[styles.riskyRow, { borderBottomColor: theme.colors.border }]}>
-                <Ionicons name="alert-circle" size={18} color={theme.colors[food.verdict].icon} style={{ marginRight: 10 }} />
-                <View style={{ flex: 1 }}>
-                  <Text style={{ color: theme.colors.textPrimary, fontSize: theme.fontSizes.body, fontWeight: theme.fontWeights.medium, fontFamily: theme.fontFamilies.body }}>{food.name}</Text>
-                  <Text style={{ color: theme.colors.textTertiary, fontSize: theme.fontSizes.sm, fontFamily: theme.fontFamilies.body }}>{food.mealType}</Text>
+              <TouchableOpacity
+                key={food.id}
+                onPress={() => router.push({ pathname: '/scan-result', params: { scanLogId: food.id } })}
+                style={[styles.riskyRow, { borderBottomColor: theme.colors.border }]}
+                activeOpacity={0.7}
+              >
+                {/* Small thumbnail */}
+                <View style={[styles.riskyThumb, { backgroundColor: theme.colors.surfaceSecondary }]}>
+                  {food.image_url ? (
+                    <Image source={{ uri: food.image_url }} style={styles.riskyThumbImg} contentFit="cover" />
+                  ) : (
+                    <Ionicons name="alert-circle" size={18} color={theme.colors[food.verdict].icon} />
+                  )}
+                </View>
+                <View style={{ flex: 1, marginLeft: 10 }}>
+                  <Text style={{ color: theme.colors.textPrimary, fontSize: theme.fontSizes.body, fontWeight: theme.fontWeights.medium, fontFamily: theme.fontFamilies.body }} numberOfLines={1}>{food.name}</Text>
+                  <Text style={{ color: theme.colors.textTertiary, fontSize: theme.fontSizes.sm, fontFamily: theme.fontFamilies.body, marginTop: 2 }}>
+                    {new Date(food.scannedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                  </Text>
                 </View>
                 <VerdictBadge verdict={food.verdict} />
-              </View>
+              </TouchableOpacity>
             ))}
             {todayLog.filter((l) => l.verdict === 'avoid' || l.verdict === 'caution').length === 0 && (
               <View style={styles.emptyState}>
@@ -323,7 +378,9 @@ const styles = StyleSheet.create({
   dayChip: { paddingHorizontal: 18, paddingVertical: 10, borderWidth: 3 },
   dailySummary: { marginBottom: 12 },
   dailySummaryRow: { flexDirection: 'row', alignItems: 'center' },
-  riskyRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 12, borderBottomWidth: 2 },
+  riskyRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 12, borderBottomWidth: 2, paddingHorizontal: 16, gap: 6 },
+  riskyThumb: { width: 40, height: 40, borderRadius: 10, justifyContent: 'center', alignItems: 'center', overflow: 'hidden' },
+  riskyThumbImg: { width: '100%', height: '100%' },
   emptyState: { alignItems: 'center', paddingVertical: 20 },
   reportBtn: { flexDirection: 'row', alignItems: 'center', paddingVertical: 16, paddingHorizontal: 16, marginTop: 20, borderWidth: 3 },
 });

@@ -16,7 +16,7 @@ import { signUp } from '@/services/authService';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
-import { Image, KeyboardAvoidingView, Platform, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { Image, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 
 export default function RegisterScreen() {
   const theme = useTheme();
@@ -118,8 +118,15 @@ export default function RegisterScreen() {
 
   // ── Main register form ───────────────────────────────────────────────
   return (
-    <AppScreen scroll>
-      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1 }}>
+    <KeyboardAvoidingView
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      style={{ flex: 1, backgroundColor: theme.colors.background }}
+    >
+      <ScrollView
+        contentContainerStyle={{ flexGrow: 1 }}
+        showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
+      >
         <View style={styles.container}>
           {/* ── Branding (matches Login) ──────── */}
           <View style={styles.branding}>
@@ -314,18 +321,18 @@ export default function RegisterScreen() {
             By continuing, you agree to our Terms of Service{'\n'}and Privacy Policy.
           </Text>
         </View>
-      </KeyboardAvoidingView>
-    </AppScreen>
+      </ScrollView>
+    </KeyboardAvoidingView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, paddingTop: 40, paddingBottom: 24 },
+  container: { flex: 1, paddingTop: 40, paddingBottom: 24, paddingHorizontal: 24 },
   branding: { alignItems: 'center', marginBottom: 28 },
   logo: { width: 96, height: 96 },
   successCircle: { width: 96, height: 96, borderRadius: 48, justifyContent: 'center', alignItems: 'center' },
   form: {},
-  fieldWrap: { marginBottom: 12 },
+  fieldWrap: { marginBottom: 16 },
   inputRow: { flexDirection: 'row', alignItems: 'center' },
   errorRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 6 },
   strengthWrap: { marginTop: 10 },

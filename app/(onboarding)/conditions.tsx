@@ -16,7 +16,11 @@ import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
 import { StyleSheet, Text, TextInput, View } from 'react-native';
 
-const LISTED_CONDITIONS: { key: HealthCondition; label: string; icon: keyof typeof Ionicons.glyphMap }[] = [
+const LISTED_CONDITIONS: {
+  key: HealthCondition;
+  label: string;
+  icon: keyof typeof Ionicons.glyphMap;
+}[] = [
   { key: 'diabetes', label: 'Diabetes / Prediabetes', icon: 'water' },
   { key: 'hypertension', label: 'High Blood Pressure', icon: 'pulse' },
   { key: 'heart_disease', label: 'Heart Disease / High Cholesterol', icon: 'heart' },
@@ -52,13 +56,12 @@ export default function ConditionsScreen() {
     if (!selectedCondition) return;
 
     if (selectedCondition === 'unsure') {
-      // Go to AI-assisted classification
       router.push('/(onboarding)/nutribot-assist');
       return;
     }
 
     if (selectedCondition === 'other') {
-      if (!customText.trim()) return; // require text
+      if (!customText.trim()) return;
       setPrimaryCondition({
         condition: selectedCondition,
         source: 'other',
@@ -68,7 +71,6 @@ export default function ConditionsScreen() {
       return;
     }
 
-    // Listed condition
     setPrimaryCondition({
       condition: selectedCondition,
       source: 'listed',
@@ -85,18 +87,27 @@ export default function ConditionsScreen() {
 
   return (
     <AppScreen scroll noPadding>
-      <View style={{ paddingHorizontal: 20, paddingTop: theme.spacing.md, paddingBottom: 40 }}>
+      <View style={styles.content}>
+        {/* ── Header ─────────────────────────────── */}
         <Text
-          style={[theme.textStyles.h2, { color: theme.colors.textPrimary, marginBottom: theme.spacing.xs }]}
+          style={[
+            theme.textStyles.h2,
+            { color: theme.colors.textPrimary, marginBottom: theme.spacing.xs },
+          ]}
         >
           What are you managing?
         </Text>
         <Text
-          style={[theme.textStyles.body, { color: theme.colors.textSecondary, marginBottom: theme.spacing.lg }]}
+          style={[
+            theme.textStyles.body,
+            { color: theme.colors.textSecondary, marginBottom: theme.spacing.lg },
+          ]}
         >
-          Pick the one that best describes your situation. You can always update this later.
+          Pick the one that best describes your situation. You can always
+          update this later.
         </Text>
 
+        {/* ── Condition cards grid ────────────────── */}
         <View style={styles.grid}>
           {LISTED_CONDITIONS.map((c) => (
             <SelectableCard
@@ -109,15 +120,31 @@ export default function ConditionsScreen() {
           ))}
         </View>
 
-        {/* Custom condition text input — shown when "other" is selected */}
+        {/* ── Custom condition input ──────────────── */}
         {showCustomInput && (
-          <View style={[styles.customInputWrap, { backgroundColor: theme.colors.surfaceSecondary, borderColor: theme.colors.border, borderRadius: theme.radius.md }]}>
+          <View
+            style={[
+              styles.customInputWrap,
+              {
+                backgroundColor: theme.colors.surfaceSecondary,
+                borderColor: theme.colors.border,
+                borderRadius: theme.radius.md,
+              },
+            ]}
+          >
             <TextInput
               value={customText}
               onChangeText={setCustomText}
               placeholder="Describe your condition, e.g. Thyroid disorder, Asthma..."
               placeholderTextColor={theme.colors.textTertiary}
-              style={{ flex: 1, color: theme.colors.textPrimary, fontSize: theme.fontSizes.body, fontFamily: theme.fontFamilies.body, padding: 16, minHeight: 60 }}
+              style={{
+                flex: 1,
+                color: theme.colors.textPrimary,
+                fontSize: theme.fontSizes.body,
+                fontFamily: theme.fontFamilies.body,
+                padding: 16,
+                minHeight: 60,
+              }}
               multiline
               autoFocus
               accessibilityLabel="Describe your condition"
@@ -125,14 +152,25 @@ export default function ConditionsScreen() {
           </View>
         )}
 
-        {/* Divider for bottom options */}
+        {/* ── Divider ─────────────────────────────── */}
         <View style={styles.dividerRow}>
-          <View style={[styles.dividerLine, { backgroundColor: theme.colors.border }]} />
-          <Text style={[theme.textStyles.caption, { color: theme.colors.textTertiary, marginHorizontal: 12 }]}>or</Text>
-          <View style={[styles.dividerLine, { backgroundColor: theme.colors.border }]} />
+          <View
+            style={[styles.dividerLine, { backgroundColor: theme.colors.border }]}
+          />
+          <Text
+            style={[
+              theme.textStyles.caption,
+              { color: theme.colors.textTertiary, marginHorizontal: 12 },
+            ]}
+          >
+            or
+          </Text>
+          <View
+            style={[styles.dividerLine, { backgroundColor: theme.colors.border }]}
+          />
         </View>
 
-        {/* "My condition isn't listed" and "I'm not sure" */}
+        {/* ── Bottom options (horizontal) ─────────── */}
         <View style={styles.bottomOptions}>
           <SelectableCard
             key="other"
@@ -140,26 +178,37 @@ export default function ConditionsScreen() {
             icon="help-circle"
             selected={selectedCondition === 'other'}
             onPress={() => handleSelect('other')}
+            style={styles.bottomCard}
+            flat
           />
-          <View style={{ marginTop: theme.spacing.sm }}>
-            <SelectableCard
-              key="unsure"
-              label="I'm not sure"
-              icon="help"
-              selected={selectedCondition === 'unsure'}
-              onPress={() => handleSelect('unsure')}
-            />
-          </View>
+          <SelectableCard
+            key="unsure"
+            label="I'm not sure"
+            icon="help"
+            selected={selectedCondition === 'unsure'}
+            onPress={() => handleSelect('unsure')}
+            style={styles.bottomCard}
+            flat
+          />
         </View>
 
+        {/* ── Validation hint ──────────────────────── */}
         {isOtherSelected && !customText.trim() && (
           <Text
-            style={[theme.textStyles.small, { color: theme.colors.textTertiary, textAlign: 'center', marginTop: theme.spacing.sm }]}
+            style={[
+              theme.textStyles.small,
+              {
+                color: theme.colors.textTertiary,
+                textAlign: 'center',
+                marginTop: theme.spacing.sm,
+              },
+            ]}
           >
             Please describe your condition to continue.
           </Text>
         )}
 
+        {/* ── CTA ──────────────────────────────────── */}
         <PrimaryButton
           label={
             selectedCondition === 'unsure'
@@ -172,7 +221,7 @@ export default function ConditionsScreen() {
           }
           onPress={handleContinue}
           disabled={!canContinue}
-          style={{ marginTop: theme.spacing.lg }}
+          style={{ marginTop: theme.spacing.xl }}
         />
       </View>
     </AppScreen>
@@ -180,26 +229,36 @@ export default function ConditionsScreen() {
 }
 
 const styles = StyleSheet.create({
+  content: {
+    paddingHorizontal: 20,
+    paddingTop: 16,
+    paddingBottom: 40,
+  },
   grid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: 12,
   },
+  customInputWrap: {
+    borderWidth: 3,
+    marginTop: 12,
+    marginBottom: 4,
+  },
   dividerRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginVertical: 20,
+    marginTop: 24,
+    marginBottom: 20,
   },
   dividerLine: {
     flex: 1,
     height: 3,
   },
   bottomOptions: {
-    gap: 8,
+    flexDirection: 'row',
+    gap: 12,
   },
-  customInputWrap: {
-    borderWidth: 3,
-    marginTop: 12,
-    marginBottom: 4,
+  bottomCard: {
+    flex: 1,
   },
 });

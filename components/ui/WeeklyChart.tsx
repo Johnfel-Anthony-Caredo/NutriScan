@@ -16,13 +16,14 @@ interface WeeklyChartProps {
 
 export function WeeklyChart({ data }: WeeklyChartProps) {
   const theme = useTheme();
-  const maxPerDay = Math.max(...data.daily.map((d) => d.safe + d.caution + d.avoid), 1);
+  const maxPerDay = Math.max(...data.daily.map((d) => d.safe + d.caution + d.avoid + (d.invalid ?? 0)), 1);
 
   return (
     <View style={styles.container}>
       <View style={styles.chartRow}>
         {data.daily.map((day) => {
-          const total = day.safe + day.caution + day.avoid;
+          const invalidCount = (day as any).invalid ?? 0;
+          const total = day.safe + day.caution + day.avoid + invalidCount;
           const h = Math.max((total / maxPerDay) * 80, 4);
           return (
             <View key={day.day} style={styles.barColumn}>
@@ -34,7 +35,10 @@ export function WeeklyChart({ data }: WeeklyChartProps) {
                   <View style={[styles.segment, { height: (day.caution / total) * h, backgroundColor: theme.colors.caution.icon }]} />
                 )}
                 {day.safe > 0 && (
-                  <View style={[styles.segment, { height: (day.safe / total) * h, backgroundColor: theme.colors.safe.icon, borderBottomLeftRadius: 3, borderBottomRightRadius: 3 }]} />
+                  <View style={[styles.segment, { height: (day.safe / total) * h, backgroundColor: theme.colors.safe.icon }]} />
+                )}
+                {invalidCount > 0 && (
+                  <View style={[styles.segment, { height: (invalidCount / total) * h, backgroundColor: theme.colors.invalid.icon, borderBottomLeftRadius: 3, borderBottomRightRadius: 3 }]} />
                 )}
                 {total === 0 && (
                   <View style={[styles.segment, { height: 4, backgroundColor: theme.colors.surfaceSecondary, borderRadius: 2 }]} />
@@ -54,6 +58,7 @@ export function WeeklyChart({ data }: WeeklyChartProps) {
           { label: 'Safe', color: theme.colors.safe.icon },
           { label: 'Caution', color: theme.colors.caution.icon },
           { label: 'Avoid', color: theme.colors.avoid.icon },
+          { label: 'Invalid', color: theme.colors.invalid.icon },
         ].map((l) => (
           <View key={l.label} style={styles.legendItem}>
             <View style={[styles.legendDot, { backgroundColor: l.color, borderColor: theme.colors.border }]} />

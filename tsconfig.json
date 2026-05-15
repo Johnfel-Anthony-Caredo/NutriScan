@@ -8,6 +8,9 @@
       ]
     }
   },
+  "exclude": [
+    "supabase"
+  ],
   "include": [
     "**/*.ts",
     "**/*.tsx",

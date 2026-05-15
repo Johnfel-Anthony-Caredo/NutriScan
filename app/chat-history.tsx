@@ -98,7 +98,7 @@ export default function ChatHistoryScreen() {
 
       return (
         <TouchableOpacity
-          onPress={() => router.push({ pathname: '/nutribot', params: { conversationId: item.id } })}
+          onPress={() => router.push({ pathname: '/(tabs)/nutribot', params: { conversationId: item.id } })}
           activeOpacity={0.7}
           style={[styles.row, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border, borderRadius: theme.radius.md }]}
           accessibilityRole="button"
@@ -136,7 +136,7 @@ export default function ChatHistoryScreen() {
       {/* New Chat button */}
       <View style={{ paddingHorizontal: 20, paddingTop: 8, paddingBottom: 12 }}>
         <TouchableOpacity
-          onPress={() => router.push('/nutribot')}
+          onPress={() => router.push('/(tabs)/nutribot')}
           style={[styles.newChatBtn, { backgroundColor: theme.colors.primaryLight, borderColor: theme.colors.border, borderRadius: theme.radius.md }]}
           accessibilityRole="button"
         >
@@ -171,7 +171,7 @@ export default function ChatHistoryScreen() {
             title="No conversations yet"
             subtitle={'Tap the New Chat button to start talking! \u{1F916}'}
             actionLabel="Start Chatting"
-            onAction={() => router.push('/nutribot')}
+            onAction={() => router.push('/(tabs)/nutribot')}
           />
         </View>
       )}

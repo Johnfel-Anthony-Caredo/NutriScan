@@ -2,19 +2,34 @@
  * Home Screen — main dashboard tab.
  *
  * Shows greeting, condition pills, today's safety donut summary,
- * scan CTA, today's food log, nutrient watchlist, and health tips carousel.
- * Supports pull-to-refresh to reload all data on demand.
+ * scan CTA, recent scans list with food images, nutrient watchlist,
+ * and health tips carousel. Supports pull-to-refresh.
  */
 
 import type { Article } from '@/types/articles';
 import { ArticleCard } from '@/components/articles';
-import { AppScreen, Card, ConditionPill, FoodLogItem, NutritionDashboard, PrimaryButton, SectionHeader, SkeletonLoader } from '@/components/ui';
+import {
+  AppScreen,
+  Card,
+  ConditionPill,
+  FoodLogItem,
+  NutritionDashboard,
+  PrimaryButton,
+  SectionHeader,
+  SkeletonLoader,
+} from '@/components/ui';
 import { useAuth } from '@/context/AuthContext';
 import { useProfile } from '@/context/ProfileContext';
 import { useRefresh } from '@/hooks/useRefresh';
 import { useTheme } from '@/hooks/useTheme';
 import { fetchArticlesForConditions } from '@/services/articleService';
-import { getTodaysScanLogs, getWeeklyScanLogs, type ScanLogRow } from '@/services/supabaseService';
+import { getResolvedImageUrl } from '@/services/storageService';
+import {
+  getRecentScanLogs,
+  getTodaysScanLogs,
+  getWeeklyScanLogs,
+  type ScanLogRow,
+} from '@/services/supabaseService';
 import type { FoodItem } from '@/types/health';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect, useRouter } from 'expo-router';
@@ -28,7 +43,8 @@ interface WeeklySummaryData {
   safe: number;
   caution: number;
   avoid: number;
-  daily: { day: string; safe: number; caution: number; avoid: number }[];
+  invalid: number;
+  daily: { day: string; safe: number; caution: number; avoid: number; invalid: number }[];
 }
 
 const mapScanLogToFoodItem = (row: ScanLogRow): FoodItem => ({
@@ -36,7 +52,7 @@ const mapScanLogToFoodItem = (row: ScanLogRow): FoodItem => ({
   user_id: row.user_id,
   name: row.food_name,
   verdict: row.verdict,
-  image_url: row.image_url ?? undefined,
+  image_url: getResolvedImageUrl(row.image_url),
   scannedAt: row.scanned_at,
   mealType: row.meal_type ?? undefined,
 });
@@ -48,13 +64,13 @@ const buildWeeklySummary = (rows: ScanLogRow[]): WeeklySummaryData => {
   const dayBuckets = Array.from({ length: 7 }).map((_, index) => {
     const date = new Date(today);
     date.setDate(date.getDate() - (6 - index));
-
     return {
       date,
       label: date.toLocaleDateString('en-US', { weekday: 'short' }),
       safe: 0,
       caution: 0,
       avoid: 0,
+      invalid: 0,
     };
   });
 
@@ -62,27 +78,29 @@ const buildWeeklySummary = (rows: ScanLogRow[]): WeeklySummaryData => {
     const scanned = new Date(row.scanned_at);
     scanned.setHours(0, 0, 0, 0);
     const bucket = dayBuckets.find((b) => b.date.getTime() === scanned.getTime());
-
     if (!bucket) return;
-
     if (row.verdict === 'safe') bucket.safe += 1;
-    if (row.verdict === 'caution') bucket.caution += 1;
-    if (row.verdict === 'avoid') bucket.avoid += 1;
+    else if (row.verdict === 'caution') bucket.caution += 1;
+    else if (row.verdict === 'avoid') bucket.avoid += 1;
+    else if (row.verdict === 'invalid') bucket.invalid += 1;
   });
 
   const safe = dayBuckets.reduce((sum, day) => sum + day.safe, 0);
   const caution = dayBuckets.reduce((sum, day) => sum + day.caution, 0);
   const avoid = dayBuckets.reduce((sum, day) => sum + day.avoid, 0);
+  const invalid = dayBuckets.reduce((sum, day) => sum + day.invalid, 0);
 
   return {
     safe,
     caution,
     avoid,
+    invalid,
     daily: dayBuckets.map((day) => ({
       day: day.label,
       safe: day.safe,
       caution: day.caution,
       avoid: day.avoid,
+      invalid: day.invalid,
     })),
   };
 };
@@ -93,6 +111,7 @@ export default function HomeScreen() {
   const { profile } = useProfile();
   const { user } = useAuth();
   const [todayLog, setTodayLog] = useState<FoodItem[]>([]);
+  const [recentLog, setRecentLog] = useState<FoodItem[]>([]);
   const [weeklySummary, setWeeklySummary] = useState<WeeklySummaryData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -100,17 +119,19 @@ export default function HomeScreen() {
   const [articlesLoading, setArticlesLoading] = useState(true);
   const hasLoadedOnce = useRef(false);
 
-  // ── Data loading (shared between initial load and pull-to-refresh) ──
+  // ── Data loading ──────────────────────────────────────────────
 
   const loadScanData = useCallback(async () => {
     if (!user) return;
 
-    const [todayRows, weeklyRows] = await Promise.all([
+    const [todayRows, weeklyRows, recentRows] = await Promise.all([
       getTodaysScanLogs(user.id),
       getWeeklyScanLogs(user.id),
+      getRecentScanLogs(user.id, 5),
     ]);
 
     setTodayLog(todayRows.map(mapScanLogToFoodItem));
+    setRecentLog(recentRows.map(mapScanLogToFoodItem));
 
     if (weeklyRows.length > 0) {
       setWeeklySummary(buildWeeklySummary(weeklyRows));
@@ -122,11 +143,9 @@ export default function HomeScreen() {
   const loadArticles = useCallback(async () => {
     if (!user) return;
     const fetched = await fetchArticlesForConditions(profile.conditions);
-    // Only show articles that have a real image — blank cards are not shown
     setArticles(fetched.filter((a) => !!a.imageUrl));
   }, [user, profile.conditions]);
 
-  // Combined loader for pull-to-refresh
   const refreshAll = useCallback(async () => {
     await Promise.all([loadScanData(), loadArticles()]);
   }, [loadScanData, loadArticles]);
@@ -135,7 +154,7 @@ export default function HomeScreen() {
     onRefresh: refreshAll,
   });
 
-  // ── Initial load on screen focus ──
+  // ── Initial load on screen focus ──────────────────────────────
 
   useFocusEffect(
     useCallback(() => {
@@ -166,12 +185,12 @@ export default function HomeScreen() {
       load();
 
       return () => { isActive = false; };
-      // Only re-run when user changes, not on every focus
       // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [user]),
   );
 
-  // Articles load separately on mount / when conditions change
+  // ── Articles load ─────────────────────────────────────────────
+
   useEffect(() => {
     let isActive = true;
 
@@ -195,7 +214,10 @@ export default function HomeScreen() {
     return () => { isActive = false; };
   }, [user, profile.conditions, loadArticles]);
 
-  const hasLogs = todayLog.length > 0;
+  const hasRecentLogs = recentLog.length > 0;
+  const hasTodayLogs = todayLog.length > 0;
+
+  // ── Render ────────────────────────────────────────────────────
 
   return (
     <AppScreen
@@ -223,7 +245,7 @@ export default function HomeScreen() {
         </View>
       )}
 
-      {/* ── Nutrition Dashboard (top priority) ── */}
+      {/* ── Nutrition Dashboard ──────────── */}
       {isLoading ? (
         <Card><SkeletonLoader rows={3} /></Card>
       ) : loadError ? (
@@ -237,7 +259,7 @@ export default function HomeScreen() {
         </Card>
       ) : (
         <NutritionDashboard
-          todayScans={todayLog.length}
+          todayScans={todayLog.filter((l) => l.verdict !== 'invalid').length}
           nutrientTargets={profile.nutrientTargets}
         />
       )}
@@ -253,16 +275,17 @@ export default function HomeScreen() {
             <View style={styles.donutContainer}>
               <View style={[styles.donutOuter, { borderColor: theme.colors.safe.icon }]}>
                 <Text style={{ color: theme.colors.textPrimary, fontSize: theme.fontSizes['2xl'], fontWeight: theme.fontWeights.bold, fontFamily: theme.fontFamilies.heading }}>
-                  {weeklySummary ? weeklySummary.safe + weeklySummary.caution + weeklySummary.avoid : 0}
+                  {weeklySummary ? weeklySummary.safe + weeklySummary.caution + weeklySummary.avoid + weeklySummary.invalid : 0}
                 </Text>
                 <Text style={{ color: theme.colors.textTertiary, fontSize: theme.fontSizes.xs, fontFamily: theme.fontFamilies.body }}>scans</Text>
               </View>
             </View>
             <View style={styles.summaryStats}>
               {[
-                { label: 'Safe', count: hasLogs ? todayLog.filter((l) => l.verdict === 'safe').length : 0, color: theme.colors.safe.icon },
-                { label: 'Caution', count: hasLogs ? todayLog.filter((l) => l.verdict === 'caution').length : 0, color: theme.colors.caution.icon },
-                { label: 'Avoid', count: hasLogs ? todayLog.filter((l) => l.verdict === 'avoid').length : 0, color: theme.colors.avoid.icon },
+                { label: 'Safe', count: hasTodayLogs ? todayLog.filter((l) => l.verdict === 'safe').length : 0, color: theme.colors.safe.icon },
+                { label: 'Caution', count: hasTodayLogs ? todayLog.filter((l) => l.verdict === 'caution').length : 0, color: theme.colors.caution.icon },
+                { label: 'Avoid', count: hasTodayLogs ? todayLog.filter((l) => l.verdict === 'avoid').length : 0, color: theme.colors.avoid.icon },
+                { label: 'Invalid', count: hasTodayLogs ? todayLog.filter((l) => l.verdict === 'invalid').length : 0, color: theme.colors.invalid.icon },
               ].map((s) => (
                 <View key={s.label} style={styles.statItem}>
                   <View style={[styles.statDot, { backgroundColor: s.color, borderColor: theme.colors.border }]} />
@@ -275,13 +298,13 @@ export default function HomeScreen() {
         </Card>
       )}
 
-      {/* ── Today's Log ────────────────── */}
-      <SectionHeader title="Today's Log" action="See all" onAction={() => router.push('/(tabs)/history')} />
-      {hasLogs ? (
-        <Card noPadding style={styles.logCard}>
+      {/* ── Recent Scans ────────────────── */}
+      <SectionHeader title="Recent Scans" action="See all" onAction={() => router.push('/(tabs)/history')} />
+      {hasRecentLogs ? (
+        <Card noPadding flat style={styles.logCard}>
           <View style={{ paddingHorizontal: 16 }}>
-            {todayLog.map((item) => (
-              <FoodLogItem key={item.id} item={item} onPress={() => router.push('/scan-result')} />
+            {recentLog.map((item) => (
+              <FoodLogItem key={item.id} item={item} showImage onPress={() => router.push({ pathname: '/scan-result', params: { scanLogId: item.id } })} />
             ))}
           </View>
         </Card>
@@ -290,7 +313,7 @@ export default function HomeScreen() {
           <View style={styles.emptyLog}>
             <Ionicons name="restaurant-outline" size={28} color={theme.colors.textTertiary} />
             <Text style={{ color: theme.colors.textSecondary, fontSize: theme.fontSizes.body, marginTop: 8, textAlign: 'center', fontFamily: theme.fontFamilies.body }}>
-              No meals scanned today.{'\n'}Tap "Scan Your Food" to get started!
+              No meals scanned yet.{'\n'}Tap "Scan Your Food" to get started!
             </Text>
           </View>
         </Card>

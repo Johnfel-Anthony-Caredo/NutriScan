@@ -19,61 +19,92 @@ export default function WelcomeScreen() {
   return (
     <AppScreen>
       <View style={styles.container}>
-        <View style={styles.top}>
-          <View
-            style={[styles.iconCircle, { backgroundColor: theme.colors.primaryLight, borderColor: theme.colors.border }]}
-          >
-            <Ionicons name="heart" size={52} color={theme.colors.primary} />
-          </View>
-
-          <Text
-            style={{
-              ...theme.textStyles.displayMd,
-              color: theme.colors.textPrimary,
-              textAlign: 'center',
-              marginTop: 28,
-            }}
-          >
-            Let's personalize{'\n'}your experience
-          </Text>
-
-          <Text
-            style={{
-              ...theme.textStyles.body,
-              color: theme.colors.textSecondary,
-              textAlign: 'center',
-              marginTop: 12,
-              maxWidth: 300,
-            }}
-          >
-            Tell us about your health so we can give you accurate, helpful food guidance.
-          </Text>
-
-          <View style={styles.highlights}>
-            {[
-              { icon: 'shield-checkmark' as const, text: 'Your data stays private' },
-              { icon: 'time' as const, text: 'Takes less than 2 minutes' },
-              { icon: 'create' as const, text: 'You can change this anytime' },
-            ].map((item) => (
-              <View key={item.text} style={styles.highlightRow}>
-                <View style={[styles.highlightIcon, { backgroundColor: theme.colors.primaryLight, borderColor: theme.colors.border }]}>
-                  <Ionicons name={item.icon} size={18} color={theme.colors.primary} />
-                </View>
-                <Text
-                  style={{
-                    ...theme.textStyles.body,
-                    color: theme.colors.textSecondary,
-                    marginLeft: 12,
-                    flex: 1,
-                  }}
-                >
-                  {item.text}
-                </Text>
-              </View>
-            ))}
-          </View>
+        {/* ── Icon ──────────────────────────────── */}
+        <View
+          style={[
+            styles.iconCircle,
+            {
+              backgroundColor: theme.colors.primaryLight,
+              borderColor: theme.colors.border,
+            },
+          ]}
+        >
+          <Ionicons name="heart" size={52} color={theme.colors.primary} />
         </View>
 
+        {/* ── Headline ──────────────────────────── */}
+        <Text
+          style={{
+            ...theme.textStyles.displayMd,
+            color: theme.colors.textPrimary,
+            textAlign: 'center',
+            marginTop: 28,
+          }}
+        >
+          Let's personalize{'\n'}your experience
+        </Text>
+
+        {/* ── Subtitle ──────────────────────────── */}
+        <Text
+          style={{
+            ...theme.textStyles.body,
+            color: theme.colors.textSecondary,
+            textAlign: 'center',
+            marginTop: 12,
+            maxWidth: 300,
+          }}
+        >
+          Tell us about your health so we can give you accurate, helpful
+          food guidance.
+        </Text>
+
+        {/* ── Benefit rows ──────────────────────── */}
+        <View style={styles.highlights}>
+          {[
+            {
+              icon: 'shield-checkmark' as const,
+              text: 'Your data stays private',
+            },
+            {
+              icon: 'time' as const,
+              text: 'Takes less than 2 minutes',
+            },
+            {
+              icon: 'create' as const,
+              text: 'You can change this anytime',
+            },
+          ].map((item) => (
+            <View key={item.text} style={styles.highlightRow}>
+              <View
+                style={[
+                  styles.highlightIcon,
+                  {
+                    backgroundColor: theme.colors.primaryLight,
+                    borderColor: theme.colors.border,
+                  },
+                ]}
+              >
+                <Ionicons
+                  name={item.icon}
+                  size={18}
+                  color={theme.colors.primary}
+                />
+              </View>
+              <Text
+                style={{
+                  ...theme.textStyles.body,
+                  color: theme.colors.textSecondary,
+                  marginLeft: 12,
+                  flex: 1,
+                }}
+              >
+                {item.text}
+              </Text>
+            </View>
+          ))}
+        </View>
+
+        {/* ── CTA ────────────────────────────────── */}
         <PrimaryButton
           label="Get Started"
           onPress={() => router.push('/(onboarding)/conditions')}
@@ -84,10 +115,37 @@ export default function WelcomeScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, paddingTop: 60, paddingBottom: 40 },
-  top: { alignItems: 'center' },
-  iconCircle: { width: 108, height: 108, borderRadius: 54, justifyContent: 'center', alignItems: 'center', borderWidth: 3 },
-  highlights: { marginTop: 40, alignSelf: 'stretch', gap: 16, paddingHorizontal: 8 },
-  highlightRow: { flexDirection: 'row', alignItems: 'center' },
-  highlightIcon: { width: 36, height: 36, borderRadius: 18, justifyContent: 'center', alignItems: 'center', borderWidth: 2 },
+  container: {
+    flex: 1,
+    justifyContent: 'center',
+    paddingBottom: 32,
+  },
+  iconCircle: {
+    width: 108,
+    height: 108,
+    borderRadius: 54,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 3,
+    alignSelf: 'center',
+  },
+  highlights: {
+    marginTop: 40,
+    marginBottom: 48,
+    alignSelf: 'stretch',
+    gap: 16,
+    paddingHorizontal: 8,
+  },
+  highlightRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  highlightIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 2,
+  },
 });

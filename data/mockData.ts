@@ -128,22 +128,24 @@ export interface WeeklySummary {
   safe: number;
   caution: number;
   avoid: number;
+  invalid: number;
   /** Day-by-day breakdown for chart */
-  daily: { day: string; safe: number; caution: number; avoid: number }[];
+  daily: { day: string; safe: number; caution: number; avoid: number; invalid: number }[];
 }
 
 export const MOCK_WEEKLY: WeeklySummary = {
   safe: 12,
   caution: 5,
   avoid: 2,
+  invalid: 0,
   daily: [
-    { day: 'Mon', safe: 3, caution: 1, avoid: 0 },
-    { day: 'Tue', safe: 2, caution: 1, avoid: 1 },
-    { day: 'Wed', safe: 2, caution: 0, avoid: 0 },
-    { day: 'Thu', safe: 1, caution: 2, avoid: 1 },
-    { day: 'Fri', safe: 2, caution: 1, avoid: 0 },
-    { day: 'Sat', safe: 1, caution: 0, avoid: 0 },
-    { day: 'Sun', safe: 1, caution: 0, avoid: 0 },
+    { day: 'Mon', safe: 3, caution: 1, avoid: 0, invalid: 0 },
+    { day: 'Tue', safe: 2, caution: 1, avoid: 1, invalid: 0 },
+    { day: 'Wed', safe: 2, caution: 0, avoid: 0, invalid: 0 },
+    { day: 'Thu', safe: 1, caution: 2, avoid: 1, invalid: 0 },
+    { day: 'Fri', safe: 2, caution: 1, avoid: 0, invalid: 0 },
+    { day: 'Sat', safe: 1, caution: 0, avoid: 0, invalid: 0 },
+    { day: 'Sun', safe: 1, caution: 0, avoid: 0, invalid: 0 },
   ],
 };
 
