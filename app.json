@@ -13,11 +13,18 @@
     },
     "android": {
       "adaptiveIcon": {
-        "backgroundColor": "transparent",
+        "backgroundColor": "#FFFFFF",
         "foregroundImage": "./assets/images/icon.png"
       },
       "edgeToEdgeEnabled": true,
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "permissions": [
+        "android.permission.CAMERA",
+        "android.permission.RECORD_AUDIO",
+        "android.permission.CAMERA",
+        "android.permission.RECORD_AUDIO"
+      ],
+      "package": "com.darkmatter_29.nutriscan"
     },
     "web": {
       "output": "static",
